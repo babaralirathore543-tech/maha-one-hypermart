@@ -1,42 +1,178 @@
-import React, { useState } from "react";
-import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock } from "react-icons/fa";
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { db, collection, query, where, getDocs } from '../../config/firebase';
+
+const logo = '/images/logo.png';
 
 const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login:", { email, password });
-    alert("Login attempt: " + email);
+    setLoading(true);
+    setError('');
+
+    // ✅ HARDCODED ADMIN LOGIN (Working)
+    if (email === 'babarrathore576@gmail.com' && password === 'Youthcolonel1212') {
+      const user = {
+        id: 'admin_001',
+        name: 'Babar Ali',
+        email: 'babarrathore576@gmail.com',
+        role: 'admin',
+        isActive: true
+      };
+      
+      localStorage.setItem('token', 'dummy_token_admin_123');
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('userId', 'admin_001');
+      
+      window.dispatchEvent(new Event('userUpdated'));
+      window.dispatchEvent(new Event('storage'));
+      
+      navigate('/admin');
+      return;
+    }
+
+    // ✅ HARDCODED CUSTOMER LOGIN
+    if (email === 'user@example.com' && password === 'user123') {
+      const user = {
+        id: 'customer_001',
+        name: 'Customer User',
+        email: 'user@example.com',
+        role: 'customer',
+        isActive: true
+      };
+      
+      localStorage.setItem('token', 'dummy_token_user_123');
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('userId', 'customer_001');
+      
+      window.dispatchEvent(new Event('userUpdated'));
+      window.dispatchEvent(new Event('storage'));
+      
+      navigate('/');
+      return;
+    }
+
+    // ✅ FIREBASE LOGIN (Backup)
+    try {
+      console.log('🔍 Checking Firebase for:', email);
+
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', email));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        setError('❌ User not found. Please check your email.');
+        setLoading(false);
+        return;
+      }
+
+      let userData: any = null;
+      let userId = '';
+
+      querySnapshot.forEach((doc) => {
+        userData = doc.data();
+        userId = doc.id;
+        console.log('✅ User found:', userData);
+      });
+
+      if (userData && userData.password === password) {
+        const user = {
+          id: userId,
+          name: userData.name || 'User',
+          email: userData.email,
+          role: userData.role || 'customer',
+          isActive: userData.isActive !== false,
+          phone: userData.phone || '',
+          isVerified: userData.isVerified || false
+        };
+        
+        localStorage.setItem('token', 'firebase_token_' + Date.now());
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('userId', userId);
+        
+        window.dispatchEvent(new Event('userUpdated'));
+        window.dispatchEvent(new Event('storage'));
+        
+        if (user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+        return;
+      } else {
+        setError('❌ Invalid password. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+    } catch (error: any) {
+      console.error('❌ Firebase Login error:', error);
+      setError('❌ Login failed. Please try again.');
+      setLoading(false);
+    }
+
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
-        {/* Logo - SVG alternative */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-3 flex items-center justify-center">
-            <span className="text-white text-3xl font-bold">M</span>
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center">
+            <img 
+              src={logo} 
+              alt="Maha One Logo" 
+              className="h-16 w-auto"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  const fallback = document.createElement('div');
+                  fallback.className = 'w-16 h-16 bg-[#0F766E] rounded-full flex items-center justify-center text-white text-2xl font-bold';
+                  fallback.textContent = 'M';
+                  parent.appendChild(fallback);
+                }
+              }}
+            />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Maha One</h1>
-          <p className="text-gray-500 text-sm mt-1">Welcome back!</p>
+          <h1 className="text-2xl font-bold text-gray-800 mt-3">
+            <span className="text-[#0F766E]">MAHA</span>
+            <span className="text-[#D4AF37]"> ONE</span>
+          </h1>
+          <p className="text-gray-500 text-sm">Sign in to your account</p>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg mb-4 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
             </label>
             <div className="relative">
-              <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <FaEnvelope className="absolute left-3 top-3 text-gray-400" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                placeholder="you@example.com"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none"
+                placeholder="your@email.com"
                 required
               />
             </div>
@@ -47,66 +183,58 @@ const LoginPage: React.FC = () => {
               Password
             </label>
             <div className="relative">
-              <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <FaLock className="absolute left-3 top-3 text-gray-400" />
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none"
                 placeholder="••••••••"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" className="rounded border-gray-300" />
-              <span className="text-gray-600">Remember me</span>
-            </label>
-            <a href="#" className="text-blue-600 hover:underline">
-              Forgot password?
-            </a>
-          </div>
-
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            disabled={loading}
+            className="w-full bg-[#0F766E] text-white py-2.5 rounded-lg font-medium hover:bg-[#065F46] transition disabled:opacity-50"
           >
-            Sign In
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
+        </form>
 
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+        {/* Signup Link */}
+        <p className="text-center text-sm text-gray-600 mt-4">
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-[#0F766E] font-medium hover:underline">
+            Sign Up
+          </Link>
+        </p>
+
+        {/* ✅ Demo Credentials */}
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <p className="text-xs text-gray-500 text-center">🔑 Demo Credentials:</p>
+          <div className="flex flex-wrap justify-center gap-4 mt-2 text-xs text-gray-600">
+            <div>
+              <span className="font-medium">Admin:</span> mahaonehypermarket@gmail.com / Youthcolonel1212
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">or continue with</span>
+            <div>
+              <span className="font-medium">User:</span> user@example.com / user123
             </div>
           </div>
+        </div>
 
-          <button
-            type="button"
-            className="w-full flex items-center justify-center gap-3 border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <FaGoogle className="text-red-500 text-lg" />
-            <span className="text-gray-700 font-medium">Google</span>
-          </button>
-
-          <p className="text-center text-sm text-gray-600 mt-4">
-            Don't have an account?{" "}
-            <a href="#" className="text-blue-600 font-medium hover:underline">
-              Sign Up
-            </a>
-          </p>
-        </form>
+        <p className="text-center text-xs text-gray-400 mt-6">
+          © 2024 Maha One HyperMart. All rights reserved.
+        </p>
       </div>
     </div>
   );

@@ -152,9 +152,53 @@
     animation: scaleIn 0.5s ease-out forwards;
   }
 
+  /* ✅ BLINK ANIMATION - Green Dot */
+  .animate-blink {
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
+  .animate-blink-fast {
+    animation: blink 0.6s ease-in-out infinite;
+  }
+
+  .animate-blink-slow {
+    animation: blink 1.8s ease-in-out infinite;
+  }
+
   .delay-100 { animation-delay: 100ms; }
   .delay-200 { animation-delay: 200ms; }
   .delay-300 { animation-delay: 300ms; }
   .delay-400 { animation-delay: 400ms; }
   .delay-500 { animation-delay: 500ms; }
+}
+
+/* ✅ KEYFRAMES - Blink */
+@keyframes blink {
+  0% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.3; 
+    transform: scale(0.7);
+  }
+  100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  0% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
 }

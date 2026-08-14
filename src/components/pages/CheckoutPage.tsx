@@ -6,6 +6,7 @@ import {
   FaArrowLeft, FaArrowRight, FaSpinner, FaMobileAlt
 } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
+import { placeOrder } from '../../services/orderService';
 
 const CheckoutPage = () => {
   const { cart, getCartTotal, clearCart } = useCart();
@@ -22,6 +23,8 @@ const CheckoutPage = () => {
     phone: '',
     address: '',
     city: 'Karachi',
+    province: 'Punjab',
+    postalCode: '',
     notes: ''
   });
 
@@ -32,16 +35,11 @@ const CheckoutPage = () => {
     cvv: ''
   });
 
-  // ============================================================
-  // ✅ PAKISTAN KI TAMAM CITIES
-  // ============================================================
+  // ✅ Pakistan Cities
   const cities = [
-    // Sindh
     'Karachi', 'Hyderabad', 'Sukkur', 'Larkana', 'Nawabshah', 'Mirpur Khas',
     'Jacobabad', 'Shikarpur', 'Khairpur', 'Dadu', 'Badin', 'Thatta',
     'Ghotki', 'Sanghar', 'Naushahro Feroze', 'Kashmore', 'Umerkot',
-    
-    // Punjab
     'Lahore', 'Faisalabad', 'Rawalpindi', 'Multan', 'Gujranwala',
     'Sialkot', 'Bahawalpur', 'Sargodha', 'Sheikhupura', 'Rahim Yar Khan',
     'Jhang', 'Kasur', 'Okara', 'Wah Cantt', 'Dera Ghazi Khan',
@@ -49,33 +47,20 @@ const CheckoutPage = () => {
     'Toba Tek Singh', 'Nankana Sahib', 'Layyah', 'Bhakkar', 'Pakpattan',
     'Vehari', 'Lodhran', 'Sahiwal', 'Gujrat', 'Hasan Abdal',
     'Attock', 'Mianwali', 'Jhelum', 'Chakwal', 'Talagang',
-    
-    // Khyber Pakhtunkhwa
     'Peshawar', 'Abbottabad', 'Mardan', 'Swat', 'Dera Ismail Khan',
     'Mansehra', 'Kohat', 'Nowshera', 'Charsadda', 'Swabi',
     'Haripur', 'Bannu', 'Tank', 'Lakki Marwat', 'Hangu',
     'Batkhela', 'Timergara', 'Mingora', 'Parachinar',
-    
-    // Balochistan
     'Quetta', 'Gwadar', 'Turbat', 'Khuzdar', 'Chaman',
     'Sibi', 'Loralai', 'Zhob', 'Mastung', 'Kalat',
     'Nushki', 'Panjgur', 'Killa Saifullah', 'Barkhan',
-    
-    // Islamabad
     'Islamabad',
-    
-    // Azad Kashmir
     'Muzaffarabad', 'Mirpur', 'Kotli', 'Rawalakot', 'Bhimber',
-    
-    // Gilgit-Baltistan
     'Gilgit', 'Skardu', 'Hunza', 'Nagar', 'Ghanche',
     'Astore', 'Diamer', 'Shigar', 'Kharmang',
   ];
 
-  // ============================================================
-  // ✅ YOUR PAYMENT DETAILS
-  // ============================================================
-  
+  // ✅ Bank Details
   const BANK_DETAILS = {
     accountTitle: 'MAHNOOR',
     bankName: 'HABIBMETRO BANK',
@@ -89,23 +74,82 @@ const CheckoutPage = () => {
     formatted: '0329-3296822'
   };
 
-  const EASYPAISA_DETAILS = {
-    number: '03113252527',
-    formatted: '0311-3252527'
-  };
-
-  // ============================================================
-  // CALCULATIONS
-  // ============================================================
+  // ✅ SHIPPING: FIXED 300 PKR
   const subtotal = getCartTotal();
-  const shipping = subtotal > 2000 ? 0 : 200;
+  const shipping = 300;
   const discount = 0;
   const total = subtotal + shipping - discount;
 
-  // ============================================================
-  // ✅ PAYMENT FUNCTIONS
-  // ============================================================
+  // ✅ Get User Info
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const userId = localStorage.getItem('userId') || 'guest';
 
+  // ✅ Place Order Function (Firebase)
+  const placeOrderToFirebase = async () => {
+    setIsSubmitting(true);
+
+    try {
+      const orderData = {
+        userId: userId,
+        userEmail: formData.email || user?.email || 'guest@email.com',
+        userName: `${formData.firstName} ${formData.lastName}`,
+        userPhone: formData.phone,
+        items: cart.map((item: any) => ({
+          productId: item.id || item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          total: item.price * item.quantity,
+          image: item.image || '/images/placeholder.jpg',
+          weight: item.weight || null
+        })),
+        subtotal: subtotal,
+        shipping: shipping,
+        discount: discount,
+        total: total,
+        paymentMethod: paymentMethod as 'cod' | 'jazzcash' | 'card' | 'bank',
+        // ensure paymentStatus matches Order type union
+        paymentStatus: (paymentMethod === 'cod' ? 'pending' : 'paid') as
+          | 'pending'
+          | 'paid'
+          | 'failed'
+          | 'refunded',
+        shippingAddress: {
+          name: `${formData.firstName} ${formData.lastName}`,
+          street: formData.address,
+          city: formData.city,
+          province: formData.province || 'Punjab',
+          postalCode: formData.postalCode || '54000',
+          country: 'Pakistan',
+          phone: formData.phone
+        },
+        notes: formData.notes || ''
+      };
+
+      const result = await placeOrder(orderData);
+      
+      if (result.success) {
+        setOrderId(result.orderNumber || '');
+        setOrderPlaced(true);
+        clearCart();
+        
+        // ✅ Trigger event for admin panel
+        window.dispatchEvent(new Event('orderPlaced'));
+        window.dispatchEvent(new Event('storage'));
+        
+      } else {
+        alert('❌ Failed to place order: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error: any) {
+      console.error('Error placing order:', error);
+      alert('❌ Failed to place order. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ✅ Payment Functions
   const payWithJazzCash = () => {
     const amount = total;
     const account = JAZZCASH_DETAILS.number.replace(/-/g, '');
@@ -126,32 +170,7 @@ const CheckoutPage = () => {
       }
       
       setTimeout(() => {
-        placeOrder();
-      }, 5000);
-    }
-  };
-
-  const payWithEasyPaisa = () => {
-    const amount = total;
-    const account = EASYPAISA_DETAILS.number.replace(/-/g, '');
-    
-    const confirmPayment = window.confirm(
-      `📱 EasyPaisa Payment\n\n` +
-      `💰 Amount: PKR ${amount.toLocaleString()}\n` +
-      `📱 Account: ${EASYPAISA_DETAILS.formatted}\n\n` +
-      `⚠️ Please open EasyPaisa app and send payment to the above number.\n\n` +
-      `✅ After payment, click OK to confirm your order.`
-    );
-    
-    if (confirmPayment) {
-      try {
-        window.location.href = `easypaisa://pay?amount=${amount}&account=${account}`;
-      } catch (e) {
-        window.open(`https://www.easypaisa.com.pk/`, '_blank');
-      }
-      
-      setTimeout(() => {
-        placeOrder();
+        placeOrderToFirebase();
       }, 5000);
     }
   };
@@ -165,42 +184,13 @@ const CheckoutPage = () => {
       `📱 Phone: ${formData.phone}\n` +
       `💰 Amount: *PKR ${total.toLocaleString()}*\n\n` +
       `📱 *Payment Options:*\n` +
-      `JazzCash: ${JAZZCASH_DETAILS.formatted}\n` +
-      `EasyPaisa: ${EASYPAISA_DETAILS.formatted}\n\n` +
+      `JazzCash: ${JAZZCASH_DETAILS.formatted}\n\n` +
       `📸 Please send payment screenshot after transfer.\n\n` +
       `📍 Address: ${formData.address}, ${formData.city}`
     );
     
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
-  };
-
-  const placeOrder = async () => {
-    setIsSubmitting(true);
-
-    setTimeout(() => {
-      const newOrderId = `MAHA-${Date.now().toString().slice(-6)}`;
-      setOrderId(newOrderId);
-      
-      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-      orders.push({
-        orderId: newOrderId,
-        customer: formData,
-        paymentMethod: paymentMethod,
-        items: cart,
-        subtotal: subtotal,
-        shipping: shipping,
-        discount: discount,
-        total: total,
-        status: 'Confirmed',
-        date: new Date().toISOString()
-      });
-      localStorage.setItem('orders', JSON.stringify(orders));
-      
-      clearCart();
-      setOrderPlaced(true);
-      setIsSubmitting(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 2000);
+    setTimeout(() => placeOrderToFirebase(), 3000);
   };
 
   // ============================================================
@@ -236,7 +226,7 @@ const CheckoutPage = () => {
     
     if (step === 1) {
       if (!formData.firstName || !formData.lastName || !formData.phone || !formData.address) {
-        alert('⚠️ Please fill all required fields! (Email is optional)');
+        alert('⚠️ Please fill all required fields!');
         return;
       }
       setStep(2);
@@ -250,14 +240,8 @@ const CheckoutPage = () => {
         return;
       }
 
-      if (paymentMethod === 'easypaisa') {
-        payWithEasyPaisa();
-        return;
-      }
-
       if (paymentMethod === 'whatsapp') {
         sendWhatsAppPayment();
-        setTimeout(() => placeOrder(), 3000);
         return;
       }
 
@@ -268,7 +252,7 @@ const CheckoutPage = () => {
         }
       }
       
-      placeOrder();
+      placeOrderToFirebase();
     }
   };
 
@@ -296,7 +280,6 @@ const CheckoutPage = () => {
                 <p className="capitalize">
                   {paymentMethod === 'cod' && '💵 Cash on Delivery'}
                   {paymentMethod === 'jazzcash' && '📱 JazzCash'}
-                  {paymentMethod === 'easypaisa' && '📱 EasyPaisa'}
                   {paymentMethod === 'whatsapp' && '💬 WhatsApp Payment'}
                   {paymentMethod === 'bank' && '🏦 Bank Transfer'}
                   {paymentMethod === 'card' && '💳 Credit/Debit Card'}
@@ -309,7 +292,7 @@ const CheckoutPage = () => {
             <Link to="/" className="bg-[#0F766E] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#065F46] transition">
               Continue Shopping
             </Link>
-            <Link to="/dashboard" className="bg-white border-2 border-[#0F766E] text-[#0F766E] px-8 py-3 rounded-full font-semibold hover:bg-[#F8FAFC] transition">
+            <Link to="/dashboard?tab=orders" className="bg-white border-2 border-[#0F766E] text-[#0F766E] px-8 py-3 rounded-full font-semibold hover:bg-[#F8FAFC] transition">
               View Orders
             </Link>
           </div>
@@ -353,47 +336,54 @@ const CheckoutPage = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name <span className="text-red-500">*</span>
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">First Name <span className="text-red-500">*</span></label>
                       <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition" required />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name <span className="text-red-500">*</span>
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Last Name <span className="text-red-500">*</span></label>
                       <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition" required />
                     </div>
                   </div>
 
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email <span className="text-gray-400 text-xs">(Optional)</span>
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-gray-400 text-xs">(Optional)</span></label>
                     <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="your@email.com" className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition" />
                   </div>
 
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone <span className="text-red-500">*</span>
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone <span className="text-red-500">*</span></label>
                     <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="03XX-XXXXXXX" className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition" required />
                   </div>
 
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Address <span className="text-red-500">*</span>
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Address <span className="text-red-500">*</span></label>
                     <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="House #, Street, Area" className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition" required />
                   </div>
 
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      City <span className="text-red-500">*</span>
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-500">*</span></label>
                     <select name="city" value={formData.city} onChange={handleChange} className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition">
                       {cities.map(city => <option key={city} value={city}>{city}</option>)}
                     </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                      <select name="province" value={formData.province} onChange={handleChange} className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition">
+                        <option value="Punjab">Punjab</option>
+                        <option value="Sindh">Sindh</option>
+                        <option value="KPK">KPK</option>
+                        <option value="Balochistan">Balochistan</option>
+                        <option value="Gilgit-Baltistan">Gilgit-Baltistan</option>
+                        <option value="AJK">AJK</option>
+                        <option value="Islamabad">Islamabad</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                      <input type="text" name="postalCode" value={formData.postalCode} onChange={handleChange} placeholder="54000" className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition" />
+                    </div>
                   </div>
 
                   <div className="mt-4">
@@ -417,7 +407,6 @@ const CheckoutPage = () => {
                     <h2 className="text-xl font-bold text-gray-800">💳 Payment Method</h2>
                   </div>
 
-                  {/* Payment Options */}
                   <div className="space-y-3">
                     <button 
                       type="button"
@@ -447,21 +436,6 @@ const CheckoutPage = () => {
                         <p className="text-xs text-gray-500">{JAZZCASH_DETAILS.formatted}</p>
                       </div>
                       {paymentMethod === 'jazzcash' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
-                    </button>
-
-                    <button 
-                      type="button"
-                      onClick={() => setPaymentMethod('easypaisa')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
-                        paymentMethod === 'easypaisa' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      }`}
-                    >
-                      <FaMobileAlt className={`text-2xl ${paymentMethod === 'easypaisa' ? 'text-[#0F766E]' : 'text-gray-400'}`} />
-                      <div className="flex-1 text-left">
-                        <p className="font-semibold text-gray-800">EasyPaisa</p>
-                        <p className="text-xs text-gray-500">{EASYPAISA_DETAILS.formatted}</p>
-                      </div>
-                      {paymentMethod === 'easypaisa' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
                     </button>
 
                     <button 
@@ -510,7 +484,7 @@ const CheckoutPage = () => {
                     </button>
                   </div>
 
-                  {/* JazzCash Details */}
+                  {/* Payment Details */}
                   {paymentMethod === 'jazzcash' && (
                     <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
                       <p className="text-sm text-gray-700 flex items-center gap-2">
@@ -521,18 +495,6 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
-                  {/* EasyPaisa Details */}
-                  {paymentMethod === 'easypaisa' && (
-                    <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
-                      <p className="text-sm text-gray-700 flex items-center gap-2">
-                        <FaMobileAlt className="text-[#0F766E]" />
-                        <strong>EasyPaisa: {EASYPAISA_DETAILS.formatted}</strong>
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">📱 EasyPaisa App will open automatically</p>
-                    </div>
-                  )}
-
-                  {/* WhatsApp Details */}
                   {paymentMethod === 'whatsapp' && (
                     <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
                       <p className="text-sm text-gray-700 flex items-center gap-2">
@@ -543,7 +505,6 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
-                  {/* Bank Details */}
                   {paymentMethod === 'bank' && (
                     <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
                       <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
@@ -559,7 +520,6 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
-                  {/* Card Details */}
                   {paymentMethod === 'card' && (
                     <div className="mt-4 pt-4 border-t border-[#E5E7EB] space-y-3">
                       <div>
@@ -589,7 +549,6 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
-                  {/* COD Info */}
                   {paymentMethod === 'cod' && (
                     <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
                       <p className="text-sm text-gray-700">💵 <strong>Cash on Delivery</strong><br/>Pay with cash when our delivery partner arrives.</p>
@@ -624,8 +583,14 @@ const CheckoutPage = () => {
               </div>
 
               <div className="mt-4 pt-4 border-t border-[#E5E7EB] space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span className="font-semibold">PKR {subtotal.toLocaleString()}</span></div>
-                <div className="flex justify-between"><span className="text-gray-600">Shipping</span><span className="font-semibold text-green-600">{shipping === 0 ? 'FREE' : `PKR ${shipping}`}</span></div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-semibold">PKR {subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Shipping</span>
+                  <span className="font-semibold text-[#0F766E]">PKR {shipping}</span>
+                </div>
                 <div className="border-t pt-3 mt-3 flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span className="text-[#D4AF37]">PKR {total.toLocaleString()}</span>
@@ -633,7 +598,7 @@ const CheckoutPage = () => {
               </div>
 
               <p className="text-xs text-gray-400 mt-3 flex items-center gap-1">
-                <FaCheckCircle className="text-green-500 text-xs" /> Free delivery on orders above PKR 2,000
+                <FaCheckCircle className="text-green-500 text-xs" /> Shipping charges PKR 300 apply
               </p>
             </div>
           </div>

@@ -17,7 +17,8 @@ const SweetsPage = () => {
       rating: 4.9,
       category: 'Premium',
       image: '/images/sweets/caramel dream choco bar.jpg',
-      description: 'A heavenly combination of rich caramel and smooth chocolate.'
+      description: 'A heavenly combination of rich caramel and smooth chocolate.',
+      stock: 45
     },
     {
       id: 102,
@@ -28,7 +29,8 @@ const SweetsPage = () => {
       rating: 4.8,
       category: 'Premium',
       image: '/images/sweets/hiss crispy wafer.jpg',
-      description: 'Crispy wafer layers coated with smooth chocolate.'
+      description: 'Crispy wafer layers coated with smooth chocolate.',
+      stock: 30
     },
     {
       id: 103,
@@ -39,7 +41,8 @@ const SweetsPage = () => {
       rating: 4.7,
       category: 'Premium',
       image: '/images/sweets/nani caramel choco bar.jpg',
-      description: 'Soft and chewy caramel blended with premium chocolate.'
+      description: 'Soft and chewy caramel blended with premium chocolate.',
+      stock: 10
     },
     {
       id: 104,
@@ -50,7 +53,8 @@ const SweetsPage = () => {
       rating: 4.9,
       category: 'Premium',
       image: '/images/sweets/nani coconut bar.jpg',
-      description: 'Creamy coconut infused with a touch of sweetness.'
+      description: 'Creamy coconut infused with a touch of sweetness.',
+      stock: 55
     },
     {
       id: 105,
@@ -61,7 +65,8 @@ const SweetsPage = () => {
       rating: 4.6,
       category: 'Traditional',
       image: '/images/sweets/rili eclairs.jpg',
-      description: 'Classic French-inspired eclairs filled with creamy goodness.'
+      description: 'Classic French-inspired eclairs filled with creamy goodness.',
+      stock: 40
     },
     {
       id: 106,
@@ -72,7 +77,8 @@ const SweetsPage = () => {
       rating: 4.8,
       category: 'Traditional',
       image: '/images/sweets/roro caramel eclair.jpg',
-      description: 'Golden and caramel filled eclairs with a soft texture.'
+      description: 'Golden and caramel filled eclairs with a soft texture.',
+      stock: 25
     },
     {
       id: 107,
@@ -83,7 +89,8 @@ const SweetsPage = () => {
       rating: 4.7,
       category: 'Premium',
       image: '/images/sweets/spark coconut bar.jpg',
-      description: 'A unique fusion of coconut and chocolate.'
+      description: 'A unique fusion of coconut and chocolate.',
+      stock: 10
     },
   ];
 
@@ -128,59 +135,85 @@ const SweetsPage = () => {
           ))}
         </div>
 
-        {/* ✅ Products Grid - Clickable with Link */}
+        {/* ✅ Products Grid - With Stock Status */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {filteredProducts.map((product) => (
-            <Link to={`/sweet-product/${product.id}`} key={product.id}>
-              <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-[#E5E7EB] hover:-translate-y-1 cursor-pointer group">
-                <div className="relative overflow-hidden">
-                  <img 
-                    src={product.image} 
-                    alt={product.name} 
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://via.placeholder.com/400x400/D4AF37/FFFFFF?text=' + product.name;
-                    }}
-                  />
-                  <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">
-                    -{product.discount}%
-                  </span>
-                  <button 
-                    className="absolute top-3 right-3 bg-white/90 rounded-full p-2 hover:bg-[#D4AF37] transition"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      alert('❤️ Added to Wishlist!');
-                    }}
-                  >
-                    <FaHeart className="text-gray-600 hover:text-white" />
-                  </button>
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center gap-1 text-sm">
-                    {[...Array(5)].map((_, i) => (
-                      <FaStar key={i} className={i < Math.floor(product.rating) ? 'text-[#D4AF37]' : 'text-gray-300'} />
-                    ))}
-                    <span className="text-gray-400 text-xs ml-1">({product.rating})</span>
+          {filteredProducts.map((product) => {
+            const isInStock = product.stock > 0;
+            
+            return (
+              <Link to={`/sweet-product/${product.id}`} key={product.id}>
+                <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-[#E5E7EB] hover:-translate-y-1 cursor-pointer group">
+                  <div className="relative overflow-hidden">
+                    <img 
+                      src={product.image} 
+                      alt={product.name} 
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/400x400/D4AF37/FFFFFF?text=' + product.name;
+                      }}
+                    />
+                    <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                      -{product.discount}%
+                    </span>
+                    <button 
+                      className="absolute top-3 right-3 bg-white/90 rounded-full p-2 hover:bg-[#D4AF37] transition"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        alert('❤️ Added to Wishlist!');
+                      }}
+                    >
+                      <FaHeart className="text-gray-600 hover:text-white" />
+                    </button>
                   </div>
-                  <h3 className="font-semibold text-[#111827] text-sm mt-1">{product.name}</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">{product.category}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[#D4AF37] font-bold">PKR {product.price}</span>
-                    <span className="text-gray-400 line-through text-sm">PKR {product.oldPrice}</span>
+                  
+                  <div className="p-4">
+                    <div className="flex items-center gap-1 text-sm">
+                      {[...Array(5)].map((_, i) => (
+                        <FaStar key={i} className={i < Math.floor(product.rating) ? 'text-[#D4AF37]' : 'text-gray-300'} />
+                      ))}
+                      <span className="text-gray-400 text-xs ml-1">({product.rating})</span>
+                    </div>
+                    <h3 className="font-semibold text-[#111827] text-sm mt-1">{product.name}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">{product.category}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[#D4AF37] font-bold">PKR {product.price}</span>
+                      <span className="text-gray-400 line-through text-sm">PKR {product.oldPrice}</span>
+                    </div>
+                    
+                    {/* ✅ Stock Status - Blinking Green Dot */}
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <span 
+                        className={`w-2 h-2 rounded-full ${isInStock ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}
+                      ></span>
+                      <span className={`text-xs font-medium ${isInStock ? 'text-green-600' : 'text-red-500'}`}>
+                        {isInStock ? 'In Stock' : 'Out of Stock'}
+                      </span>
+                    </div>
+                    
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (isInStock) {
+                          addToCart(product);
+                        } else {
+                          alert('❌ This product is out of stock!');
+                        }
+                      }}
+                      disabled={!isInStock}
+                      className={`w-full mt-3 px-4 py-2 rounded-full text-sm font-medium transition flex items-center justify-center gap-2 ${
+                        isInStock
+                          ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <FaShoppingCart className="text-xs" />
+                      {isInStock ? 'Add to Cart' : 'Out of Stock'}
+                    </button>
                   </div>
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addToCart(product);
-                    }}
-                    className="w-full mt-3 bg-[#0F766E] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#065F46] transition flex items-center justify-center gap-2"
-                  >
-                    <FaShoppingCart className="text-xs" /> Add to Cart
-                  </button>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>

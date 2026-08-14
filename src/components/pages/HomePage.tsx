@@ -74,14 +74,14 @@ const HomePage = () => {
 
   // ✅ PRODUCTS
   const products = [
-    { id: 1, name: 'American Almonds Premium', price: 2000, oldPrice: 2300, discount: 13, rating: 4.8, image: '/images/dry-fruits/almonds large.jpg', type: 'dry' },
-    { id: 2, name: 'Roasted Brown Cashews', price: 2000, oldPrice: 2400, discount: 17, rating: 4.9, image: '/images/dry-fruits/brown kaju.jpg', type: 'dry' },
-    { id: 3, name: 'Soft Shell Salted Pistachios', price: 2600, oldPrice: 3100, discount: 16, rating: 4.7, image: '/images/dry-fruits/pista shell.jpg', type: 'dry' },
+    { id: 1, name: 'American Almonds Premium', price: 2000, oldPrice: 2300, discount: 13, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png', type: 'dry' },
+    { id: 2, name: 'Roasted Brown Cashews', price: 2000, oldPrice: 2400, discount: 17, rating: 4.9, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128406/brown_kaju_cu5gvs.png', type: 'dry' },
+    { id: 3, name: 'Soft Shell Salted Pistachios', price: 2600, oldPrice: 3100, discount: 16, rating: 4.7, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128419/pista_without_shell_ymunmc.png' , type: 'dry' },
     { id: 101, name: 'Caramel Dream Choco Bar', price: 1290, oldPrice: 1500, discount: 14, rating: 4.9, image: '/images/sweets/caramel dream choco bar.jpg', type: 'sweet' },
   ];
 
   const categories = [
-    { name: 'Dry Fruits', icon: '🥜', path: '/shop', image: '/images/dry-fruits/almonds large.jpg' },
+    { name: 'Dry Fruits', icon: '🥜', path: '/shop', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png' },
     { name: 'Sweets', icon: '🍬', path: '/sweets', image: '/images/sweets/caramel dream choco bar.jpg' },
     { name: 'Fashion', icon: '👗', path: '/fashion', image: '/images//fashion/hero-fashion.jpg' },
   ];
@@ -198,7 +198,7 @@ const HomePage = () => {
                   <div className="flex items-center gap-2">
                     <FaTruck className="text-[#0F766E] text-lg" />
                     <div>
-                      <p className="text-xs font-bold text-[#111827]">Free Delivery</p>
+                      <p className="text-xs font-bold text-[#111827]">Delivery</p>
                       <p className="text-[8px] text-gray-500">Across Pakistan</p>
                     </div>
                   </div>

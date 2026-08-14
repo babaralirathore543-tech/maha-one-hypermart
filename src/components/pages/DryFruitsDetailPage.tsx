@@ -30,8 +30,8 @@ const DryFruitsDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedWeight, setSelectedWeight] = useState('500g');
 
-  // ✅ ONLY DRY FRUITS
-   const dryProducts: Product[] = [
+  // ✅ All Cloudinary Images
+  const dryProducts: Product[] = [
     { 
       id: 1, 
       name: 'American Almonds Premium 500gm', 
@@ -40,7 +40,7 @@ const DryFruitsDetailPage = () => {
       discount: 13, 
       rating: 4.8, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/almonds large.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png',
       description: 'Premium quality American almonds, large size. Rich in vitamin E, magnesium, and healthy fats. Perfect for snacking and cooking.',
       benefits: ['Heart Healthy', 'Rich in Protein', 'Vitamin E', 'Brain Food'],
       weightPrices: { '250g': 1100, '500g': 2000, '1kg': 3800, '2kg': 7200 }
@@ -53,7 +53,7 @@ const DryFruitsDetailPage = () => {
       discount: 14, 
       rating: 4.9, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/almonds small.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128400/almonds_small_dtsgkf.png',
       description: 'Medium-sized American almonds with a rich, buttery flavor. Packed with nutrients and perfect for everyday snacking.',
       benefits: ['Heart Healthy', 'Rich in Protein', 'Vitamin E', 'Energy Boost'],
       weightPrices: { '250g': 1000, '500g': 1850, '1kg': 3500, '2kg': 6600 }
@@ -66,7 +66,7 @@ const DryFruitsDetailPage = () => {
       discount: 16, 
       rating: 4.7, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/pista shell.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128413/pista_shell_bdm59v.png',
       description: 'Premium soft shell pistachios with a light salt coating. Easy to open and packed with a rich, nutty flavor.',
       benefits: ['Rich Flavor', 'Antioxidants', 'Heart Healthy', 'Premium Quality'],
       weightPrices: { '250g': 1400, '500g': 2600, '1kg': 5000, '2kg': 9500 }
@@ -79,7 +79,7 @@ const DryFruitsDetailPage = () => {
       discount: 13, 
       rating: 4.6, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/pista without shell.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128419/pista_without_shell_ymunmc.png',
       description: 'Roasted pistachios without shell. Perfectly roasted to bring out the natural nutty flavor. Ready to eat and enjoy.',
       benefits: ['Roasted Flavor', 'No Shell', 'Premium Quality', 'Ready to Eat'],
       weightPrices: { '250g': 2100, '500g': 3900, '1kg': 7400, '2kg': 14000 }
@@ -92,7 +92,7 @@ const DryFruitsDetailPage = () => {
       discount: 17, 
       rating: 4.8, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/brown kaju.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128406/brown_kaju_cu5gvs.png',
       description: 'Rich and creamy roasted brown cashews. Perfectly roasted to enhance their natural buttery flavor. A healthy and delicious snack.',
       benefits: ['Creamy Texture', 'Roasted Flavor', 'Energy Boost', 'Heart Healthy'],
       weightPrices: { '250g': 1100, '500g': 2000, '1kg': 3800, '2kg': 7200 }
@@ -105,7 +105,7 @@ const DryFruitsDetailPage = () => {
       discount: 14, 
       rating: 4.9, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/white kaju.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128463/white_kaju_ssdd1b.png',
       description: 'Premium white cashews with a light salt coating. Creamy, rich, and perfectly salted for the ultimate snacking experience.',
       benefits: ['Creamy Texture', 'Salted Flavor', 'Rich in Minerals', 'Premium Quality'],
       weightPrices: { '250g': 1000, '500g': 1800, '1kg': 3400, '2kg': 6500 }
@@ -118,7 +118,7 @@ const DryFruitsDetailPage = () => {
       discount: 17, 
       rating: 4.8, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/soft shell almonds.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128454/soft_shell_almonds_wfd5pr.png',
       description: 'Soft shell almonds that are easy to crack open. Packed with nutrients and a delicious, natural flavor.',
       benefits: ['Easy to Open', 'Rich in Vitamin E', 'Heart Healthy', 'Natural Flavor'],
       weightPrices: { '250g': 700, '500g': 1250, '1kg': 2400, '2kg': 4500 }
@@ -131,7 +131,7 @@ const DryFruitsDetailPage = () => {
       discount: 21, 
       rating: 4.7, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/shell walnut.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128425/shell_walnut_djggub.png',
       description: 'Soft shell walnuts that are easy to crack. Rich in omega-3 fatty acids and antioxidants. A brain-healthy snack.',
       benefits: ['Brain Food', 'Omega-3', 'Antioxidants', 'Heart Healthy'],
       weightPrices: { '250g': 550, '500g': 950, '1kg': 1800, '2kg': 3400 }
@@ -144,7 +144,7 @@ const DryFruitsDetailPage = () => {
       discount: 14, 
       rating: 4.8, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/without shell walnut.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128464/without_shell_walnut_dlgsm1.png',
       description: 'Premium walnut kernels without shell. Ready to eat and packed with nutrients. Perfect for baking and snacking.',
       benefits: ['Ready to Eat', 'Omega-3 Rich', 'Brain Food', 'Antioxidants'],
       weightPrices: { '250g': 850, '500g': 1550, '1kg': 2900, '2kg': 5500 }
@@ -157,7 +157,7 @@ const DryFruitsDetailPage = () => {
       discount: 21, 
       rating: 4.8, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/sundar khani raisins.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128446/sundar_khani_raisins_e1ykp8.png',
       description: 'Premium Sundar Khani raisins. Sweet, juicy, and naturally sun-dried. Perfect for snacking and baking.',
       benefits: ['Natural Sweetness', 'Iron Rich', 'Energy Boost', 'Healthy Snack'],
       weightPrices: { '250g': 550, '500g': 950, '1kg': 1800, '2kg': 3400 }
@@ -170,7 +170,7 @@ const DryFruitsDetailPage = () => {
       discount: 20, 
       rating: 4.7, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/kandhari raisins.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128421/kandhari_raisins_ncjmwl.png',
       description: 'Sweet and juicy Kandhari raisins. Perfect for snacking, baking, and adding to your favorite dishes.',
       benefits: ['Sweet Flavor', 'Iron Rich', 'Energy Boost', 'Healthy Snack'],
       weightPrices: { '250g': 450, '500g': 800, '1kg': 1500, '2kg': 2800 }
@@ -183,7 +183,7 @@ const DryFruitsDetailPage = () => {
       discount: 23, 
       rating: 4.6, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/black raisins.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128398/black_raisins_tyw6al.png',
       description: 'Premium black raisins with a rich, sweet flavor. Naturally sun-dried and packed with nutrients.',
       benefits: ['Rich Flavor', 'Iron Rich', 'Antioxidants', 'Healthy Snack'],
       weightPrices: { '250g': 480, '500g': 850, '1kg': 1600, '2kg': 3000 }
@@ -196,7 +196,7 @@ const DryFruitsDetailPage = () => {
       discount: 21, 
       rating: 4.8, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/munakka raisins.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128430/munakka_raisins_dohfbj.png',
       description: 'Premium Munakka raisins. Large, sweet, and juicy. Perfect for snacking and traditional recipes.',
       benefits: ['Large Size', 'Sweet Flavor', 'Iron Rich', 'Energy Boost'],
       weightPrices: { '250g': 600, '500g': 1100, '1kg': 2100, '2kg': 4000 }
@@ -209,7 +209,7 @@ const DryFruitsDetailPage = () => {
       discount: 25, 
       rating: 4.5, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/yellow channa.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128461/yellow_channa_gmufqp.png',
       description: 'Roasted chickpeas without skin. A healthy and crunchy snack packed with protein and fiber.',
       benefits: ['High Protein', 'High Fiber', 'Crunchy Texture', 'Healthy Snack'],
       weightPrices: { '250g': 350, '500g': 600, '1kg': 1100, '2kg': 2100 }
@@ -222,7 +222,7 @@ const DryFruitsDetailPage = () => {
       discount: 29, 
       rating: 4.4, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/brown channa.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128403/brown_channa_diqzhp.png',
       description: 'Roasted brown chickpeas. A nutritious and crunchy snack with a rich, earthy flavor.',
       benefits: ['High Protein', 'Crunchy Texture', 'Healthy Snack', 'Rich Flavor'],
       weightPrices: { '250g': 300, '500g': 500, '1kg': 950, '2kg': 1800 }
@@ -235,7 +235,7 @@ const DryFruitsDetailPage = () => {
       discount: 19, 
       rating: 4.8, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/chia seeds.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128408/chia_seeds_qko4xt.png',
       description: 'Premium chia seeds. Packed with omega-3 fatty acids, fiber, and protein. Perfect for healthy smoothies and puddings.',
       benefits: ['Omega-3 Rich', 'High Fiber', 'High Protein', 'Superfood'],
       weightPrices: { '250g': 700, '500g': 1300, '1kg': 2500, '2kg': 4800 }
@@ -248,7 +248,7 @@ const DryFruitsDetailPage = () => {
       discount: 23, 
       rating: 4.7, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/pumpkin seeds.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128437/pumpkin_seeds_cnft3u.png',
       description: 'Premium pumpkin seeds. Rich in zinc, magnesium, and healthy fats. A nutritious snack for all ages.',
       benefits: ['Rich in Zinc', 'Magnesium Rich', 'Heart Healthy', 'Energy Boost'],
       weightPrices: { '250g': 550, '500g': 1000, '1kg': 1900, '2kg': 3600 }
@@ -261,7 +261,7 @@ const DryFruitsDetailPage = () => {
       discount: 18, 
       rating: 4.6, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/sunflower seeds.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128454/sunflower_seeds_kts2w9.png',
       description: 'Premium sunflower seeds. Packed with vitamin E, selenium, and healthy fats. Perfect for snacking.',
       benefits: ['Vitamin E Rich', 'Selenium Rich', 'Heart Healthy', 'Healthy Snack'],
       weightPrices: { '250g': 500, '500g': 900, '1kg': 1700, '2kg': 3200 }
@@ -274,7 +274,7 @@ const DryFruitsDetailPage = () => {
       discount: 20, 
       rating: 4.7, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/alsi seeds.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128398/alsi_seeds_yaxvaz.png',
       description: 'Premium flax seeds. Rich in omega-3 fatty acids, fiber, and lignans. A superfood for overall health.',
       benefits: ['Omega-3 Rich', 'High Fiber', 'Superfood', 'Heart Healthy'],
       weightPrices: { '250g': 450, '500g': 800, '1kg': 1500, '2kg': 2800 }
@@ -287,7 +287,7 @@ const DryFruitsDetailPage = () => {
       discount: 20, 
       rating: 4.6, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/basil seeds.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128397/basil_seeds_khs4ym.png',
       description: 'Premium basil seeds. Known for their cooling properties and digestive benefits. Perfect for refreshing drinks.',
       benefits: ['Cooling Properties', 'Digestive Health', 'Nutrient Rich', 'Natural Energy'],
       weightPrices: { '250g': 650, '500g': 1200, '1kg': 2300, '2kg': 4400 }
@@ -300,7 +300,7 @@ const DryFruitsDetailPage = () => {
       discount: 17, 
       rating: 4.7, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/char magaz.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128408/char_magaz_vabk39.png',
       description: 'Premium four seeds mix (Char Maghaz). A blend of healthy seeds for overall wellness and nutrition.',
       benefits: ['Nutrient Rich', 'Energy Boost', 'Heart Healthy', 'Premium Blend'],
       weightPrices: { '250g': 800, '500g': 1500, '1kg': 2900, '2kg': 5500 }
@@ -313,7 +313,7 @@ const DryFruitsDetailPage = () => {
       discount: 22, 
       rating: 4.5, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/isphagol.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128427/isphagol_djucq5.png',
       description: 'Premium Isphagol husk. Known for its digestive benefits and high fiber content. A natural health supplement.',
       benefits: ['High Fiber', 'Digestive Health', 'Natural Supplement', 'Gentle Cleanse'],
       weightPrices: { '250g': 400, '500g': 700, '1kg': 1300, '2kg': 2500 }
@@ -326,7 +326,7 @@ const DryFruitsDetailPage = () => {
       discount: 25, 
       rating: 4.4, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/dry coconut.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128407/dry_coconut_bweitq.png',
       description: 'Premium dry coconut (Khopra). Perfect for cooking, baking, and traditional recipes. Rich in healthy fats.',
       benefits: ['Healthy Fats', 'Cooking Essential', 'Traditional Use', 'Rich Flavor'],
       weightPrices: { '250g': 350, '500g': 600, '1kg': 1100, '2kg': 2100 }
@@ -339,7 +339,7 @@ const DryFruitsDetailPage = () => {
       discount: 22, 
       rating: 4.5, 
       category: 'Dry Fruits',
-      image: '/images/dry-fruits/coconut powder.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128407/coconut_powder_nvs65m.png',
       description: 'Premium coconut powder. Perfect for cooking, baking, and making delicious coconut-based dishes.',
       benefits: ['Versatile Use', 'Rich Flavor', 'Cooking Essential', 'Healthy Alternative'],
       weightPrices: { '250g': 400, '500g': 700, '1kg': 1300, '2kg': 2500 }

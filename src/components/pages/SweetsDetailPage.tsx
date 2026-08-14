@@ -3,13 +3,6 @@ import { useState } from 'react';
 import { FaStar, FaHeart, FaShoppingCart, FaArrowLeft, FaTruck, FaShieldAlt, FaLeaf } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 
-type WeightPrices = {
-  '250g'?: number;
-  '500g'?: number;
-  '1kg'?: number;
-  '2kg'?: number;
-};
-
 interface Product {
   id: number;
   name: string;
@@ -21,16 +14,14 @@ interface Product {
   image: string;
   description: string;
   benefits: string[];
-  weightPrices?: WeightPrices;
 }
 
 const SweetsDetailPage = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [selectedWeight, setSelectedWeight] = useState('500g');
 
-  // ✅ ONLY SWEETS
+  // ✅ ONLY SWEETS - No weight options
   const sweetProducts: Product[] = [
     { 
       id: 101, 
@@ -42,8 +33,7 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/caramel dream choco bar.jpg',
       description: 'A heavenly combination of rich caramel and smooth chocolate. This premium bar offers a perfect balance of sweetness and crunch. Made with the finest ingredients for a luxurious taste experience.',
-      benefits: ['Premium Chocolate', 'Rich Caramel', 'Crunchy Texture', 'Luxury Taste'],
-      weightPrices: { '250g': 700, '500g': 1290, '1kg': 2400, '2kg': 4500 }
+      benefits: ['Premium Chocolate', 'Rich Caramel', 'Crunchy Texture', 'Luxury Taste']
     },
     { 
       id: 102, 
@@ -55,8 +45,7 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/hiss crispy wafer.jpg',
       description: 'Crispy wafer layers coated with smooth chocolate, creating a delightful crunch in every bite. A perfect snack for those who love texture in their sweets.',
-      benefits: ['Crispy Wafer', 'Smooth Chocolate', 'Perfect Crunch', 'Premium Quality'],
-      weightPrices: { '250g': 700, '500g': 1280, '1kg': 2400, '2kg': 4500 }
+      benefits: ['Crispy Wafer', 'Smooth Chocolate', 'Perfect Crunch', 'Premium Quality']
     },
     { 
       id: 103, 
@@ -68,8 +57,7 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/nani caramel choco bar.jpg',
       description: 'Soft and chewy caramel blended with premium chocolate. This bar offers a rich, buttery taste that melts in your mouth, leaving a lasting sweet impression.',
-      benefits: ['Soft Caramel', 'Premium Chocolate', 'Buttery Taste', 'Melt in Mouth'],
-      weightPrices: { '250g': 700, '500g': 1300, '1kg': 2400, '2kg': 4500 }
+      benefits: ['Soft Caramel', 'Premium Chocolate', 'Buttery Taste', 'Melt in Mouth']
     },
     { 
       id: 104, 
@@ -81,8 +69,7 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/nani coconut bar.jpg',
       description: 'Creamy coconut infused with a touch of sweetness, creating a tropical delight. This bar is perfect for coconut lovers seeking a premium sweet experience.',
-      benefits: ['Creamy Coconut', 'Tropical Flavor', 'Premium Quality', 'Rich Taste'],
-      weightPrices: { '250g': 700, '500g': 1290, '1kg': 2400, '2kg': 4500 }
+      benefits: ['Creamy Coconut', 'Tropical Flavor', 'Premium Quality', 'Rich Taste']
     },
     { 
       id: 105, 
@@ -94,8 +81,7 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/rili eclairs.jpg',
       description: 'Classic French-inspired eclairs filled with creamy goodness. A timeless sweet treat that brings elegance and indulgence to any occasion.',
-      benefits: ['French Recipe', 'Creamy Filling', 'Elegant Design', 'Classic Taste'],
-      weightPrices: { '250g': 600, '500g': 1100, '1kg': 2000, '2kg': 3800 }
+      benefits: ['French Recipe', 'Creamy Filling', 'Elegant Design', 'Classic Taste']
     },
     { 
       id: 106, 
@@ -107,8 +93,7 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/roro caramel eclair.jpg',
       description: 'Golden and caramel-filled eclairs with a soft, melt-in-your-mouth texture. A delightful treat for those who enjoy the classic combination of caramel and pastry.',
-      benefits: ['Caramel Filled', 'Soft Texture', 'Golden Pastry', 'Sweet Delight'],
-      weightPrices: { '250g': 400, '500g': 650, '1kg': 1200, '2kg': 2200 }
+      benefits: ['Caramel Filled', 'Soft Texture', 'Golden Pastry', 'Sweet Delight']
     },
     { 
       id: 107, 
@@ -120,8 +105,7 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/spark coconut bar.jpg',
       description: 'A unique fusion of coconut and chocolate, this bar offers a spark of flavor that awakens your taste buds. Perfect for those seeking something extraordinary.',
-      benefits: ['Coconut Fusion', 'Chocolate Blend', 'Unique Flavor', 'Premium Quality'],
-      weightPrices: { '250g': 700, '500g': 1290, '1kg': 2400, '2kg': 4500 }
+      benefits: ['Coconut Fusion', 'Chocolate Blend', 'Unique Flavor', 'Premium Quality']
     },
   ];
 
@@ -141,24 +125,6 @@ const SweetsDetailPage = () => {
     );
   }
 
-  const weights = ['250g', '500g', '1kg', '2kg'];
-
-  const getCurrentPrice = (): number => {
-    if (product.weightPrices && selectedWeight in product.weightPrices) {
-      return product.weightPrices[selectedWeight as keyof WeightPrices] || product.price;
-    }
-    return product.price;
-  };
-
-  const currentPrice = getCurrentPrice();
-
-  const getWeightPrice = (weight: string): number => {
-    if (product.weightPrices && weight in product.weightPrices) {
-      return product.weightPrices[weight as keyof WeightPrices] || product.price;
-    }
-    return product.price;
-  };
-
   return (
     <div className="bg-[#FFFDF7] py-12 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -169,6 +135,7 @@ const SweetsDetailPage = () => {
 
         <div className="grid md:grid-cols-2 gap-12">
           
+          {/* Product Image */}
           <div className="relative">
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-[#E5E7EB]">
               <img 
@@ -191,6 +158,7 @@ const SweetsDetailPage = () => {
             </div>
           </div>
 
+          {/* Product Info */}
           <div>
             <div className="flex items-center gap-2 text-sm mb-2">
               <span className="bg-[#D4AF37]/10 text-[#D4AF37] px-3 py-1 rounded-full text-xs font-medium">
@@ -207,12 +175,13 @@ const SweetsDetailPage = () => {
             <h1 className="text-3xl md:text-4xl font-bold text-[#111827]">{product.name}</h1>
             
             <div className="flex items-center gap-3 mt-2">
-              <span className="text-3xl font-bold text-[#D4AF37]">PKR {currentPrice}</span>
+              <span className="text-3xl font-bold text-[#D4AF37]">PKR {product.price}</span>
               <span className="text-gray-400 line-through text-lg">PKR {product.oldPrice}</span>
             </div>
 
             <p className="text-gray-600 mt-4 leading-relaxed">{product.description}</p>
 
+            {/* Benefits */}
             <div className="mt-6">
               <h3 className="font-semibold text-[#111827] mb-3">✨ Key Benefits</h3>
               <div className="flex flex-wrap gap-2">
@@ -224,39 +193,34 @@ const SweetsDetailPage = () => {
               </div>
             </div>
 
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Weight</label>
-              <div className="flex flex-wrap gap-2">
-                {weights.map((w) => (
-                  <button
-                    key={w}
-                    onClick={() => setSelectedWeight(w)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                      selectedWeight === w
-                        ? 'bg-[#D4AF37] text-white shadow-md'
-                        : 'bg-[#F8FAFC] text-gray-600 hover:bg-[#E5E7EB] border border-[#E5E7EB]'
-                    }`}
-                  >
-                    {w}
-                    <span className="text-[10px] ml-1 text-gray-400">
-                      PKR {getWeightPrice(w)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* ❌ WEIGHT OPTION REMOVED */}
 
+            {/* Quantity */}
             <div className="mt-6 flex items-center gap-4">
               <label className="text-sm font-medium text-gray-700">Quantity</label>
               <div className="flex items-center gap-2">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-8 h-8 rounded-full bg-[#F8FAFC] hover:bg-[#E5E7EB] transition">-</button>
+                <button 
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))} 
+                  className="w-8 h-8 rounded-full bg-[#F8FAFC] hover:bg-[#E5E7EB] transition"
+                >
+                  -
+                </button>
                 <span className="w-8 text-center font-semibold">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="w-8 h-8 rounded-full bg-[#F8FAFC] hover:bg-[#E5E7EB] transition">+</button>
+                <button 
+                  onClick={() => setQuantity(quantity + 1)} 
+                  className="w-8 h-8 rounded-full bg-[#F8FAFC] hover:bg-[#E5E7EB] transition"
+                >
+                  +
+                </button>
               </div>
             </div>
 
+            {/* Add to Cart Button */}
             <div className="flex gap-4 mt-8">
-              <button onClick={() => addToCart({ ...product, price: currentPrice, weight: selectedWeight })} className="flex-1 bg-[#0F766E] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#065F46] transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+              <button 
+                onClick={() => addToCart({ ...product, price: product.price })} 
+                className="flex-1 bg-[#0F766E] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#065F46] transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              >
                 <FaShoppingCart /> Add to Cart
               </button>
               <button className="bg-[#D4AF37] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#b8941f] transition shadow-lg hover:shadow-xl">
@@ -264,6 +228,7 @@ const SweetsDetailPage = () => {
               </button>
             </div>
 
+            {/* Delivery Info */}
             <div className="mt-8 grid grid-cols-3 gap-3">
               <div className="bg-white/80 backdrop-blur p-3 rounded-xl border border-[#E5E7EB] text-center">
                 <FaTruck className="text-[#D4AF37] text-xl mx-auto" />

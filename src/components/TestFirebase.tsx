@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { db } from '../firebase/config';
+import { db } from '../config/firebase';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 
 const TestFirebase = () => {

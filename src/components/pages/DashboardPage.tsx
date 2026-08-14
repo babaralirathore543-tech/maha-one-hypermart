@@ -1,102 +1,455 @@
-import { useState } from 'react';
-import { FaUser, FaHeart, FaMapMarkerAlt, FaCog, FaSignOutAlt, FaBox } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+  FaHeart, 
+  FaShoppingBag, 
+  FaSignOutAlt,
+  FaMapMarkerAlt,
+  FaCreditCard,
+  FaCog,
+  FaHistory,
+  FaHome,
+  FaGift,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaTimes,
+  FaWallet
+} from 'react-icons/fa';
+import MahaWallet from '../MahaWallet';
+// ❌ FaArrowUp, FaArrowDown remove kar diye - use nahi ho rahe
 
-const DashboardPage = () => {
-  const [activeTab, setActiveTab] = useState('orders');
+const DashboardPage: React.FC = () => {
 
-  const tabs = [
-    { id: 'orders', label: 'Orders', icon: <FaBox /> },
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // ✅ Get tab from URL (for wallet link)
+  const params = new URLSearchParams(location.search);
+  const tabFromUrl = params.get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  
+  // ❌ Wallet state removed - MahaWallet component handle karega
+  // ✅ Form States
+  const [showAddAddress, setShowAddAddress] = useState(false);
+  const [showAddPayment, setShowAddPayment] = useState(false);
+  
+  // ✅ Address Form State
+  const [newAddress, setNewAddress] = useState({
+    name: '',
+    street: '',
+    city: '',
+    province: '',
+    postalCode: '',
+    country: 'Pakistan'
+  });
+
+  // ✅ Payment Form State
+  const [newPayment, setNewPayment] = useState({
+    cardNumber: '',
+    cardName: '',
+    expiryDate: '',
+    cvv: '',
+    isDefault: false
+  });
+
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+
+  // ✅ Addresses State
+  const [addresses, setAddresses] = useState([
+    { id: 1, name: 'Home', street: '123 Main Street', city: 'Lahore', province: 'Punjab', postalCode: '54000', country: 'Pakistan' },
+    { id: 2, name: 'Office', street: '456 Office Road', city: 'Lahore', province: 'Punjab', postalCode: '54000', country: 'Pakistan' },
+  ]);
+
+  // ✅ Payments State
+  const [payments, setPayments] = useState([
+    { id: 1, cardName: 'John Doe', cardNumber: '**** **** **** 1234', expiryDate: '12/26', isDefault: true },
+  ]);
+
+  // ✅ Orders State
+  const [orders] = useState([
+    { id: 1, date: '2026-01-15', total: 2500, status: 'Delivered', items: 2, image: '/images/products/almonds-1.jpg' },
+    { id: 2, date: '2026-01-10', total: 3200, status: 'Processing', items: 3, image: '/images/products/pistachios-1.jpg' },
+    { id: 3, date: '2026-01-05', total: 1800, status: 'Shipped', items: 1, image: '/images/products/walnuts-1.jpg' },
+  ]);
+
+  // ✅ Wishlist State
+  const [wishlistItems] = useState([
+    { id: 1, name: 'American Almonds', price: 2500, image: '/images/products/almonds-1.jpg' },
+    { id: 2, name: 'Pistachios', price: 3500, image: '/images/products/pistachios-1.jpg' },
+    { id: 3, name: 'Walnuts', price: 2200, image: '/images/products/walnuts-1.jpg' },
+  ]);
+
+  // ✅ Stats
+  const stats = [
+    { label: 'Orders', value: orders.length, icon: <FaShoppingBag className="text-[#0F766E]" /> },
+    { label: 'Wishlist', value: wishlistItems.length, icon: <FaHeart className="text-red-500" /> },
+    { label: 'Wallet', value: 'PKR 0', icon: <FaWallet className="text-[#D4AF37]" /> },
+    { label: 'Rewards', value: 0, icon: <FaGift className="text-purple-500" /> },
+  ];
+
+  // ✅ Address Functions
+  const handleAddAddressSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const address = {
+      id: addresses.length + 1,
+      ...newAddress
+    };
+    setAddresses([...addresses, address]);
+    setNewAddress({ name: '', street: '', city: '', province: '', postalCode: '', country: 'Pakistan' });
+    setShowAddAddress(false);
+    alert('✅ Address added successfully!');
+  };
+
+  const handleDeleteAddress = (id: number) => {
+    if (window.confirm('Are you sure you want to delete this address?')) {
+      setAddresses(addresses.filter(addr => addr.id !== id));
+      alert('✅ Address deleted!');
+    }
+  };
+
+  // ✅ Payment Functions
+  const handleAddPaymentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const payment = {
+      id: payments.length + 1,
+      cardName: newPayment.cardName,
+      cardNumber: `**** **** **** ${newPayment.cardNumber.slice(-4)}`,
+      expiryDate: newPayment.expiryDate,
+      isDefault: newPayment.isDefault
+    };
+    setPayments([...payments, payment]);
+    setNewPayment({ cardNumber: '', cardName: '', expiryDate: '', cvv: '', isDefault: false });
+    setShowAddPayment(false);
+    alert('✅ Payment method added successfully!');
+  };
+
+  // ✅ Add to Cart
+  const handleAddToCart = (productName: string) => {
+    alert(`🛒 ${productName} added to cart!`);
+  };
+
+  // ✅ Logout
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userId');
+    window.dispatchEvent(new Event('userUpdated'));
+    window.dispatchEvent(new Event('storage'));
+    navigate('/login');
+  };
+
+  const menuItems = [
+    { id: 'overview', label: 'Overview', icon: <FaHome /> },
+    { id: 'orders', label: 'My Orders', icon: <FaShoppingBag /> },
     { id: 'wishlist', label: 'Wishlist', icon: <FaHeart /> },
-    { id: 'addresses', label: 'Addresses', icon: <FaMapMarkerAlt /> },
-    { id: 'profile', label: 'Profile', icon: <FaUser /> },
+    { id: 'address', label: 'Addresses', icon: <FaMapMarkerAlt /> },
+    { id: 'payments', label: 'Payments', icon: <FaCreditCard /> },
+    { id: 'wallet', label: 'Maha Wallet', icon: <FaWallet /> },
+    { id: 'history', label: 'History', icon: <FaHistory /> },
     { id: 'settings', label: 'Settings', icon: <FaCog /> },
   ];
 
+  if (!user) {
+    navigate('/login');
+    return null;
+  }
+
   return (
-    <div className="bg-[#FFFDF7] py-12 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3 mb-8">
-          <FaUser className="text-3xl text-[#D4AF37]" />
-          <h1 className="text-3xl font-bold text-[#111827]">My Dashboard</h1>
+    <div className="min-h-screen bg-gray-100 py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        
+        {/* Welcome Section */}
+        <div className="bg-gradient-to-r from-[#0F766E] to-[#065F46] rounded-2xl p-6 text-white mb-8">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center text-2xl font-bold">
+                {user.name?.charAt(0) || 'U'}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">Welcome, {user.name || 'User'}! 👋</h1>
+                <p className="text-white/80 text-sm">{user.email}</p>
+                <span className="inline-block mt-1 bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                  {user.role === 'admin' ? 'Admin' : 'Customer'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-lg font-medium transition flex items-center gap-2"
+            >
+              <FaSignOutAlt /> Logout
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="md:col-span-1">
-            <div className="bg-white/80 backdrop-blur p-4 rounded-2xl border border-[#E5E7EB] shadow-sm">
-              <div className="text-center mb-6">
-                <div className="w-20 h-20 bg-[#0F766E] rounded-full flex items-center justify-center text-white text-3xl mx-auto">👤</div>
-                <h3 className="font-bold text-[#111827] mt-2">Ahmed Khan</h3>
-                <p className="text-sm text-gray-500">ahmed@email.com</p>
-              </div>
-              <div className="space-y-1">
-                {tabs.map((tab) => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${activeTab === tab.id ? 'bg-[#D4AF37] text-white' : 'hover:bg-[#F8FAFC] text-gray-700'}`}>
-                    {tab.icon}<span>{tab.label}</span>
-                  </button>
-                ))}
-                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition"><FaSignOutAlt /><span>Logout</span></button>
-              </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {stats.map((stat, index) => (
+            <div key={index} className="bg-white p-4 rounded-xl shadow-sm">
+              <div className="text-2xl">{stat.icon}</div>
+              <p className="text-2xl font-bold mt-1">{stat.value}</p>
+              <p className="text-sm text-gray-500">{stat.label}</p>
             </div>
+          ))}
+        </div>
+
+        {/* Dashboard Content */}
+        <div className="flex flex-col md:flex-row gap-6">
+          
+          {/* Sidebar */}
+          <div className="md:w-64 bg-white rounded-xl shadow-sm p-4 h-fit">
+            <nav className="space-y-1">
+              {menuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm transition ${
+                    activeTab === item.id
+                      ? 'bg-[#0F766E] text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {item.icon}
+                  {item.label}
+                </button>
+              ))}
+            </nav>
           </div>
 
-          <div className="md:col-span-3">
-            <div className="bg-white/80 backdrop-blur p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
-              {activeTab === 'orders' && (
-                <div>
-                  <h2 className="text-xl font-bold text-[#111827] mb-4">Recent Orders</h2>
+          {/* Content */}
+          <div className="flex-1">
+            
+            {/* Overview */}
+            {activeTab === 'overview' && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">📊 Overview</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Recent Orders */}
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                      <FaShoppingBag /> Recent Orders
+                    </h3>
+                    {orders.slice(0, 2).map((order) => (
+                      <div key={order.id} className="mt-2 p-2 bg-gray-50 rounded-lg">
+                        <div className="flex justify-between text-sm">
+                          <span>Order #{order.id}</span>
+                          <span className="text-[#0F766E] font-medium">Rs. {order.total}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>{order.date}</span>
+                          <span className={`px-2 py-0.5 rounded-full ${
+                            order.status === 'Delivered' ? 'bg-green-100 text-green-600' :
+                            order.status === 'Processing' ? 'bg-yellow-100 text-yellow-600' :
+                            'bg-blue-100 text-blue-600'
+                          }`}>
+                            {order.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    <button onClick={() => setActiveTab('orders')} className="mt-3 text-sm text-[#0F766E] hover:underline">
+                      View All Orders →
+                    </button>
+                  </div>
+
+                  {/* Wallet Summary */}
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                      <FaWallet className="text-[#D4AF37]" /> Wallet
+                    </h3>
+                    <p className="text-2xl font-bold text-[#0F766E] mt-2">PKR 0</p>
+                    <button 
+                      onClick={() => setActiveTab('wallet')}
+                      className="text-xs bg-[#0F766E] text-white px-3 py-1 rounded hover:bg-[#065F46] transition mt-2"
+                    >
+                      Manage Wallet →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Orders */}
+            {activeTab === 'orders' && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">📦 My Orders</h2>
+                {orders.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No orders yet</p>
+                ) : (
                   <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="border border-[#E5E7EB] rounded-xl p-4 flex items-center justify-between">
-                        <div><p className="font-semibold">Order #{i}000{i}</p><p className="text-sm text-gray-500">PKR {(i+1) * 1200}</p></div>
-                        <span className={`text-sm px-3 py-1 rounded-full ${i === 1 ? 'bg-green-100 text-green-600' : i === 2 ? 'bg-yellow-100 text-yellow-600' : 'bg-blue-100 text-blue-600'}`}>
-                          {i === 1 ? 'Delivered' : i === 2 ? 'Processing' : 'Shipped'}
-                        </span>
+                    {orders.map((order) => (
+                      <div key={order.id} className="border rounded-lg p-4 hover:shadow-md transition">
+                        <div className="flex items-center gap-4">
+                          <img src={order.image} alt="Order" className="w-16 h-16 object-cover rounded" />
+                          <div className="flex-1">
+                            <p className="font-medium">Order #{order.id}</p>
+                            <p className="text-sm text-gray-500">{order.date}</p>
+                            <p className="text-sm text-gray-500">{order.items} items</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-[#0F766E]">Rs. {order.total}</p>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              order.status === 'Delivered' ? 'bg-green-100 text-green-600' :
+                              order.status === 'Processing' ? 'bg-yellow-100 text-yellow-600' :
+                              'bg-blue-100 text-blue-600'
+                            }`}>
+                              {order.status}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-              {activeTab === 'wishlist' && (
-                <div>
-                  <h2 className="text-xl font-bold text-[#111827] mb-4">Wishlist</h2>
-                  <div className="grid grid-cols-2 gap-4">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="border border-[#E5E7EB] rounded-xl p-4 text-center">
-                        <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop" alt="Product" className="w-full h-32 object-cover rounded-lg mb-2" />
-                        <p className="font-semibold text-sm">Product {i}</p>
-                        <p className="text-[#D4AF37] font-bold">PKR {(i+1) * 1000}</p>
+                )}
+              </div>
+            )}
+
+            {/* Wishlist */}
+            {activeTab === 'wishlist' && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">❤️ Wishlist</h2>
+                {wishlistItems.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">Your wishlist is empty</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {wishlistItems.map((item) => (
+                      <div key={item.id} className="border rounded-lg p-4 flex items-center gap-4">
+                        <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded" />
+                        <div className="flex-1">
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-[#0F766E] font-bold">Rs. {item.price}</p>
+                          <button onClick={() => handleAddToCart(item.name)} className="mt-1 text-sm bg-[#0F766E] text-white px-3 py-1 rounded hover:bg-[#065F46] transition">
+                            Add to Cart
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Addresses */}
+            {activeTab === 'address' && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-gray-800">📍 Addresses</h2>
+                  <button onClick={() => setShowAddAddress(!showAddAddress)} className="bg-[#0F766E] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#065F46] transition flex items-center gap-2">
+                    <FaPlus /> {showAddAddress ? 'Cancel' : 'Add Address'}
+                  </button>
                 </div>
-              )}
-              {activeTab === 'addresses' && (
-                <div>
-                  <h2 className="text-xl font-bold text-[#111827] mb-4">Saved Addresses</h2>
-                  <div className="border border-[#E5E7EB] rounded-xl p-4"><p className="font-semibold">🏠 Home</p><p className="text-sm text-gray-600">123 Main Street, Karachi, Pakistan</p></div>
+
+                {showAddAddress && (
+                  <form onSubmit={handleAddAddressSubmit} className="bg-gray-50 p-4 rounded-lg mb-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-semibold text-gray-700">Add New Address</h3>
+                      <button type="button" onClick={() => setShowAddAddress(false)} className="text-gray-400 hover:text-red-500"><FaTimes /></button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input type="text" placeholder="Address Name" value={newAddress.name} onChange={(e) => setNewAddress({...newAddress, name: e.target.value})} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" required />
+                      <input type="text" placeholder="Street" value={newAddress.street} onChange={(e) => setNewAddress({...newAddress, street: e.target.value})} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" required />
+                      <input type="text" placeholder="City" value={newAddress.city} onChange={(e) => setNewAddress({...newAddress, city: e.target.value})} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" required />
+                      <input type="text" placeholder="Province" value={newAddress.province} onChange={(e) => setNewAddress({...newAddress, province: e.target.value})} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" required />
+                      <input type="text" placeholder="Postal Code" value={newAddress.postalCode} onChange={(e) => setNewAddress({...newAddress, postalCode: e.target.value})} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" />
+                      <input type="text" placeholder="Country" value={newAddress.country} onChange={(e) => setNewAddress({...newAddress, country: e.target.value})} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" required />
+                    </div>
+                    <button type="submit" className="mt-3 bg-[#0F766E] text-white px-6 py-2 rounded-lg hover:bg-[#065F46] transition">Save Address</button>
+                  </form>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {addresses.map((address) => (
+                    <div key={address.id} className="border rounded-lg p-4">
+                      <p className="font-medium">{address.name}</p>
+                      <p className="text-sm text-gray-600">{address.street}</p>
+                      <p className="text-sm text-gray-600">{address.city}, {address.country}</p>
+                      <div className="flex gap-2 mt-2">
+                        <button onClick={() => alert('✏️ Edit Address')} className="text-sm text-blue-600 hover:underline flex items-center gap-1"><FaEdit /> Edit</button>
+                        <button onClick={() => handleDeleteAddress(address.id)} className="text-sm text-red-600 hover:underline flex items-center gap-1"><FaTrash /> Delete</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-              {activeTab === 'profile' && (
-                <div>
-                  <h2 className="text-xl font-bold text-[#111827] mb-4">Profile Settings</h2>
-                  <div className="space-y-4">
-                    <div><label className="block text-sm font-medium text-gray-700">Full Name</label><input type="text" value="Ahmed Khan" className="w-full px-4 py-2 border border-[#E5E7EB] rounded-lg" /></div>
-                    <div><label className="block text-sm font-medium text-gray-700">Email</label><input type="email" value="ahmed@email.com" className="w-full px-4 py-2 border border-[#E5E7EB] rounded-lg" /></div>
-                    <button className="bg-[#0F766E] text-white px-6 py-2 rounded-lg hover:bg-[#065F46] transition">Update Profile</button>
+              </div>
+            )}
+
+            {/* Payments */}
+            {activeTab === 'payments' && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-gray-800">💳 Payment Methods</h2>
+                  <button onClick={() => setShowAddPayment(!showAddPayment)} className="bg-[#0F766E] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#065F46] transition flex items-center gap-2">
+                    <FaPlus /> {showAddPayment ? 'Cancel' : 'Add Payment'}
+                  </button>
+                </div>
+
+                {showAddPayment && (
+                  <form onSubmit={handleAddPaymentSubmit} className="bg-gray-50 p-4 rounded-lg mb-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-semibold text-gray-700">Add Payment Method</h3>
+                      <button type="button" onClick={() => setShowAddPayment(false)} className="text-gray-400 hover:text-red-500"><FaTimes /></button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input type="text" placeholder="Card Number" value={newPayment.cardNumber} onChange={(e) => setNewPayment({...newPayment, cardNumber: e.target.value})} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" required />
+                      <input type="text" placeholder="Name on Card" value={newPayment.cardName} onChange={(e) => setNewPayment({...newPayment, cardName: e.target.value})} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" required />
+                      <input type="text" placeholder="Expiry Date (MM/YY)" value={newPayment.expiryDate} onChange={(e) => setNewPayment({...newPayment, expiryDate: e.target.value})} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" required />
+                      <input type="password" placeholder="CVV" value={newPayment.cvv} onChange={(e) => setNewPayment({...newPayment, cvv: e.target.value})} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" required />
+                    </div>
+                    <button type="submit" className="mt-3 bg-[#0F766E] text-white px-6 py-2 rounded-lg hover:bg-[#065F46] transition">Save Payment</button>
+                  </form>
+                )}
+
+                <div className="space-y-3">
+                  {payments.map((payment) => (
+                    <div key={payment.id} className="border rounded-lg p-4 flex justify-between items-center">
+                      <div><p className="font-medium">{payment.cardName}</p><p className="text-sm text-gray-600">{payment.cardNumber}</p></div>
+                      <div className="flex items-center gap-3">
+                        {payment.isDefault && <span className="bg-green-100 text-green-600 text-xs px-2 py-1 rounded-full">Default</span>}
+                        <button onClick={() => alert('✏️ Edit Payment')} className="text-blue-600 hover:underline text-sm">Edit</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ✅ Maha Wallet Tab */}
+            {activeTab === 'wallet' && (
+              <MahaWallet />
+            )}
+
+            {/* History */}
+            {activeTab === 'history' && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">📜 History</h2>
+                <div className="border rounded-lg p-4 text-center text-gray-500">No history available</div>
+              </div>
+            )}
+
+            {/* Settings */}
+            {activeTab === 'settings' && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">⚙️ Settings</h2>
+                <div className="space-y-4">
+                  <div className="border rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">👤 Name</label>
+                    <input type="text" defaultValue={user.name || ''} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" />
                   </div>
-                </div>
-              )}
-              {activeTab === 'settings' && (
-                <div>
-                  <h2 className="text-xl font-bold text-[#111827] mb-4">Settings</h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b pb-4"><div><p className="font-semibold">Email Notifications</p><p className="text-sm text-gray-500">Receive order updates</p></div><input type="checkbox" className="w-5 h-5 text-[#D4AF37]" defaultChecked /></div>
-                    <div className="flex items-center justify-between border-b pb-4"><div><p className="font-semibold">SMS Notifications</p><p className="text-sm text-gray-500">Receive delivery updates</p></div><input type="checkbox" className="w-5 h-5 text-[#D4AF37]" /></div>
-                    <div className="flex items-center justify-between"><div><p className="font-semibold">Language</p><p className="text-sm text-gray-500">Select your language</p></div><select className="px-4 py-2 border rounded-lg"><option>English</option><option>Urdu</option></select></div>
+                  <div className="border rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">✉️ Email</label>
+                    <input type="email" defaultValue={user.email || ''} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" />
                   </div>
+                  <div className="border rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">📞 Phone</label>
+                    <input type="tel" defaultValue={user.phone || ''} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none" />
+                  </div>
+                  <button onClick={() => alert('✅ Settings saved successfully!')} className="bg-[#0F766E] text-white px-6 py-2 rounded-lg hover:bg-[#065F46] transition">Save Changes</button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

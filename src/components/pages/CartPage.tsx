@@ -9,7 +9,7 @@ const CartPage = () => {
   const [discount] = useState(0);
 
   const subtotal = getCartTotal();
-  const shipping = subtotal > 2000 ? 0 : 200;
+  const shipping = subtotal > 2000 ? 0 : 300;
   const total = subtotal + shipping - discount;
 
   if (cart.length === 0) {

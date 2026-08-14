@@ -3,11 +3,15 @@ import { CartProvider } from './context/CartContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import WhatsAppButton from './components/common/WhatsAppButton';
+import AIAssistant from './components/common/AIAssistant';
+import AdminPanel from './components/admin/AdminPanel';
 
 // Pages Import
 import HomePage from './components/pages/HomePage';
 import DryFruitsPage from './components/pages/DryFruitsPage';
 import SweetsPage from './components/pages/SweetsPage';
+import LoginPage from './components/pages/LoginPage';
+import SignupPage from './components/pages/SignupPage';  // ✅ Add this
 import FashionPage from './components/pages/FashionPage';
 import AboutPage from './components/pages/AboutPage';
 import ContactPage from './components/pages/ContactPage';
@@ -24,14 +28,13 @@ function App() {
     <CartProvider>
       <Router>
         <div className="min-h-screen flex flex-col bg-[#FFFDF7]">
-          {/* Navbar */}
           <Navbar />
-
-          {/* Main Content */}
           <main className="flex-grow">
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/shop" element={<DryFruitsPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />  {/* ✅ Add this */}
               <Route path="/sweets" element={<SweetsPage />} />
               <Route path="/fashion" element={<FashionPage />} />
               <Route path="/about" element={<AboutPage />} />
@@ -43,14 +46,12 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/dry-product/:id" element={<DryFruitsDetailPage />} />
               <Route path="/sweet-product/:id" element={<SweetsDetailPage />} />
+              <Route path="/admin" element={<AdminPanel />} />
             </Routes>
           </main>
-
-          {/* Footer */}
           <Footer />
-
-          {/* ✅ WhatsApp Button - Sab pages par */}
           <WhatsAppButton />
+          <AIAssistant />
         </div>
       </Router>
     </CartProvider>
