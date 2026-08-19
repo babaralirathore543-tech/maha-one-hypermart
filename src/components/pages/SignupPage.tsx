@@ -185,7 +185,7 @@ const SignupPage: React.FC = () => {
                 value={formData.name}
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none"
-                placeholder="Babar Ali"
+                placeholder="Mahnoor Ali"
                 required
               />
             </div>

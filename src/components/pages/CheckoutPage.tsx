@@ -1,20 +1,26 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  FaCheckCircle, FaTruck, FaBuilding, FaCreditCard,
+  FaCheckCircle, 
+  FaBuilding,
   FaUniversity, FaWhatsapp, FaMoneyBillWave,
-  FaArrowLeft, FaArrowRight, FaSpinner, FaMobileAlt
+  FaArrowLeft, FaArrowRight, FaSpinner, FaMobileAlt,
+  FaQrcode
 } from 'react-icons/fa';
+// ❌ FaTruck removed (COD remove kar diya)
 import { useCart } from '../../context/CartContext';
 import { placeOrder } from '../../services/orderService';
+import QRCodePayment from '../Payment/QRCodePayment';
 
 const CheckoutPage = () => {
   const { cart, getCartTotal, clearCart } = useCart();
   const [step, setStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [paymentMethod, setPaymentMethod] = useState('jazzcash');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [qrAmount, setQrAmount] = useState(0);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -26,13 +32,6 @@ const CheckoutPage = () => {
     province: 'Punjab',
     postalCode: '',
     notes: ''
-  });
-
-  const [cardData, setCardData] = useState({
-    cardNumber: '',
-    cardName: '',
-    expiry: '',
-    cvv: ''
   });
 
   // ✅ Pakistan Cities
@@ -108,8 +107,7 @@ const CheckoutPage = () => {
         shipping: shipping,
         discount: discount,
         total: total,
-        paymentMethod: paymentMethod as 'cod' | 'jazzcash' | 'card' | 'bank',
-        // ensure paymentStatus matches Order type union
+        paymentMethod: paymentMethod as 'jazzcash' | 'bank' | 'cod' | 'card',  // ✅ Fixed type
         paymentStatus: (paymentMethod === 'cod' ? 'pending' : 'paid') as
           | 'pending'
           | 'paid'
@@ -134,7 +132,6 @@ const CheckoutPage = () => {
         setOrderPlaced(true);
         clearCart();
         
-        // ✅ Trigger event for admin panel
         window.dispatchEvent(new Event('orderPlaced'));
         window.dispatchEvent(new Event('storage'));
         
@@ -147,6 +144,12 @@ const CheckoutPage = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // ✅ Handle QR Payment Success
+  const handleQRPaymentSuccess = () => {
+    setShowQRCode(false);
+    placeOrderToFirebase();
   };
 
   // ✅ Payment Functions
@@ -200,27 +203,6 @@ const CheckoutPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCardData({ ...cardData, [e.target.name]: e.target.value });
-  };
-
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const parts = [];
-    for (let i = 0; i < v.length; i += 4) {
-      parts.push(v.substring(i, i + 4));
-    }
-    return parts.join(' ');
-  };
-
-  const formatExpiry = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    if (v.length >= 2) {
-      return v.substring(0, 2) + '/' + v.substring(2, 4);
-    }
-    return v;
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -245,11 +227,10 @@ const CheckoutPage = () => {
         return;
       }
 
-      if (paymentMethod === 'card') {
-        if (cardData.cardNumber.replace(/\s/g, '').length < 16 || cardData.cvv.length < 3) {
-          alert('⚠️ Please enter valid card details!');
-          return;
-        }
+      if (paymentMethod === 'qr') {
+        setShowQRCode(true);
+        setQrAmount(total);
+        return;
       }
       
       placeOrderToFirebase();
@@ -278,11 +259,10 @@ const CheckoutPage = () => {
               <div className="pt-3 border-t border-[#E5E7EB]">
                 <p className="font-medium text-gray-800">Payment Method:</p>
                 <p className="capitalize">
-                  {paymentMethod === 'cod' && '💵 Cash on Delivery'}
                   {paymentMethod === 'jazzcash' && '📱 JazzCash'}
                   {paymentMethod === 'whatsapp' && '💬 WhatsApp Payment'}
                   {paymentMethod === 'bank' && '🏦 Bank Transfer'}
-                  {paymentMethod === 'card' && '💳 Credit/Debit Card'}
+                  {paymentMethod === 'qr' && '📱 QR Code Payment'}
                 </p>
               </div>
             </div>
@@ -296,6 +276,27 @@ const CheckoutPage = () => {
               View Orders
             </Link>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Show QR Code Payment
+  if (showQRCode) {
+    return (
+      <div className="min-h-screen bg-[#FFFDF7] py-12">
+        <div className="max-w-4xl mx-auto px-4">
+          <button 
+            onClick={() => setShowQRCode(false)}
+            className="text-[#0F766E] hover:text-[#D4AF37] transition mb-4 flex items-center gap-2"
+          >
+            <FaArrowLeft /> Back to Payment Options
+          </button>
+          <QRCodePayment 
+            amount={qrAmount}
+            onSuccess={handleQRPaymentSuccess}
+            onCancel={() => setShowQRCode(false)}
+          />
         </div>
       </div>
     );
@@ -408,21 +409,7 @@ const CheckoutPage = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <button 
-                      type="button"
-                      onClick={() => setPaymentMethod('cod')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
-                        paymentMethod === 'cod' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      }`}
-                    >
-                      <FaTruck className={`text-2xl ${paymentMethod === 'cod' ? 'text-[#0F766E]' : 'text-gray-400'}`} />
-                      <div className="flex-1 text-left">
-                        <p className="font-semibold text-gray-800">Cash on Delivery</p>
-                        <p className="text-xs text-gray-500">Pay when you receive</p>
-                      </div>
-                      {paymentMethod === 'cod' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
-                    </button>
-
+                    {/* ✅ JazzCash */}
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('jazzcash')}
@@ -438,6 +425,23 @@ const CheckoutPage = () => {
                       {paymentMethod === 'jazzcash' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
                     </button>
 
+                    {/* ✅ QR Code */}
+                    <button 
+                      type="button"
+                      onClick={() => setPaymentMethod('qr')}
+                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
+                        paymentMethod === 'qr' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
+                      }`}
+                    >
+                      <FaQrcode className={`text-2xl ${paymentMethod === 'qr' ? 'text-[#0F766E]' : 'text-gray-400'}`} />
+                      <div className="flex-1 text-left">
+                        <p className="font-semibold text-gray-800">QR Code Payment</p>
+                        <p className="text-xs text-gray-500">Pay via JazzCash/EasyPaisa</p>
+                      </div>
+                      {paymentMethod === 'qr' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
+                    </button>
+
+                    {/* ✅ WhatsApp */}
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('whatsapp')}
@@ -453,6 +457,7 @@ const CheckoutPage = () => {
                       {paymentMethod === 'whatsapp' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
                     </button>
 
+                    {/* ✅ Bank Transfer */}
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('bank')}
@@ -467,24 +472,9 @@ const CheckoutPage = () => {
                       </div>
                       {paymentMethod === 'bank' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
                     </button>
-
-                    <button 
-                      type="button"
-                      onClick={() => setPaymentMethod('card')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
-                        paymentMethod === 'card' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      }`}
-                    >
-                      <FaCreditCard className={`text-2xl ${paymentMethod === 'card' ? 'text-[#0F766E]' : 'text-gray-400'}`} />
-                      <div className="flex-1 text-left">
-                        <p className="font-semibold text-gray-800">Credit / Debit Card</p>
-                        <p className="text-xs text-gray-500">Visa, Mastercard, etc.</p>
-                      </div>
-                      {paymentMethod === 'card' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
-                    </button>
                   </div>
 
-                  {/* Payment Details */}
+                  {/* JazzCash Details */}
                   {paymentMethod === 'jazzcash' && (
                     <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
                       <p className="text-sm text-gray-700 flex items-center gap-2">
@@ -495,6 +485,21 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
+                  {/* QR Code Details */}
+                  {paymentMethod === 'qr' && (
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-2">
+                        <FaQrcode className="text-blue-500 text-2xl" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-700">QR Code Payment</p>
+                          <p className="text-xs text-blue-600">Pay using JazzCash or EasyPaisa app</p>
+                          <p className="text-xs text-blue-500 mt-1">💡 Amount: PKR {total.toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* WhatsApp Details */}
                   {paymentMethod === 'whatsapp' && (
                     <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
                       <p className="text-sm text-gray-700 flex items-center gap-2">
@@ -505,6 +510,7 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
+                  {/* Bank Details */}
                   {paymentMethod === 'bank' && (
                     <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
                       <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
@@ -517,42 +523,6 @@ const CheckoutPage = () => {
                         <p><span className="font-medium">Account #:</span> <span className="font-bold">{BANK_DETAILS.accountNumber}</span></p>
                       </div>
                       <p className="text-xs text-red-500 mt-2">⚠️ Use Order ID as reference when transferring</p>
-                    </div>
-                  )}
-
-                  {paymentMethod === 'card' && (
-                    <div className="mt-4 pt-4 border-t border-[#E5E7EB] space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
-                        <input type="text" name="cardNumber" value={cardData.cardNumber} onChange={(e) => {
-                          const formatted = formatCardNumber(e.target.value);
-                          setCardData({ ...cardData, cardNumber: formatted });
-                        }} placeholder="1234 5678 9012 3456" maxLength={19} className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Cardholder Name</label>
-                        <input type="text" name="cardName" value={cardData.cardName} onChange={handleCardChange} placeholder="John Doe" className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                          <input type="text" name="expiry" value={cardData.expiry} onChange={(e) => {
-                            const formatted = formatExpiry(e.target.value);
-                            setCardData({ ...cardData, expiry: formatted });
-                          }} placeholder="MM/YY" maxLength={5} className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">CVV</label>
-                          <input type="password" name="cvv" value={cardData.cvv} onChange={handleCardChange} placeholder="123" maxLength={4} className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition" />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {paymentMethod === 'cod' && (
-                    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                      <p className="text-sm text-gray-700">💵 <strong>Cash on Delivery</strong><br/>Pay with cash when our delivery partner arrives.</p>
-                      <p className="text-xs text-gray-500 mt-1">✅ No extra charges for COD</p>
                     </div>
                   )}
 

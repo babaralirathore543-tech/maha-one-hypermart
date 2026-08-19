@@ -18,7 +18,7 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     setError('');
 
-    // ✅ HARDCODED ADMIN LOGIN (Working)
+    // ✅ HARDCODED ADMIN LOGIN (Working - Hidden)
     if (email === 'babarrathore576@gmail.com' && password === 'Youthcolonel1212') {
       const user = {
         id: 'admin_001',
@@ -39,7 +39,7 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    // ✅ HARDCODED CUSTOMER LOGIN
+    // ✅ HARDCODED CUSTOMER LOGIN (Hidden)
     if (email === 'user@example.com' && password === 'user123') {
       const user = {
         id: 'customer_001',
@@ -219,18 +219,7 @@ const LoginPage: React.FC = () => {
           </Link>
         </p>
 
-        {/* ✅ Demo Credentials */}
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-          <p className="text-xs text-gray-500 text-center">🔑 Demo Credentials:</p>
-          <div className="flex flex-wrap justify-center gap-4 mt-2 text-xs text-gray-600">
-            <div>
-              <span className="font-medium">Admin:</span> mahaonehypermarket@gmail.com / Youthcolonel1212
-            </div>
-            <div>
-              <span className="font-medium">User:</span> user@example.com / user123
-            </div>
-          </div>
-        </div>
+        {/* ❌ DEMO CREDENTIALS COMPLETELY REMOVED - Hidden */}
 
         <p className="text-center text-xs text-gray-400 mt-6">
           © 2024 Maha One HyperMart. All rights reserved.
