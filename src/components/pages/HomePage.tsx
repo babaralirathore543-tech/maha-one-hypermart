@@ -72,7 +72,7 @@ const HomePage = () => {
 
   // ✅ Products
   const products = [
-    { id: 1, name: 'American Almonds Premium', price: 2000, oldPrice: 2300, discount: 13, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png', type: 'dry', stock: 50 },
+    { id: 1, name: 'American Almonds Premium', price: 1950, oldPrice: 2300, discount: 13, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png', type: 'dry', stock: 50 },
     { id: 2, name: 'Roasted Brown Cashews', price: 2000, oldPrice: 2400, discount: 17, rating: 4.9, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128406/brown_kaju_cu5gvs.png', type: 'dry', stock: 35 },
     { id: 3, name: 'Soft Shell Salted Pistachios', price: 2600, oldPrice: 3100, discount: 16, rating: 4.7, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128419/pista_without_shell_ymunmc.png', type: 'dry', stock: 40 },
     { id: 101, name: 'Caramel Dream Choco Bar', price: 1290, oldPrice: 1500, discount: 14, rating: 4.9, image: '/images/sweets/caramel dream choco bar.jpg', type: 'sweet', stock: 45 },

@@ -53,8 +53,8 @@ const DryFruitsDetailPage = () => {
     { 
       id: 1, 
       name: 'American Almonds Premium', 
-      price: 4100,        // ✅ 1kg price
-      oldPrice: 4500,
+      price: 3800,        // ✅ 1kg price
+      oldPrice: 4200,
       discount: 9,
       rating: 4.8, 
       category: 'Dry Fruits',

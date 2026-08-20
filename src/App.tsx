@@ -6,13 +6,19 @@ import WhatsAppButton from './components/common/WhatsAppButton';
 import AIAssistant from './components/common/AIAssistant';
 import AdminPanel from './components/admin/AdminPanel';
 
+
+
+// ✅ Popup Import
+import Popup from './components/common/Popup';
+
 // Pages Import
 import HomePage from './components/pages/HomePage';
 import DryFruitsPage from './components/pages/DryFruitsPage';
 import SweetsPage from './components/pages/SweetsPage';
 import LoginPage from './components/pages/LoginPage';
-import SignupPage from './components/pages/SignupPage';  // ✅ Add this
+import SignupPage from './components/pages/SignupPage';
 import FashionPage from './components/pages/FashionPage';
+import FashionDetailPage from './components/pages/FashionDetailPage'
 import AboutPage from './components/pages/AboutPage';
 import ContactPage from './components/pages/ContactPage';
 import CategoryPage from './components/pages/CategoryPage';
@@ -28,15 +34,22 @@ function App() {
     <CartProvider>
       <Router>
         <div className="min-h-screen flex flex-col bg-[#FFFDF7]">
+          
+          
+          
+          {/* Navbar */}
           <Navbar />
+          
+          {/* Main Content */}
           <main className="flex-grow">
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/shop" element={<DryFruitsPage />} />
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />  {/* ✅ Add this */}
+              <Route path="/signup" element={<SignupPage />} />
               <Route path="/sweets" element={<SweetsPage />} />
               <Route path="/fashion" element={<FashionPage />} />
+              <Route path="/fashion/:id" element={<FashionDetailPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/category/:categoryName" element={<CategoryPage />} />
@@ -49,9 +62,21 @@ function App() {
               <Route path="/admin" element={<AdminPanel />} />
             </Routes>
           </main>
+          
+          {/* Footer */}
           <Footer />
+          
+          {/* ✅ WhatsApp Button */}
           <WhatsAppButton />
+          
+          {/* ✅ AI Assistant */}
           <AIAssistant />
+          
+          {/* ✅ Popup - Har page par dikhega */}
+          <Popup 
+            image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
+            delay={2000}
+          />
         </div>
       </Router>
     </CartProvider>
