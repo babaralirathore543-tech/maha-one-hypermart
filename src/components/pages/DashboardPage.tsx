@@ -13,12 +13,8 @@ import {
   FaPlus,
   FaEdit,
   FaTrash,
-  FaTimes,
-  FaWallet
+  FaTimes
 } from 'react-icons/fa';
-
-// ✅ Import MahaWallet
-import MahaWallet from './MahaWallet';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -80,11 +76,10 @@ const DashboardPage: React.FC = () => {
     { id: 3, name: 'Walnuts', price: 2200, image: '/images/products/walnuts-1.jpg' },
   ]);
 
-  // ✅ Stats
+  // ✅ Stats (Wallet removed)
   const stats = [
     { label: 'Orders', value: orders.length, icon: <FaShoppingBag className="text-[#0F766E] text-xl sm:text-2xl" /> },
     { label: 'Wishlist', value: wishlistItems.length, icon: <FaHeart className="text-red-500 text-xl sm:text-2xl" /> },
-    { label: 'Wallet Balance', value: 'PKR 0', icon: <FaWallet className="text-[#D4AF37] text-xl sm:text-2xl" /> },
     { label: 'Rewards', value: 0, icon: <FaGift className="text-purple-500 text-xl sm:text-2xl" /> },
   ];
 
@@ -139,14 +134,13 @@ const DashboardPage: React.FC = () => {
     navigate('/login');
   };
 
-  // ✅ Menu Items - Labels ab hamesha dikhenge
+  // ✅ Menu Items (Wallet removed)
   const menuItems = [
     { id: 'overview', label: '📊 Overview', icon: <FaHome /> },
     { id: 'orders', label: '📦 My Orders', icon: <FaShoppingBag /> },
     { id: 'wishlist', label: '❤️ Wishlist', icon: <FaHeart /> },
     { id: 'address', label: '📍 Addresses', icon: <FaMapMarkerAlt /> },
     { id: 'payments', label: '💳 Payments', icon: <FaCreditCard /> },
-    { id: 'wallet', label: '💰 Maha Wallet', icon: <FaWallet /> },
     { id: 'history', label: '📜 History', icon: <FaHistory /> },
     { id: 'settings', label: '⚙️ Settings', icon: <FaCog /> },
   ];
@@ -160,7 +154,7 @@ const DashboardPage: React.FC = () => {
     <div className="min-h-screen bg-gray-100 py-6 sm:py-8">
       <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
         
-        {/* ✅ Welcome Section - Responsive */}
+        {/* ✅ Welcome Section */}
         <div className="bg-gradient-to-r from-[#0F766E] to-[#065F46] rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-4">
@@ -184,8 +178,8 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ✅ Stats Cards - Responsive Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
+        {/* ✅ Stats Cards (Wallet removed) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
           {stats.map((stat, index) => (
             <div key={index} className="bg-white p-3 sm:p-4 rounded-xl shadow-sm">
               <div className="text-xl sm:text-2xl">{stat.icon}</div>
@@ -195,10 +189,10 @@ const DashboardPage: React.FC = () => {
           ))}
         </div>
 
-        {/* ✅ Dashboard Content - Responsive */}
+        {/* ✅ Dashboard Content */}
         <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
           
-          {/* ✅ Sidebar - Labels ab hamesha dikhenge */}
+          {/* ✅ Sidebar */}
           <div className="md:w-56 lg:w-64 bg-white rounded-xl shadow-sm p-3 sm:p-4 h-fit">
             <nav className="space-y-0.5 sm:space-y-1">
               {menuItems.map((item) => (
@@ -212,14 +206,13 @@ const DashboardPage: React.FC = () => {
                   }`}
                 >
                   <span className="text-base sm:text-lg">{item.icon}</span>
-                  {/* ✅ FIX: Label ab hamesha dikhega - hidden class remove ki */}
                   <span className="inline text-xs sm:text-sm">{item.label}</span>
                 </button>
               ))}
             </nav>
           </div>
 
-          {/* ✅ Content - Responsive */}
+          {/* ✅ Content */}
           <div className="flex-1">
             
             {/* Overview */}
@@ -256,17 +249,17 @@ const DashboardPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Wallet Summary */}
+                  {/* My Wishlist Summary */}
                   <div className="border rounded-lg p-3 sm:p-4">
                     <h3 className="font-semibold text-gray-700 flex items-center gap-2 text-sm sm:text-base">
-                      <FaWallet className="text-[#D4AF37]" /> Wallet
+                      <FaHeart className="text-red-500" /> Wishlist
                     </h3>
-                    <p className="text-xl sm:text-2xl font-bold text-[#0F766E] mt-2">PKR 0</p>
+                    <p className="text-xl sm:text-2xl font-bold text-[#0F766E] mt-2">{wishlistItems.length} items</p>
                     <button 
-                      onClick={() => setActiveTab('wallet')}
+                      onClick={() => setActiveTab('wishlist')}
                       className="text-xs bg-[#0F766E] text-white px-3 py-1 rounded hover:bg-[#065F46] transition mt-2"
                     >
-                      Manage Wallet →
+                      View Wishlist →
                     </button>
                   </div>
                 </div>
@@ -418,11 +411,6 @@ const DashboardPage: React.FC = () => {
                   ))}
                 </div>
               </div>
-            )}
-
-            {/* ✅ Maha Wallet */}
-            {activeTab === 'wallet' && (
-              <MahaWallet />
             )}
 
             {/* History */}

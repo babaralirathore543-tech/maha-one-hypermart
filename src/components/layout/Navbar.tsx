@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { 
   FaSearch, FaHeart, FaUser, FaShoppingBag, FaBars, FaTimes, 
-  FaCrown, FaTshirt, FaCog, FaWallet 
+  FaCrown, FaCog
 } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { getWishlistCount } from '../../services/wishlistService';
@@ -87,11 +87,13 @@ const Navbar = () => {
     }
   };
 
+  // ✅ Links without Icons
   const links = [
     { name: 'Home', path: '/' },
     { name: 'Dry Fruits', path: '/shop' },
     { name: 'Fashion', path: '/fashion' },
     { name: 'Sweets', path: '/sweets' },
+    { name: 'Cakes', path: '/cakes' },
     { name: 'About', path: '/about' },
     { name: 'Contact', path: '/contact' },
   ];
@@ -105,7 +107,7 @@ const Navbar = () => {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
             
-            {/* ✅ Logo - Mobile Fixed */}
+            {/* ✅ Logo */}
             <Link to="/" className="flex items-center gap-2 sm:gap-3 group flex-shrink-0">
               <div className="relative">
                 <img 
@@ -129,7 +131,7 @@ const Navbar = () => {
               </div>
             </Link>
 
-            {/* Desktop Menu */}
+            {/* ✅ Desktop Menu */}
             <div className="hidden lg:flex items-center gap-1">
               {links.map((link) => (
                 <Link
@@ -141,15 +143,7 @@ const Navbar = () => {
                       : 'text-gray-600 hover:text-[#D4AF37]'
                   } hover:bg-gradient-to-r hover:from-[#D4AF37]/10 hover:to-transparent`}
                 >
-                  {link.name === 'Fashion' && <FaTshirt className="inline mr-1 text-xs" />}
                   {link.name}
-                  
-                  {link.name === 'Fashion' && (
-                    <span className="absolute -top-2 -right-4 bg-[#D4AF37] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
-                      Soon
-                    </span>
-                  )}
-                  
                   <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-[#D4AF37] to-[#0F766E] group-hover:w-full transition-all duration-300" />
                 </Link>
               ))}
@@ -187,20 +181,6 @@ const Navbar = () => {
                 )}
               </Link>
 
-              {/* Maha Wallet */}
-              {isLoggedIn && (
-                <Link 
-                  to="/dashboard?tab=wallet" 
-                  className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] transition-all duration-300 relative group"
-                  title="Maha Wallet"
-                >
-                  <FaWallet className="text-base sm:text-lg text-[#D4AF37] group-hover:text-[#0F766E] transition-colors" />
-                  <span className="absolute -top-0.5 -right-0.5 bg-[#D4AF37] text-white text-[8px] sm:text-[10px] font-bold rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 flex items-center justify-center shadow-md">
-                    $
-                  </span>
-                </Link>
-              )}
-              
               {/* User Dashboard */}
               <Link to="/dashboard" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] transition-all duration-300">
                 <FaUser className="text-base sm:text-lg text-gray-600 hover:text-[#D4AF37] transition-colors" />
@@ -262,13 +242,7 @@ const Navbar = () => {
                     }`}
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    {link.name === 'Fashion' && <FaTshirt className="inline mr-1.5" />}
                     {link.name}
-                    {link.name === 'Fashion' && (
-                      <span className="ml-1.5 text-[8px] bg-[#D4AF37] text-white px-1.5 py-0.5 rounded-full">
-                        Soon
-                      </span>
-                    )}
                   </Link>
                 ))}
               </div>
@@ -277,13 +251,6 @@ const Navbar = () => {
               <div className="mt-3 pt-3 border-t border-gray-100 px-2">
                 {isLoggedIn && (
                   <>
-                    <Link
-                      to="/dashboard?tab=wallet"
-                      className="block py-2.5 px-3 text-sm font-medium rounded-lg text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all duration-300 text-center"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      💰 Maha Wallet
-                    </Link>
                     <Link
                       to="/dashboard"
                       className="block py-2.5 px-3 text-sm font-medium rounded-lg text-gray-600 hover:text-[#D4AF37] hover:bg-[#F8FAFC] transition-all duration-300 text-center"

@@ -10,7 +10,7 @@ const HomePage = () => {
   const { addToCart } = useCart();
 
   // ============================================================
-  // ✅ HERO SLIDES
+  // ✅ HERO SLIDES - FASHION NOW "SHOP NOW"
   // ============================================================
   const slides = [
     {
@@ -40,14 +40,14 @@ const HomePage = () => {
     {
       id: 2,
       title: 'Fashion Collection',
-      subtitle: 'Premium fashion collection coming soon. Stay tuned for the latest trends.',
+      subtitle: 'Premium fashion collection for men, women, and kids. Explore the latest trends.',
       emoji: '👗',
       bg: 'from-[#8B5CF6] to-[#6D28D9]',
       image: '/images/fashion/hero-fashion.jpg',
       link: '/fashion',
-      btnText: 'Coming Soon',
-      isComingSoon: true,
-      badge: '👗 Coming Soon - 2026'
+      btnText: 'Shop Now',          // ✅ Changed
+      isComingSoon: false,          // ✅ Changed
+      badge: '👗 New Collection 2026'  // ✅ Changed
     },
   ];
 
@@ -178,10 +178,11 @@ const HomePage = () => {
             {/* RIGHT - Image */}
             <div className="relative flex justify-center mt-6 lg:mt-0">
               <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-lg">
+                {/* ✅ HERO IMAGE - object-contain */}
                 <img 
                   src={slide.image} 
                   alt={slide.title}
-                  className="rounded-2xl sm:rounded-3xl shadow-2xl w-full object-cover h-[250px] sm:h-[320px] md:h-[400px]"
+                  className="rounded-2xl sm:rounded-3xl shadow-2xl w-full object-contain bg-white h-[250px] sm:h-[320px] md:h-[400px]"
                   onError={(e) => {
                     e.currentTarget.src = 'https://via.placeholder.com/800x600/D4AF37/FFFFFF?text=' + slide.title;
                   }}
@@ -265,10 +266,11 @@ const HomePage = () => {
                 <div key={p.id} className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-[#E5E7EB] group">
                   <Link to={getDetailLink(p)}>
                     <div className="relative overflow-hidden cursor-pointer">
+                      {/* ✅ PRODUCT IMAGE - object-contain */}
                       <img 
                         src={p.image} 
                         alt={p.name} 
-                        className="w-full h-32 sm:h-40 md:h-48 lg:h-56 object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-32 sm:h-40 md:h-48 lg:h-56 object-contain bg-white group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => {
                           e.currentTarget.src = 'https://via.placeholder.com/400x400/D4AF37/FFFFFF?text=' + p.name;
                         }}

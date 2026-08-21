@@ -37,8 +37,11 @@ const Footer = () => {
               </div>
             </Link>
 
+            {/* Updated Description */}
             <p className="text-sm text-gray-500 mt-3">
-              Premium dry fruits, nuts, and healthy snacks sourced from the finest farms.
+              Pakistan's premier hypermart offering premium dry fruits, 
+              delicious sweets, stylish fashion, and freshly baked cakes. 
+              Quality you can trust, delivered to your doorstep.
             </p>
 
             {/* Social Media Links */}
@@ -193,16 +196,16 @@ const Footer = () => {
               Subscribe for premium offers.
             </p>
 
-            <div className="flex">
+            {/* ✅ Mobile Fixed - Button Chota aur Responsive */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
               <input
                 type="email"
                 placeholder="Your email"
-                className="flex-1 px-4 py-2 rounded-l-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-[#D4AF37]"
+                className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-l-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-[#D4AF37] text-sm"
               />
-
               <button
                 type="button"
-                className="bg-[#D4AF37] text-black px-4 py-2 rounded-r-lg hover:bg-[#c4a030] transition-colors font-semibold"
+                className="bg-[#D4AF37] text-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-r-lg hover:bg-[#c4a030] transition-colors font-semibold text-sm sm:text-base"
               >
                 Subscribe
               </button>
@@ -214,7 +217,7 @@ const Footer = () => {
         {/* Footer Bottom */}
         <div className="mt-8 pt-8 border-t border-white/5 text-center text-sm text-gray-600">
           <p>
-            © {new Date().getFullYear()} MAHA ONE. All Rights Reserved. Made with ❤️ in Pakistan
+            © {new Date().getFullYear()} MAHA ONE. All Rights Reserved. Made with MahaOne.Org in Pakistan
           </p>
         </div>
       </div>
