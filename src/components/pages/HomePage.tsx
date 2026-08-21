@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { FaStar, FaHeart, FaShoppingCart, FaTruck, FaLeaf, FaMedal, FaArrowRight, FaPlay } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 
-// ✅ Hero Images
-import heroImage from '../../assets/images/hero-image.png';
+// ✅ Hero Images - Direct Cloudinary URLs used in slides
+// import heroImage from '../../assets/images/hero-image.png';
 
 const HomePage = () => {
   const { addToCart } = useCart();
@@ -19,7 +19,7 @@ const HomePage = () => {
       subtitle: 'Handpicked from the finest farms, delivered fresh across Pakistan.',
       emoji: '🥜',
       bg: 'from-[#0F766E] to-[#065F46]',
-      image: heroImage,
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787299384/hero-image_gqluny.jpg',
       link: '/shop',
       btnText: 'Shop Now',
       isComingSoon: false,
@@ -31,7 +31,7 @@ const HomePage = () => {
       subtitle: 'Delicious treats made with love, perfect for every occasion.',
       emoji: '🍬',
       bg: 'from-[#D4AF37] to-[#b8941f]',
-      image: '/images/sweets/hero-sweets.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787299385/hero-sweets_lbplgs.jpg',
       link: '/sweets',
       btnText: 'Explore Sweets',
       isComingSoon: false,
@@ -43,11 +43,11 @@ const HomePage = () => {
       subtitle: 'Premium fashion collection for men, women, and kids. Explore the latest trends.',
       emoji: '👗',
       bg: 'from-[#8B5CF6] to-[#6D28D9]',
-      image: '/images/fashion/hero-fashion.jpg',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787299388/hero-fashion_miqdis.jpg',
       link: '/fashion',
-      btnText: 'Shop Now',          // ✅ Changed
-      isComingSoon: false,          // ✅ Changed
-      badge: '👗 New Collection 2026'  // ✅ Changed
+      btnText: 'Shop Now',
+      isComingSoon: false,
+      badge: '👗 New Collection 2026'
     },
   ];
 
@@ -79,9 +79,9 @@ const HomePage = () => {
   ];
 
   const categories = [
-    { name: 'Dry Fruits', icon: '🥜', path: '/shop', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png' },
-    { name: 'Sweets', icon: '🍬', path: '/sweets', image: '/images/sweets/caramel dream choco bar.jpg' },
-    { name: 'Fashion', icon: '👗', path: '/fashion', image: '/images/fashion/hero-fashion.jpg' },
+    { name: 'Dry Fruits', icon: '🥜', path: '/shop', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787299384/hero-image_gqluny.jpg' },
+    { name: 'Sweets', icon: '🍬', path: '/sweets', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787299385/hero-sweets_lbplgs.jpg' },
+    { name: 'Fashion', icon: '👗', path: '/fashion', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787299388/hero-fashion_miqdis.jpg' },
   ];
 
   const reviews = [
@@ -178,7 +178,6 @@ const HomePage = () => {
             {/* RIGHT - Image */}
             <div className="relative flex justify-center mt-6 lg:mt-0">
               <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-lg">
-                {/* ✅ HERO IMAGE - object-contain */}
                 <img 
                   src={slide.image} 
                   alt={slide.title}
@@ -266,7 +265,6 @@ const HomePage = () => {
                 <div key={p.id} className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-[#E5E7EB] group">
                   <Link to={getDetailLink(p)}>
                     <div className="relative overflow-hidden cursor-pointer">
-                      {/* ✅ PRODUCT IMAGE - object-contain */}
                       <img 
                         src={p.image} 
                         alt={p.name} 
