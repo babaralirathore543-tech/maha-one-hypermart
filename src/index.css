@@ -20,6 +20,7 @@
     background: #FFFDF7;
     color: #111827;
     overflow-x: hidden;
+    transition: all 0.3s ease;
   }
 
   ::-webkit-scrollbar {
@@ -41,6 +42,223 @@
     color: white;
   }
 }
+
+/* ============================================================
+   ✅ DARK MODE - COMPLETE
+   ============================================================ */
+
+.dark,
+.dark *,
+.dark body,
+.dark html {
+  background-color: #111827 !important;
+  color: #F9FAFB !important;
+}
+
+/* ✅ ALL TEXT WHITE */
+.dark p,
+.dark span,
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6,
+.dark li,
+.dark label,
+.dark a,
+.dark div,
+.dark section,
+.dark article,
+.dark main,
+.dark header,
+.dark footer,
+.dark nav,
+.dark aside,
+.dark .text-white,
+.dark .text-gray-50,
+.dark .text-gray-100,
+.dark .text-gray-200,
+.dark .text-gray-300,
+.dark .text-gray-400,
+.dark .text-gray-500,
+.dark .text-gray-600,
+.dark .text-gray-700,
+.dark .text-gray-800,
+.dark .text-gray-900,
+.dark .text-black,
+.dark .text-\[#000000\],
+.dark .text-\[#111827\],
+.dark .text-\[#1F2937\],
+.dark .text-\[#374151\],
+.dark .text-\[#4B5563\],
+.dark .text-\[#6B7280\],
+.dark .text-\[#9CA3AF\],
+.dark .text-\[#D1D5DB\],
+.dark .text-\[#E5E7EB\],
+.dark .text-\[#F3F4F6\],
+.dark .text-\[#F9FAFB\],
+.dark .text-dark {
+  color: #F9FAFB !important;
+}
+
+/* ✅ Gold Color */
+.dark .text-\[#D4AF37\],
+.dark .text-gold,
+.dark .text-\[\#D4AF37\] {
+  color: #D4AF37 !important;
+}
+
+/* ✅ Green Color */
+.dark .text-\[#0F766E\],
+.dark .text-emerald,
+.dark .text-\[\#0F766E\] {
+  color: #14b8a6 !important;
+}
+
+/* ✅ ALL BACKGROUNDS DARK */
+.dark .bg-white,
+.dark .bg-\[#FFFFFF\],
+.dark .bg-\[#FFFDF7\],
+.dark .bg-\[#F8FAFC\],
+.dark .bg-\[#F3F4F6\],
+.dark .bg-\[#E5E7EB\],
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200,
+.dark .bg-gray-300,
+.dark .bg-gray-400,
+.dark .bg-gray-500,
+.dark .bg-gray-600,
+.dark .bg-gray-700,
+.dark .bg-gray-800,
+.dark .bg-gray-900 {
+  background-color: #1F2937 !important;
+}
+
+/* ✅ FORCE ALL IMAGES VISIBLE IN DARK MODE */
+.dark img {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* ✅ White background images - keep white background */
+.dark img.bg-white,
+.dark img[class*="bg-white"],
+.dark .bg-white img {
+  background-color: #ffffff !important;
+  padding: 4px;
+  border-radius: 8px;
+  opacity: 1 !important;
+}
+
+/* ✅ Product images visible */
+.dark .product-image,
+.dark .category-image,
+.dark .card img,
+.dark .product-card img,
+.dark .group img {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ✅ Borders */
+.dark .border,
+.dark .border-white,
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-gray-400,
+.dark .border-\[#E5E7EB\],
+.dark .border-\[#F3F4F6\],
+.dark .border-\[#D4AF37\]\/20 {
+  border-color: #374151 !important;
+}
+
+/* ✅ Inputs */
+.dark input,
+.dark textarea,
+.dark select,
+.dark .input,
+.dark .form-input,
+.dark .form-control {
+  background-color: #1F2937 !important;
+  color: #F9FAFB !important;
+  border-color: #374151 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6B7280 !important;
+}
+
+/* ✅ Icons */
+.dark svg:not(.text-\[#D4AF37\]):not(.text-\[#0F766E\]):not(.text-gold):not(.text-emerald) {
+  color: #D1D5DB !important;
+}
+
+.dark svg.text-\[#D4AF37\],
+.dark svg.text-gold {
+  color: #D4AF37 !important;
+}
+
+.dark svg.text-\[#0F766E\],
+.dark svg.text-emerald {
+  color: #14b8a6 !important;
+}
+
+/* ✅ Cards */
+.dark .card-premium,
+.dark .bg-white\/80,
+.dark .bg-white-80,
+.dark .bg-white\/90,
+.dark .bg-white-90,
+.dark .bg-white\/95,
+.dark .bg-white-95,
+.dark .glass-card {
+  background-color: #1F2937 !important;
+}
+
+/* ✅ Navbar */
+.dark nav,
+.dark .navbar,
+.dark .bg-white\/95,
+.dark .bg-white-95 {
+  background-color: #1F2937 !important;
+}
+
+/* ✅ Footer */
+.dark footer,
+.dark .footer {
+  background-color: #111827 !important;
+}
+
+/* ✅ Dropdown */
+.dark .dropdown,
+.dark .menu,
+.dark .bg-white\/90,
+.dark .bg-white-90 {
+  background-color: #1F2937 !important;
+}
+
+/* ✅ Scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #1F2937 !important;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4B5563 !important;
+  border-radius: 10px !important;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6B7280 !important;
+}
+
+/* ============================================================
+   ✅ COMPONENT CLASSES
+   ============================================================ */
 
 @layer components {
   .container-premium {
@@ -152,7 +370,6 @@
     animation: scaleIn 0.5s ease-out forwards;
   }
 
-  /* ✅ BLINK ANIMATION - Green Dot */
   .animate-blink {
     animation: blink 1.2s ease-in-out infinite;
   }
@@ -165,40 +382,65 @@
     animation: blink 1.8s ease-in-out infinite;
   }
 
-  .delay-100 { animation-delay: 100ms; }
-  .delay-200 { animation-delay: 200ms; }
-  .delay-300 { animation-delay: 300ms; }
-  .delay-400 { animation-delay: 400ms; }
-  .delay-500 { animation-delay: 500ms; }
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+  .delay-400 {
+    animation-delay: 400ms;
+  }
+  .delay-500 {
+    animation-delay: 500ms;
+  }
 }
 
-/* ✅ KEYFRAMES - Blink */
 @keyframes blink {
-  0% { 
-    opacity: 1; 
+  0% {
+    opacity: 1;
     transform: scale(1);
   }
-  50% { 
-    opacity: 0.3; 
+  50% {
+    opacity: 0.3;
     transform: scale(0.7);
   }
-  100% { 
-    opacity: 1; 
+  100% {
+    opacity: 1;
     transform: scale(1);
   }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 @keyframes fadeUp {
-  0% { opacity: 0; transform: translateY(30px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes scaleIn {
-  0% { opacity: 0; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

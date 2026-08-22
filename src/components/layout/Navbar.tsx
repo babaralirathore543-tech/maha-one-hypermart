@@ -7,6 +7,7 @@ import {
 import { useCart } from '../../context/CartContext';
 import { getWishlistCount } from '../../services/wishlistService';
 import logo from '../../assets/images/logo.png';
+import ThemeToggle from '../common/ThemeToggle';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -87,7 +88,7 @@ const Navbar = () => {
     }
   };
 
-  // ✅ Links without Icons
+  // ✅ Links (Cakes included)
   const links = [
     { name: 'Home', path: '/' },
     { name: 'Dry Fruits', path: '/shop' },
@@ -102,7 +103,7 @@ const Navbar = () => {
     <>
       <div className="h-14 sm:h-16 md:h-20" />
       <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? 'bg-white/95 backdrop-blur-2xl shadow-2xl border-b border-[#D4AF37]/20' : 'bg-white/80 backdrop-blur-xl'
+        scrolled ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl shadow-2xl border-b border-[#D4AF37]/20' : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl'
       }`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
@@ -140,7 +141,7 @@ const Navbar = () => {
                   className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 relative group ${
                     link.name === 'Fashion' 
                       ? 'text-[#D4AF37] hover:text-[#0F766E]' 
-                      : 'text-gray-600 hover:text-[#D4AF37]'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-[#D4AF37]'
                   } hover:bg-gradient-to-r hover:from-[#D4AF37]/10 hover:to-transparent`}
                 >
                   {link.name}
@@ -149,7 +150,7 @@ const Navbar = () => {
               ))}
             </div>
 
-            {/* Right Side */}
+            {/* ✅ Right Side */}
             <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
               <form onSubmit={handleSearch} className="relative hidden md:block">
                 <input
@@ -157,7 +158,7 @@ const Navbar = () => {
                   placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-32 lg:w-56 pl-8 pr-3 py-1.5 bg-[#F8FAFC] border-2 border-transparent rounded-full text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#D4AF37] focus:bg-white focus:shadow-lg transition-all duration-300"
+                  className="w-32 lg:w-56 pl-8 pr-3 py-1.5 bg-[#F8FAFC] dark:bg-gray-800 border-2 border-transparent rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#D4AF37] focus:bg-white dark:focus:bg-gray-700 focus:shadow-lg transition-all duration-300"
                 />
                 <button type="submit" className="absolute left-2.5 top-1.5 text-gray-400 hover:text-[#D4AF37] transition-colors">
                   <FaSearch size={14} />
@@ -166,14 +167,14 @@ const Navbar = () => {
               
               <button 
                 onClick={() => navigate('/shop')}
-                className="md:hidden p-1.5 rounded-full hover:bg-[#F8FAFC] transition-colors"
+                className="md:hidden p-1.5 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-colors"
               >
-                <FaSearch className="text-base sm:text-lg text-gray-600" />
+                <FaSearch className="text-base sm:text-lg text-gray-600 dark:text-gray-400" />
               </button>
               
               {/* Wishlist */}
-              <Link to="/wishlist" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] transition-all duration-300 relative group">
-                <FaHeart className="text-base sm:text-lg text-gray-600 group-hover:text-[#D4AF37] transition-colors" />
+              <Link to="/wishlist" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group">
+                <FaHeart className="text-base sm:text-lg text-gray-600 dark:text-gray-400 group-hover:text-[#D4AF37] transition-colors" />
                 {wishlistCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-red-500 to-red-600 text-white text-[8px] sm:text-[10px] font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-md">
                     {wishlistCount}
@@ -181,14 +182,17 @@ const Navbar = () => {
                 )}
               </Link>
 
+              {/* ✅ Theme Toggle */}
+              <ThemeToggle />
+
               {/* User Dashboard */}
-              <Link to="/dashboard" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] transition-all duration-300">
-                <FaUser className="text-base sm:text-lg text-gray-600 hover:text-[#D4AF37] transition-colors" />
+              <Link to="/dashboard" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300">
+                <FaUser className="text-base sm:text-lg text-gray-600 dark:text-gray-400 hover:text-[#D4AF37] transition-colors" />
               </Link>
               
               {/* Cart */}
-              <Link to="/cart" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] transition-all duration-300 relative group">
-                <FaShoppingBag className="text-base sm:text-lg text-gray-600 group-hover:text-[#D4AF37] transition-colors" />
+              <Link to="/cart" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group">
+                <FaShoppingBag className="text-base sm:text-lg text-gray-600 dark:text-gray-400 group-hover:text-[#D4AF37] transition-colors" />
                 <span className="absolute -top-0.5 -right-0.5 bg-[#0F766E] text-white text-[8px] sm:text-[10px] font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-md">
                   {getCartCount()}
                 </span>
@@ -198,7 +202,7 @@ const Navbar = () => {
               {isAdmin && (
                 <Link 
                   to="/admin" 
-                  className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] transition-all duration-300 relative group"
+                  className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group"
                   title="Admin Panel"
                 >
                   <FaCog className="text-base sm:text-lg text-[#D4AF37] group-hover:text-[#0F766E] transition-colors" />
@@ -208,22 +212,22 @@ const Navbar = () => {
                 </Link>
               )}
 
-              <button className="lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-[#F8FAFC] transition-colors" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                {isMenuOpen ? <FaTimes className="text-lg sm:text-xl text-[#0F766E]" /> : <FaBars className="text-lg sm:text-xl text-gray-600" />}
+              <button className="lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-colors" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                {isMenuOpen ? <FaTimes className="text-lg sm:text-xl text-[#0F766E]" /> : <FaBars className="text-lg sm:text-xl text-gray-600 dark:text-gray-400" />}
               </button>
             </div>
           </div>
 
-          {/* Mobile Menu */}
+          {/* ✅ Mobile Menu */}
           {isMenuOpen && (
-            <div className="lg:hidden py-3 sm:py-4 border-t border-[#E5E7EB] bg-white/95 backdrop-blur max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="lg:hidden py-3 sm:py-4 border-t border-[#E5E7EB] dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 backdrop-blur max-h-[calc(100vh-4rem)] overflow-y-auto">
               <form onSubmit={handleSearch} className="relative mb-3 sm:mb-4 px-2">
                 <input
                   type="text"
                   placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-[#F8FAFC] border-2 border-transparent rounded-full text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#D4AF37] focus:bg-white transition-all duration-300"
+                  className="w-full pl-9 pr-4 py-2 bg-[#F8FAFC] dark:bg-gray-800 border-2 border-transparent rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#D4AF37] focus:bg-white dark:focus:bg-gray-700 transition-all duration-300"
                 />
                 <button type="submit" className="absolute left-4 top-2.5 text-gray-400 hover:text-[#D4AF37] transition-colors">
                   <FaSearch />
@@ -238,7 +242,7 @@ const Navbar = () => {
                     className={`block py-2.5 px-3 text-sm font-medium rounded-lg transition-all duration-300 text-center ${
                       link.name === 'Fashion' 
                         ? 'text-[#D4AF37] hover:bg-[#D4AF37]/10' 
-                        : 'text-gray-600 hover:text-[#D4AF37] hover:bg-[#F8FAFC]'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] hover:bg-[#F8FAFC] dark:hover:bg-gray-800'
                     }`}
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -248,12 +252,12 @@ const Navbar = () => {
               </div>
 
               {/* Extra Links */}
-              <div className="mt-3 pt-3 border-t border-gray-100 px-2">
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 px-2">
                 {isLoggedIn && (
                   <>
                     <Link
                       to="/dashboard"
-                      className="block py-2.5 px-3 text-sm font-medium rounded-lg text-gray-600 hover:text-[#D4AF37] hover:bg-[#F8FAFC] transition-all duration-300 text-center"
+                      className="block py-2.5 px-3 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 text-center"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       👤 My Account
@@ -283,7 +287,7 @@ const Navbar = () => {
                       navigate('/login');
                       setIsMenuOpen(false);
                     }}
-                    className="block w-full py-2.5 px-3 text-sm font-medium rounded-lg text-red-600 hover:bg-red-50 transition-all duration-300 text-center mt-1"
+                    className="block w-full py-2.5 px-3 text-sm font-medium rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 text-center mt-1"
                   >
                     🚪 Logout
                   </button>

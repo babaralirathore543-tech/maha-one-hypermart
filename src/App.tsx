@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
+import { ThemeProvider } from './context/ThemeContext'; // ✅ Add
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import WhatsAppButton from './components/common/WhatsAppButton';
@@ -33,72 +34,74 @@ import CakesDetailPage from './components/pages/CakesDetailPage';
 
 function App() {
   return (
-    <CartProvider>
-      <Router>
-        <div className="min-h-screen flex flex-col bg-[#FFFDF7]">
-          
-          {/* Navbar */}
-          <Navbar />
-          
-          {/* Main Content */}
-          <main className="flex-grow">
-            <Routes>
-              {/* Home */}
-              <Route path="/" element={<HomePage />} />
-              
-              {/* Dry Fruits */}
-              <Route path="/shop" element={<DryFruitsPage />} />
-              <Route path="/dry-product/:id" element={<DryFruitsDetailPage />} />
-              
-              {/* Sweets */}
-              <Route path="/sweets" element={<SweetsPage />} />
-              <Route path="/sweet-product/:id" element={<SweetsDetailPage />} />
-              
-              {/* Fashion */}
-              <Route path="/fashion" element={<FashionPage />} />
-              <Route path="/fashion/:id" element={<FashionDetailPage />} />
-              
-              {/* ✅ Cakes */}
-              <Route path="/cakes" element={<CakesPage />} />
-              <Route path="/cakes/:id" element={<CakesDetailPage />} />
-              
-              {/* Auth */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              
-              {/* Pages */}
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/category/:categoryName" element={<CategoryPage />} />
-              
-              {/* Cart & Checkout */}
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/wishlist" element={<WishlistPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              
-              {/* Admin */}
-              <Route path="/admin" element={<AdminPanel />} />
-            </Routes>
-          </main>
-          
-          {/* Footer */}
-          <Footer />
-          
-          {/* ✅ WhatsApp Button */}
-          <WhatsAppButton />
-          
-          {/* ✅ AI Assistant */}
-          <AIAssistant />
-          
-          {/* ✅ Popup */}
-          <Popup 
-            image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
-            delay={2000}
-          />
-        </div>
-      </Router>
-    </CartProvider>
+    <ThemeProvider>  {/* ✅ Wrap */}
+      <CartProvider>
+        <Router>
+          <div className="min-h-screen flex flex-col bg-[#FFFDF7] dark:bg-[#111827] transition-colors duration-300">
+            
+            {/* Navbar */}
+            <Navbar />
+            
+            {/* Main Content */}
+            <main className="flex-grow">
+              <Routes>
+                {/* Home */}
+                <Route path="/" element={<HomePage />} />
+                
+                {/* Dry Fruits */}
+                <Route path="/shop" element={<DryFruitsPage />} />
+                <Route path="/dry-product/:id" element={<DryFruitsDetailPage />} />
+                
+                {/* Sweets */}
+                <Route path="/sweets" element={<SweetsPage />} />
+                <Route path="/sweet-product/:id" element={<SweetsDetailPage />} />
+                
+                {/* Fashion */}
+                <Route path="/fashion" element={<FashionPage />} />
+                <Route path="/fashion/:id" element={<FashionDetailPage />} />
+                
+                {/* ✅ Cakes */}
+                <Route path="/cakes" element={<CakesPage />} />
+                <Route path="/cakes/:id" element={<CakesDetailPage />} />
+                
+                {/* Auth */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                
+                {/* Pages */}
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/category/:categoryName" element={<CategoryPage />} />
+                
+                {/* Cart & Checkout */}
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
+                <Route path="/wishlist" element={<WishlistPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                
+                {/* Admin */}
+                <Route path="/admin" element={<AdminPanel />} />
+              </Routes>
+            </main>
+            
+            {/* Footer */}
+            <Footer />
+            
+            {/* ✅ WhatsApp Button */}
+            <WhatsAppButton />
+            
+            {/* ✅ AI Assistant */}
+            <AIAssistant />
+            
+            {/* ✅ Popup */}
+            <Popup 
+              image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
+              delay={2000}
+            />
+          </div>
+        </Router>
+      </CartProvider>
+    </ThemeProvider>
   );
 }
 

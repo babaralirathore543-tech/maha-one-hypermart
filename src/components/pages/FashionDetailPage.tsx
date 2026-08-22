@@ -40,54 +40,10 @@ const FashionDetailPage = () => {
   // ✅ ALL PRODUCTS - Complete Data
   const fashionProducts: FashionProduct[] = [
     // ==================== 👨 MEN ====================
-    {
-      id: 107,
-      name: 'Premium Cotton T-Shirt',
-      price: 1200,
-      oldPrice: 1500,
-      discount: 20,
-      rating: 4.5,
-      category: 'men',
-      subCategory: 'tshirts',
-      image: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/men/tshirts/tshirt-1-main.jpg',
-      images: [
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/men/tshirts/tshirt-1-main.jpg',
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/men/tshirts/tshirt-1-2.jpg',
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/men/tshirts/tshirt-1-3.jpg'
-      ],
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['White', 'Black', 'Blue', 'Red', 'Grey'],
-      stock: 60,
-      description: 'Soft and comfortable cotton t-shirt. Perfect for daily wear.',
-      material: '100% Cotton',
-      careInstructions: 'Machine wash warm. Tumble dry low.',
-      isNew: true
-    },
+   
 
     // ==================== 👩 WOMEN ====================
-    {
-      id: 201,
-      name: 'Premium Embroidered Lawn Suit',
-      price: 4500,
-      oldPrice: 5500,
-      discount: 18,
-      rating: 4.8,
-      category: 'women',
-      subCategory: 'lawn',
-      image: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/women/lawn/lawn-1-main.jpg',
-      images: [
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/women/lawn/lawn-1-main.jpg',
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/women/lawn/lawn-1-2.jpg',
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/women/lawn/lawn-1-3.jpg'
-      ],
-      sizes: ['S', 'M', 'L', 'XL'],
-      colors: ['Red', 'Blue', 'Green', 'Yellow'],
-      stock: 45,
-      description: 'Premium embroidered lawn suit with digital prints. Perfect for summer wear.',
-      material: '100% Lawn Cotton',
-      careInstructions: 'Dry clean recommended. Iron on low heat.',
-      isNew: true
-    },
+   
     {
       id: 209,
       name: '1 Carat Zircon Locket Set',
@@ -119,56 +75,10 @@ const FashionDetailPage = () => {
     },
 
     // ==================== 👶 KIDS ====================
-    {
-      id: 301,
-      name: 'Kids Cotton T-Shirt',
-      price: 1200,
-      oldPrice: 1500,
-      discount: 20,
-      rating: 4.5,
-      category: 'kids',
-      subCategory: 'tshirts',
-      image: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/kids/tshirts/kids-tshirt-1-main.jpg',
-      images: [
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/kids/tshirts/kids-tshirt-1-main.jpg',
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/kids/tshirts/kids-tshirt-1-2.jpg',
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/kids/tshirts/kids-tshirt-1-3.jpg'
-      ],
-      sizes: ['2-3Y', '3-4Y', '4-5Y', '5-6Y', '6-7Y'],
-      colors: ['Red', 'Blue', 'Green', 'Yellow', 'Pink'],
-      stock: 35,
-      description: 'Soft and comfortable cotton t-shirt for kids.',
-      material: '100% Cotton',
-      careInstructions: 'Machine wash warm. Tumble dry low.',
-      isNew: true
-    },
-  
+    
 
     // ==================== ⌚ WATCHES ====================
-    {
-      id: 501,
-      name: 'Premium Luxury Gold Watch',
-      price: 25000,
-      oldPrice: 32000,
-      discount: 22,
-      rating: 4.9,
-      category: 'watches',
-      subCategory: 'luxury',
-      image: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/watches/luxury/watch-1-main.jpg',
-      images: [
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/watches/luxury/watch-1-main.jpg',
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/watches/luxury/watch-1-2.jpg',
-        'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1/fashion/watches/luxury/watch-1-3.jpg'
-      ],
-      sizes: ['One Size'],
-      colors: ['Gold', 'Silver', 'Rose Gold'],
-      stock: 10,
-      description: 'Premium luxury watch with gold plating. Perfect for formal occasions.',
-      material: 'Stainless Steel with Gold Plating',
-      careInstructions: 'Wipe clean with soft cloth. Avoid water contact.',
-      isNew: true,
-      isFeatured: true
-    },
+    
   ];
 
   // ✅ Find product by ID

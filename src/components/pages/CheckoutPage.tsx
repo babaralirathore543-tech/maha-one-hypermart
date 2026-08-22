@@ -7,7 +7,6 @@ import {
   FaArrowLeft, FaArrowRight, FaSpinner, FaMobileAlt,
   FaQrcode
 } from 'react-icons/fa';
-// ❌ FaTruck removed (COD remove kar diya)
 import { useCart } from '../../context/CartContext';
 import { placeOrder } from '../../services/orderService';
 import QRCodePayment from '../Payment/QRCodePayment';
@@ -73,9 +72,16 @@ const CheckoutPage = () => {
     formatted: '0329-3296822'
   };
 
-  // ✅ SHIPPING: FIXED 300 PKR
+  // ✅ SHIPPING: City-based
+  const calculateShipping = (city: string) => {
+    if (city.toLowerCase() === 'karachi') {
+      return 250;
+    }
+    return 290;
+  };
+
   const subtotal = getCartTotal();
-  const shipping = 300;
+  const shipping = calculateShipping(formData.city);
   const discount = 0;
   const total = subtotal + shipping - discount;
 
@@ -107,7 +113,7 @@ const CheckoutPage = () => {
         shipping: shipping,
         discount: discount,
         total: total,
-        paymentMethod: paymentMethod as 'jazzcash' | 'bank' | 'cod' | 'card',  // ✅ Fixed type
+        paymentMethod: paymentMethod as 'jazzcash' | 'bank' | 'cod' | 'card',
         paymentStatus: (paymentMethod === 'cod' ? 'pending' : 'paid') as
           | 'pending'
           | 'paid'
@@ -131,10 +137,8 @@ const CheckoutPage = () => {
         setOrderId(result.orderNumber || '');
         setOrderPlaced(true);
         clearCart();
-        
         window.dispatchEvent(new Event('orderPlaced'));
         window.dispatchEvent(new Event('storage'));
-        
       } else {
         alert('❌ Failed to place order: ' + (result.error || 'Unknown error'));
       }
@@ -171,7 +175,6 @@ const CheckoutPage = () => {
       } catch (e) {
         window.open(`https://www.jazzcash.com.pk/`, '_blank');
       }
-      
       setTimeout(() => {
         placeOrderToFirebase();
       }, 5000);
@@ -191,7 +194,6 @@ const CheckoutPage = () => {
       `📸 Please send payment screenshot after transfer.\n\n` +
       `📍 Address: ${formData.address}, ${formData.city}`
     );
-    
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
     setTimeout(() => placeOrderToFirebase(), 3000);
   };
@@ -221,18 +223,15 @@ const CheckoutPage = () => {
         payWithJazzCash();
         return;
       }
-
       if (paymentMethod === 'whatsapp') {
         sendWhatsAppPayment();
         return;
       }
-
       if (paymentMethod === 'qr') {
         setShowQRCode(true);
         setQrAmount(total);
         return;
       }
-      
       placeOrderToFirebase();
     }
   };
@@ -366,6 +365,11 @@ const CheckoutPage = () => {
                     <select name="city" value={formData.city} onChange={handleChange} className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition">
                       {cities.map(city => <option key={city} value={city}>{city}</option>)}
                     </select>
+                    {/* ✅ Shipping Charges Display */}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Shipping: PKR {calculateShipping(formData.city)} 
+                      {formData.city.toLowerCase() === 'karachi' ? ' (Karachi rate)' : ' (Other cities rate)'}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4">
@@ -409,7 +413,7 @@ const CheckoutPage = () => {
                   </div>
 
                   <div className="space-y-3">
-                    {/* ✅ JazzCash */}
+                    {/* JazzCash */}
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('jazzcash')}
@@ -425,7 +429,7 @@ const CheckoutPage = () => {
                       {paymentMethod === 'jazzcash' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
                     </button>
 
-                    {/* ✅ QR Code */}
+                    {/* QR Code */}
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('qr')}
@@ -441,7 +445,7 @@ const CheckoutPage = () => {
                       {paymentMethod === 'qr' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
                     </button>
 
-                    {/* ✅ WhatsApp */}
+                    {/* WhatsApp */}
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('whatsapp')}
@@ -457,7 +461,7 @@ const CheckoutPage = () => {
                       {paymentMethod === 'whatsapp' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
                     </button>
 
-                    {/* ✅ Bank Transfer */}
+                    {/* Bank Transfer */}
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('bank')}
@@ -559,7 +563,12 @@ const CheckoutPage = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
-                  <span className="font-semibold text-[#0F766E]">PKR {shipping}</span>
+                  <span className="font-semibold text-[#0F766E]">
+                    PKR {shipping}
+                    <span className="text-xs text-gray-400 ml-1">
+                      ({formData.city.toLowerCase() === 'karachi' ? 'Karachi' : 'Other'})
+                    </span>
+                  </span>
                 </div>
                 <div className="border-t pt-3 mt-3 flex justify-between text-lg font-bold">
                   <span>Total</span>
@@ -568,7 +577,10 @@ const CheckoutPage = () => {
               </div>
 
               <p className="text-xs text-gray-400 mt-3 flex items-center gap-1">
-                <FaCheckCircle className="text-green-500 text-xs" /> Shipping charges PKR 300 apply
+                <FaCheckCircle className="text-green-500 text-xs" /> 
+                {formData.city.toLowerCase() === 'karachi' 
+                  ? '📍 Karachi: PKR 250 shipping' 
+                  : '📍 Other Cities: PKR 290 shipping'}
               </p>
             </div>
           </div>

@@ -10,7 +10,7 @@ const HomePage = () => {
   const { addToCart } = useCart();
 
   // ============================================================
-  // ✅ HERO SLIDES - FASHION NOW "SHOP NOW"
+  // ✅ HERO SLIDES
   // ============================================================
   const slides = [
     {
@@ -70,12 +70,28 @@ const HomePage = () => {
     console.log('Current Slide:', currentSlide);
   }, [currentSlide]);
 
-  // ✅ Products
-  const products = [
+  // ✅ Dry Fruits Products (4)
+  const dryFruitsProducts = [
     { id: 1, name: 'American Almonds Premium', price: 1950, oldPrice: 2300, discount: 13, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png', type: 'dry', stock: 50 },
     { id: 2, name: 'Roasted Brown Cashews', price: 2000, oldPrice: 2400, discount: 17, rating: 4.9, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128406/brown_kaju_cu5gvs.png', type: 'dry', stock: 35 },
     { id: 3, name: 'Soft Shell Salted Pistachios', price: 2600, oldPrice: 3100, discount: 16, rating: 4.7, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128419/pista_without_shell_ymunmc.png', type: 'dry', stock: 40 },
-    { id: 101, name: 'Caramel Dream Choco Bar', price: 1290, oldPrice: 1500, discount: 14, rating: 4.9, image: '/images/sweets/caramel dream choco bar.jpg', type: 'sweet', stock: 45 },
+    { id: 4, name: 'Soft Shell Walnuts', price: 1250, oldPrice: 1500, discount: 17, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128454/soft_shell_almonds_wfd5pr.png', type: 'dry', stock: 60 },
+  ];
+
+  // ✅ Sweets Products (4)
+  const sweetsProducts = [
+    { id: 101, name: 'Caramel Dream Choco Bar', price: 1290, oldPrice: 1500, discount: 14, rating: 4.9, image: '/images/sweets/caramel dream choco bar.jpg', type: 'sweet', stock: 50 },
+    { id: 102, name: 'HISS Crispy Wafer', price: 1280, oldPrice: 1550, discount: 20, rating: 4.8, image: '/images/sweets/hiss crispy wafer.jpg', type: 'sweet', stock: 40 },
+    { id: 104, name: 'Nani Coconut Bar', price: 1290, oldPrice: 1500, discount: 20, rating: 4.9, image: '/images/sweets/nani coconut bar.jpg', type: 'sweet', stock: 30 },
+    { id: 106, name: 'Roro Caramel Eclair', price: 650, oldPrice: 700, discount: 22, rating: 4.8, image: '/images/sweets/roro caramel eclair.jpg', type: 'sweet', stock: 60 },
+  ];
+
+  // ✅ Customer Favorites (4)
+  const favoritesProducts = [
+    { id: 1, name: 'American Almonds Premium', price: 1950, oldPrice: 2300, discount: 13, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png', type: 'dry', stock: 50 },
+    { id: 2, name: 'Roasted Brown Cashews', price: 2000, oldPrice: 2400, discount: 17, rating: 4.9, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128406/brown_kaju_cu5gvs.png', type: 'dry', stock: 35 },
+    { id: 3, name: 'Soft Shell Salted Pistachios', price: 2600, oldPrice: 3100, discount: 16, rating: 4.7, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128419/pista_without_shell_ymunmc.png', type: 'dry', stock: 40 },
+    { id: 101, name: 'Caramel Dream Choco Bar', price: 1290, oldPrice: 1500, discount: 14, rating: 4.9, image: '/images/sweets/caramel dream choco bar.jpg', type: 'sweet', stock: 50 },
   ];
 
   const categories = [
@@ -100,6 +116,79 @@ const HomePage = () => {
   };
 
   const slide = slides[currentSlide];
+
+  // ✅ Product Card Component
+  const ProductCard = ({ product }: { product: any }) => {
+    const isInStock = product.stock > 0;
+    return (
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-[#E5E7EB] group">
+        <Link to={getDetailLink(product)}>
+          <div className="relative overflow-hidden cursor-pointer">
+            <img 
+              src={product.image} 
+              alt={product.name} 
+              className="w-full h-40 sm:h-48 md:h-56 object-contain bg-white group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                e.currentTarget.src = 'https://via.placeholder.com/400x400/D4AF37/FFFFFF?text=' + product.name;
+              }}
+            />
+            <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">-{product.discount}%</span>
+            <button 
+              className="absolute top-2 right-2 bg-white/90 rounded-full p-1 sm:p-1.5 hover:bg-[#D4AF37] transition-all"
+              onClick={(e) => {
+                e.preventDefault();
+                alert('❤️ Added to Wishlist!');
+              }}
+            >
+              <FaHeart className="text-xs sm:text-sm text-gray-600 hover:text-white" />
+            </button>
+          </div>
+        </Link>
+        <div className="p-3 sm:p-4">
+          <div className="flex text-[#D4AF37] text-[10px] sm:text-sm">
+            {[...Array(5)].map((_, i) => (<FaStar key={i} />))}
+          </div>
+          <Link to={getDetailLink(product)}>
+            <h3 className="font-semibold text-[#111827] text-xs sm:text-sm md:text-base mt-0.5 hover:text-[#D4AF37] transition-colors cursor-pointer line-clamp-2">
+              {product.name}
+            </h3>
+          </Link>
+          <div className="flex items-center gap-1 sm:gap-2 mt-1">
+            <span className="text-[#D4AF37] font-bold text-sm sm:text-base">PKR {product.price}</span>
+            <span className="text-gray-400 line-through text-[10px] sm:text-sm">PKR {product.oldPrice}</span>
+          </div>
+          
+          {/* Stock Status */}
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${isInStock ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}></span>
+            <span className={`text-[8px] sm:text-xs font-medium ${isInStock ? 'text-green-600' : 'text-red-500'}`}>
+              {isInStock ? 'In Stock' : 'Out of Stock'}
+            </span>
+          </div>
+          
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isInStock) {
+                handleAddToCart(product);
+              } else {
+                alert('❌ This product is out of stock!');
+              }
+            }}
+            disabled={!isInStock}
+            className={`w-full mt-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-medium transition flex items-center justify-center gap-1 sm:gap-2 ${
+              isInStock
+                ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            <FaShoppingCart className="text-[10px] sm:text-xs" />
+            <span>{isInStock ? 'Add to Cart' : 'Out of Stock'}</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-[#FFFDF7]">
@@ -249,89 +338,67 @@ const HomePage = () => {
       </section>
 
       {/* ============================================================
-      BEST SELLING PRODUCTS - Responsive
+      🥜 DRY FRUITS SECTION (4 Products)
       ============================================================ */}
-      <section className="py-8 sm:py-12 md:py-16 bg-[#F8FAFC]">
+      <section className="py-8 sm:py-12 bg-[#F8FAFC]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="text-center mb-6 sm:mb-8 md:mb-12">
-            <span className="text-[#D4AF37] font-medium text-[10px] sm:text-xs tracking-wider uppercase">Best Sellers</span>
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#111827] mt-1 sm:mt-2">Customer <span className="text-[#D4AF37]">Favorites</span></h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl sm:text-3xl">🥜</span>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#111827]">Premium Dry Fruits</h2>
+            </div>
+            <Link to="/shop" className="text-[#D4AF37] hover:text-[#b8941f] transition flex items-center gap-1 text-sm font-medium">
+              More <FaArrowRight className="text-xs" />
+            </Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-            {products.map((p) => {
-              const isInStock = p.stock > 0;
-              
-              return (
-                <div key={p.id} className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-[#E5E7EB] group">
-                  <Link to={getDetailLink(p)}>
-                    <div className="relative overflow-hidden cursor-pointer">
-                      <img 
-                        src={p.image} 
-                        alt={p.name} 
-                        className="w-full h-32 sm:h-40 md:h-48 lg:h-56 object-contain bg-white group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/400x400/D4AF37/FFFFFF?text=' + p.name;
-                        }}
-                      />
-                      <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">-{p.discount}%</span>
-                      <button 
-                        className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-white/90 rounded-full p-1 sm:p-1.5 hover:bg-[#D4AF37] transition-all"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          alert('❤️ Added to Wishlist!');
-                        }}
-                      >
-                        <FaHeart className="text-xs sm:text-sm text-gray-600 hover:text-white" />
-                      </button>
-                    </div>
-                  </Link>
-                  <div className="p-2 sm:p-3 md:p-4">
-                    <div className="flex text-[#D4AF37] text-[10px] sm:text-sm">
-                      {[...Array(5)].map((_, i) => (<FaStar key={i} />))}
-                    </div>
-                    <Link to={getDetailLink(p)}>
-                      <h3 className="font-semibold text-[#111827] text-xs sm:text-sm md:text-base lg:text-lg mt-0.5 sm:mt-1 hover:text-[#D4AF37] transition-colors cursor-pointer line-clamp-2">
-                        {p.name}
-                      </h3>
-                    </Link>
-                    <div className="flex items-center gap-1 sm:gap-2 mt-1 sm:mt-2">
-                      <span className="text-[#D4AF37] font-bold text-sm sm:text-base md:text-lg lg:text-xl">PKR {p.price}</span>
-                      <span className="text-gray-400 line-through text-[10px] sm:text-sm">PKR {p.oldPrice}</span>
-                    </div>
-                    
-                    {/* Stock Status */}
-                    <div className="mt-1 sm:mt-2 flex items-center gap-1 sm:gap-1.5">
-                      <span 
-                        className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isInStock ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}
-                      ></span>
-                      <span className={`text-[8px] sm:text-xs font-medium ${isInStock ? 'text-green-600' : 'text-red-500'}`}>
-                        {isInStock ? 'In Stock' : 'Out of Stock'}
-                      </span>
-                    </div>
-                    
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (isInStock) {
-                          handleAddToCart(p);
-                        } else {
-                          alert('❌ This product is out of stock!');
-                        }
-                      }}
-                      disabled={!isInStock}
-                      className={`w-full mt-2 sm:mt-3 md:mt-4 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-medium transition flex items-center justify-center gap-1 sm:gap-2 ${
-                        isInStock
-                          ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      <FaShoppingCart className="text-[10px] sm:text-xs" />
-                      <span className="whitespace-nowrap">{isInStock ? 'Add to Cart' : 'Out of Stock'}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            {dryFruitsProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+      🍬 SWEETS SECTION (4 Products)
+      ============================================================ */}
+      <section className="py-8 sm:py-12 bg-[#FFFDF7]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl sm:text-3xl">🍬</span>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#111827]">Sweet Collection</h2>
+            </div>
+            <Link to="/sweets" className="text-[#D4AF37] hover:text-[#b8941f] transition flex items-center gap-1 text-sm font-medium">
+              More <FaArrowRight className="text-xs" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            {sweetsProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+      ⭐ CUSTOMER FAVORITES (Best Sellers)
+      ============================================================ */}
+      <section className="py-8 sm:py-12 bg-[#F8FAFC]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl sm:text-3xl">⭐</span>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#111827]">Customer Favorites</h2>
+            </div>
+            <Link to="/shop" className="text-[#D4AF37] hover:text-[#b8941f] transition flex items-center gap-1 text-sm font-medium">
+              More <FaArrowRight className="text-xs" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            {favoritesProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
         </div>
       </section>

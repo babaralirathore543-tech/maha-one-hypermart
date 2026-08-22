@@ -14,6 +14,7 @@ interface Product {
   image: string;
   description: string;
   benefits: string[];
+  stock?: number;
 }
 
 const SweetsDetailPage = () => {
@@ -33,7 +34,8 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/caramel dream choco bar.jpg',
       description: 'A heavenly combination of rich caramel and smooth chocolate. This premium bar offers a perfect balance of sweetness and crunch. Made with the finest ingredients for a luxurious taste experience.',
-      benefits: ['Premium Chocolate', 'Rich Caramel', 'Crunchy Texture', 'Luxury Taste']
+      benefits: ['Premium Chocolate', 'Rich Caramel', 'Crunchy Texture', 'Luxury Taste'],
+      stock: 50
     },
     { 
       id: 102, 
@@ -45,7 +47,8 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/hiss crispy wafer.jpg',
       description: 'Crispy wafer layers coated with smooth chocolate, creating a delightful crunch in every bite. A perfect snack for those who love texture in their sweets.',
-      benefits: ['Crispy Wafer', 'Smooth Chocolate', 'Perfect Crunch', 'Premium Quality']
+      benefits: ['Crispy Wafer', 'Smooth Chocolate', 'Perfect Crunch', 'Premium Quality'],
+      stock: 40
     },
     { 
       id: 103, 
@@ -57,7 +60,8 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/nani caramel choco bar.jpg',
       description: 'Soft and chewy caramel blended with premium chocolate. This bar offers a rich, buttery taste that melts in your mouth, leaving a lasting sweet impression.',
-      benefits: ['Soft Caramel', 'Premium Chocolate', 'Buttery Taste', 'Melt in Mouth']
+      benefits: ['Soft Caramel', 'Premium Chocolate', 'Buttery Taste', 'Melt in Mouth'],
+      stock: 35
     },
     { 
       id: 104, 
@@ -69,7 +73,8 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/nani coconut bar.jpg',
       description: 'Creamy coconut infused with a touch of sweetness, creating a tropical delight. This bar is perfect for coconut lovers seeking a premium sweet experience.',
-      benefits: ['Creamy Coconut', 'Tropical Flavor', 'Premium Quality', 'Rich Taste']
+      benefits: ['Creamy Coconut', 'Tropical Flavor', 'Premium Quality', 'Rich Taste'],
+      stock: 30
     },
     { 
       id: 105, 
@@ -81,7 +86,8 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/rili eclairs.jpg',
       description: 'Classic French-inspired eclairs filled with creamy goodness. A timeless sweet treat that brings elegance and indulgence to any occasion.',
-      benefits: ['French Recipe', 'Creamy Filling', 'Elegant Design', 'Classic Taste']
+      benefits: ['French Recipe', 'Creamy Filling', 'Elegant Design', 'Classic Taste'],
+      stock: 45
     },
     { 
       id: 106, 
@@ -93,7 +99,8 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/roro caramel eclair.jpg',
       description: 'Golden and caramel-filled eclairs with a soft, melt-in-your-mouth texture. A delightful treat for those who enjoy the classic combination of caramel and pastry.',
-      benefits: ['Caramel Filled', 'Soft Texture', 'Golden Pastry', 'Sweet Delight']
+      benefits: ['Caramel Filled', 'Soft Texture', 'Golden Pastry', 'Sweet Delight'],
+      stock: 60
     },
     { 
       id: 107, 
@@ -105,12 +112,13 @@ const SweetsDetailPage = () => {
       category: 'Sweets',
       image: '/images/sweets/spark coconut bar.jpg',
       description: 'A unique fusion of coconut and chocolate, this bar offers a spark of flavor that awakens your taste buds. Perfect for those seeking something extraordinary.',
-      benefits: ['Coconut Fusion', 'Chocolate Blend', 'Unique Flavor', 'Premium Quality']
+      benefits: ['Coconut Fusion', 'Chocolate Blend', 'Unique Flavor', 'Premium Quality'],
+      stock: 25
     },
   ];
 
   const product = sweetProducts.find(p => p.id === parseInt(id || '0'));
-
+  
   if (!product) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center bg-[#FFFDF7]">
@@ -124,6 +132,8 @@ const SweetsDetailPage = () => {
       </div>
     );
   }
+
+  const totalPrice = product.price * quantity;
 
   return (
     <div className="bg-[#FFFDF7] py-12 min-h-screen">
@@ -141,7 +151,7 @@ const SweetsDetailPage = () => {
               <img 
                 src={product.image} 
                 alt={product.name}
-                className="w-full h-auto max-h-[500px] object-cover"
+                className="w-full h-auto max-h-[500px] object-contain bg-white"
                 onError={(e) => {
                   e.currentTarget.src = 'https://via.placeholder.com/600x600/D4AF37/FFFFFF?text=' + product.name;
                 }}
@@ -175,8 +185,8 @@ const SweetsDetailPage = () => {
             <h1 className="text-3xl md:text-4xl font-bold text-[#111827]">{product.name}</h1>
             
             <div className="flex items-center gap-3 mt-2">
-              <span className="text-3xl font-bold text-[#D4AF37]">PKR {product.price}</span>
-              <span className="text-gray-400 line-through text-lg">PKR {product.oldPrice}</span>
+              <span className="text-3xl font-bold text-[#D4AF37]">PKR {product.price.toLocaleString()}</span>
+              <span className="text-gray-400 line-through text-lg">PKR {product.oldPrice.toLocaleString()}</span>
             </div>
 
             <p className="text-gray-600 mt-4 leading-relaxed">{product.description}</p>
@@ -193,7 +203,7 @@ const SweetsDetailPage = () => {
               </div>
             </div>
 
-            {/* ❌ WEIGHT OPTION REMOVED */}
+            {/* ❌ WEIGHT OPTION REMOVED - Sweets don't have weight options */}
 
             {/* Quantity */}
             <div className="mt-6 flex items-center gap-4">
@@ -215,21 +225,74 @@ const SweetsDetailPage = () => {
               </div>
             </div>
 
-            {/* Add to Cart Button */}
+            {/* ✅ Action Buttons - Buy Now Clickable */}
             <div className="flex gap-4 mt-8">
+              {/* Add to Cart */}
               <button 
-                onClick={() => addToCart({ ...product, price: product.price })} 
-                className="flex-1 bg-[#0F766E] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#065F46] transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                onClick={() => {
+                  addToCart({ 
+                    ...product, 
+                    price: product.price,
+                    quantity: quantity,
+                    totalPrice: totalPrice
+                  });
+                  alert(`✅ ${product.name} added to cart!`);
+                }}
+                disabled={product.stock === 0}
+                className={`flex-1 bg-[#0F766E] text-white px-8 py-3 rounded-full font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 ${
+                  product.stock && product.stock > 0
+                    ? 'hover:bg-[#065F46]'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               >
-                <FaShoppingCart /> Add to Cart
+                <FaShoppingCart /> {product.stock && product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
               </button>
-              <button className="bg-[#D4AF37] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#b8941f] transition shadow-lg hover:shadow-xl">
-                Buy Now
+
+              {/* ✅ Buy Now - Clickable */}
+              <button 
+                onClick={() => {
+                  if (product.stock === 0) {
+                    alert('❌ This product is out of stock!');
+                    return;
+                  }
+                  
+                  addToCart({ 
+                    ...product, 
+                    price: product.price,
+                    quantity: quantity,
+                    totalPrice: totalPrice
+                  });
+                  
+                  window.location.href = '/checkout';
+                }}
+                disabled={product.stock === 0}
+                className={`bg-[#D4AF37] text-white px-8 py-3 rounded-full font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 ${
+                  product.stock && product.stock > 0
+                    ? 'hover:bg-[#b8941f] cursor-pointer'
+                    : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                }`}
+              >
+                <FaShoppingCart /> {product.stock && product.stock > 0 ? 'Buy Now' : 'Out of Stock'}
               </button>
             </div>
 
+            {/* Stock Status */}
+            <div className="mt-4">
+              {product.stock && product.stock > 0 ? (
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  <span className="text-sm text-green-600 font-medium">In Stock ({product.stock} available)</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="text-sm text-red-600 font-medium">Out of Stock</span>
+                </div>
+              )}
+            </div>
+
             {/* Delivery Info */}
-            <div className="mt-8 grid grid-cols-3 gap-3">
+            <div className="mt-4 grid grid-cols-3 gap-3">
               <div className="bg-white/80 backdrop-blur p-3 rounded-xl border border-[#E5E7EB] text-center">
                 <FaTruck className="text-[#D4AF37] text-xl mx-auto" />
                 <p className="text-xs text-gray-500 mt-1">Free Delivery</p>
