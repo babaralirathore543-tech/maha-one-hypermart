@@ -1,5 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import { 
   FaSearch, FaHeart, FaUser, FaShoppingBag, FaBars, FaTimes, 
   FaCrown, FaCog
@@ -11,18 +11,91 @@ import ThemeToggle from '../common/ThemeToggle';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [wishlistCount, setWishlistCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const { getCartCount } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ Check if user is logged in and admin
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
   const isAdmin = user?.role === 'admin';
   const userId = localStorage.getItem('userId') || 'guest';
+
+  const allProducts = [
+    'American Almonds Premium', 'American Almonds Medium', 'Soft Shell Salted Pistachios',
+    'Roasted Pistachios', 'Roasted Brown Cashews', 'Salted White Cashews',
+    'Soft Shell Almonds', 'Soft Shell Walnuts', 'Kernel Walnuts',
+    'Sundar Khani Raisins', 'Kandhari Raisins', 'Black Raisins',
+    'Munakka Raisins', 'Roasted Chickpeas', 'Roasted Brown Chickpeas',
+    'Chia Seeds', 'Pumpkin Seeds', 'Sunflower Seeds',
+    'Flax Seeds', 'Basil Seeds', 'Four Seeds',
+    'Isphagol Husk', 'Dry Coconut', 'Coconut Powder',
+    'Caramel Dream Choco Bar', 'HISS Crispy Wafer', 'Nani Caramel Choco Bar',
+    'Nani Coconut Bar', 'Rili Eclairs', 'Roro Caramel Eclair', 'Spark Coconut Bar'
+  ];
+
+  const placeholderTexts = [
+    'Search for almonds...',
+    'Find pistachios...',
+    'Looking for cashews?',
+    'Search sweets...',
+    'Find dry fruits...',
+    'Search for walnuts...'
+  ];
+
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [displayText, setDisplayText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // ✅ Animated Placeholder Effect
+  useEffect(() => {
+    const currentText = placeholderTexts[placeholderIndex % placeholderTexts.length];
+    
+    if (!isSearchFocused) {
+      let timeout: ReturnType<typeof setTimeout>;
+      
+      if (!isDeleting) {
+        if (displayText.length < currentText.length) {
+          timeout = setTimeout(() => {
+            setDisplayText(currentText.slice(0, displayText.length + 1));
+          }, 100);
+        } else {
+          timeout = setTimeout(() => {
+            setIsDeleting(true);
+          }, 2000);
+        }
+      } else {
+        if (displayText.length > 0) {
+          timeout = setTimeout(() => {
+            setDisplayText(currentText.slice(0, displayText.length - 1));
+          }, 50);
+        } else {
+          setIsDeleting(false);
+          setPlaceholderIndex((prev) => prev + 1);
+        }
+      }
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [displayText, isDeleting, placeholderIndex, isSearchFocused]);
+
+  // ✅ Search Suggestions
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setSearchSuggestions([]);
+      return;
+    }
+
+    const filtered = allProducts.filter(product =>
+      product.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setSearchSuggestions(filtered.slice(0, 5));
+  }, [searchTerm]);
 
   // ✅ Check login status
   useEffect(() => {
@@ -43,15 +116,6 @@ const Navbar = () => {
       window.removeEventListener('storage', checkAuth);
       window.removeEventListener('userUpdated', checkAuth);
     };
-  }, []);
-
-  // ✅ Scroll effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // ✅ Fetch wishlist count
@@ -85,10 +149,31 @@ const Navbar = () => {
     if (searchTerm.trim()) {
       navigate(`/shop?search=${encodeURIComponent(searchTerm.trim())}`);
       setSearchTerm('');
+      setSearchSuggestions([]);
+      if (window.innerWidth < 1024) {
+        setIsMenuOpen(false);
+      }
     }
   };
 
-  // ✅ Links (Cakes included)
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchTerm(suggestion);
+    navigate(`/shop?search=${encodeURIComponent(suggestion)}`);
+    setSearchTerm('');
+    setSearchSuggestions([]);
+    if (window.innerWidth < 1024) {
+      setIsMenuOpen(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setSearchSuggestions([]);
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  };
+
   const links = [
     { name: 'Home', path: '/' },
     { name: 'Dry Fruits', path: '/shop' },
@@ -101,20 +186,23 @@ const Navbar = () => {
 
   return (
     <>
-      <div className="h-14 sm:h-16 md:h-20" />
-      <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl shadow-2xl border-b border-[#D4AF37]/20' : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl'
-      }`}>
+      {/* ✅ FIXED SPACER */}
+      <div className="h-[56px] sm:h-[64px] md:h-[80px]"></div>
+
+      {/* ✅ NAVBAR - FIXED */}
+      <nav className="fixed top-0 left-0 w-full z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl shadow-2xl border-b border-[#D4AF37]/20">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
+          
+          {/* ✅ TOP ROW - FIXED HEIGHT */}
+          <div className="flex items-center justify-between h-[56px] sm:h-[64px] md:h-[80px]">
             
-            {/* ✅ Logo */}
+            {/* Logo */}
             <Link to="/" className="flex items-center gap-2 sm:gap-3 group flex-shrink-0">
               <div className="relative">
                 <img 
                   src={logo} 
                   alt="MAHA ONE" 
-                  className="h-7 sm:h-9 md:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                  className="h-7 sm:h-9 md:h-11 w-auto object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
@@ -132,15 +220,15 @@ const Navbar = () => {
               </div>
             </Link>
 
-            {/* ✅ Desktop Menu */}
+            {/* Desktop Menu */}
             <div className="hidden lg:flex items-center gap-1">
               {links.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
                   className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 relative group ${
-                    link.name === 'Fashion' 
-                      ? 'text-[#D4AF37] hover:text-[#0F766E]' 
+                    location.pathname === link.path
+                      ? 'text-[#D4AF37]'
                       : 'text-gray-600 dark:text-gray-300 hover:text-[#D4AF37]'
                   } hover:bg-gradient-to-r hover:from-[#D4AF37]/10 hover:to-transparent`}
                 >
@@ -150,28 +238,34 @@ const Navbar = () => {
               ))}
             </div>
 
-            {/* ✅ Right Side */}
+            {/* Right Icons */}
             <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+              
+              {/* Desktop Search */}
               <form onSubmit={handleSearch} className="relative hidden md:block">
                 <input
+                  ref={searchInputRef}
                   type="text"
-                  placeholder="Search products..."
+                  placeholder={isSearchFocused ? 'Search products...' : displayText}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-32 lg:w-56 pl-8 pr-3 py-1.5 bg-[#F8FAFC] dark:bg-gray-800 border-2 border-transparent rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#D4AF37] focus:bg-white dark:focus:bg-gray-700 focus:shadow-lg transition-all duration-300"
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => {
+                    setTimeout(() => {
+                      setIsSearchFocused(false);
+                    }, 200);
+                  }}
+                  className={`w-32 lg:w-56 pl-8 pr-3 py-1.5 rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-[#F8FAFC] dark:bg-gray-800 ${
+                    isSearchFocused || searchTerm.length > 0
+                      ? 'border-2 border-[#D4AF37] focus:border-[#D4AF37]'
+                      : 'border-2 border-[#0F766E]'
+                  }`}
                 />
-                <button type="submit" className="absolute left-2.5 top-1.5 text-gray-400 hover:text-[#D4AF37] transition-colors">
+                <button type="submit" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#D4AF37] transition-colors">
                   <FaSearch size={14} />
                 </button>
               </form>
-              
-              <button 
-                onClick={() => navigate('/shop')}
-                className="md:hidden p-1.5 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-colors"
-              >
-                <FaSearch className="text-base sm:text-lg text-gray-600 dark:text-gray-400" />
-              </button>
-              
+
               {/* Wishlist */}
               <Link to="/wishlist" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group">
                 <FaHeart className="text-base sm:text-lg text-gray-600 dark:text-gray-400 group-hover:text-[#D4AF37] transition-colors" />
@@ -182,15 +276,12 @@ const Navbar = () => {
                 )}
               </Link>
 
-              {/* ✅ Theme Toggle */}
               <ThemeToggle />
 
-              {/* User Dashboard */}
               <Link to="/dashboard" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300">
                 <FaUser className="text-base sm:text-lg text-gray-600 dark:text-gray-400 hover:text-[#D4AF37] transition-colors" />
               </Link>
               
-              {/* Cart */}
               <Link to="/cart" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group">
                 <FaShoppingBag className="text-base sm:text-lg text-gray-600 dark:text-gray-400 group-hover:text-[#D4AF37] transition-colors" />
                 <span className="absolute -top-0.5 -right-0.5 bg-[#0F766E] text-white text-[8px] sm:text-[10px] font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-md">
@@ -198,7 +289,6 @@ const Navbar = () => {
                 </span>
               </Link>
 
-              {/* Admin Link */}
               {isAdmin && (
                 <Link 
                   to="/admin" 
@@ -218,30 +308,73 @@ const Navbar = () => {
             </div>
           </div>
 
+          {/* ✅ MOBILE SEARCH BAR */}
+          <div className="pb-3 lg:hidden">
+            <form onSubmit={handleSearch} className="relative">
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder={isSearchFocused ? 'Search products...' : displayText}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => {
+                  setTimeout(() => {
+                    setIsSearchFocused(false);
+                  }, 200);
+                }}
+                className={`w-full pl-10 pr-10 py-2.5 rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-[#F8FAFC] dark:bg-gray-800 ${
+                  isSearchFocused || searchTerm.length > 0
+                    ? 'border-2 border-[#D4AF37] focus:border-[#D4AF37]'
+                    : 'border-2 border-[#0F766E]'
+                }`}
+              />
+              <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#D4AF37] transition-colors">
+                <FaSearch className="text-sm" />
+              </button>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors text-sm"
+                >
+                  ✕
+                </button>
+              )}
+            </form>
+
+            {searchSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 mx-3">
+                {searchSuggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/20 transition flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                  >
+                    <FaSearch className="text-[#D4AF37] text-xs" />
+                    <span dangerouslySetInnerHTML={{
+                      __html: suggestion.replace(
+                        new RegExp(searchTerm, 'gi'),
+                        (match) => `<strong class="text-[#D4AF37]">${match}</strong>`
+                      )
+                    }} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* ✅ Mobile Menu */}
           {isMenuOpen && (
             <div className="lg:hidden py-3 sm:py-4 border-t border-[#E5E7EB] dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 backdrop-blur max-h-[calc(100vh-4rem)] overflow-y-auto">
-              <form onSubmit={handleSearch} className="relative mb-3 sm:mb-4 px-2">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-[#F8FAFC] dark:bg-gray-800 border-2 border-transparent rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#D4AF37] focus:bg-white dark:focus:bg-gray-700 transition-all duration-300"
-                />
-                <button type="submit" className="absolute left-4 top-2.5 text-gray-400 hover:text-[#D4AF37] transition-colors">
-                  <FaSearch />
-                </button>
-              </form>
-              
               <div className="grid grid-cols-2 gap-1 px-2">
                 {links.map((link) => (
                   <Link
                     key={link.path}
                     to={link.path}
                     className={`block py-2.5 px-3 text-sm font-medium rounded-lg transition-all duration-300 text-center ${
-                      link.name === 'Fashion' 
-                        ? 'text-[#D4AF37] hover:bg-[#D4AF37]/10' 
+                      location.pathname === link.path
+                        ? 'bg-[#D4AF37] text-white'
                         : 'text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] hover:bg-[#F8FAFC] dark:hover:bg-gray-800'
                     }`}
                     onClick={() => setIsMenuOpen(false)}
@@ -251,7 +384,6 @@ const Navbar = () => {
                 ))}
               </div>
 
-              {/* Extra Links */}
               <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 px-2">
                 {isLoggedIn && (
                   <>
