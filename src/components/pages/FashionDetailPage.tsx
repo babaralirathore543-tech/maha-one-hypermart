@@ -44,6 +44,67 @@ const FashionDetailPage = () => {
 
     // ==================== 👩 WOMEN ====================
    
+   {
+  id: 101,
+  name: 'Black Queen - Embroidered Shamoz Silk Suit',
+  price: 4450,
+  oldPrice: 4950,
+  discount: 10,
+  rating: 4.9,
+  category: 'women',
+  subCategory: 'dresses',
+  image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461517/Gemini_Generated_Image_lneqw1lneqw1lneq_bkwrs8.jpg',
+  images: [
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461530/Gemini_Generated_Image_v258zjv258zjv258_kjk3v7.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461516/Gemini_Generated_Image_jeh50rjeh50rjeh5_qszplb.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461450/Gemini_Generated_Image_y94evny94evny94e_bztkvi.jpg'
+  ],
+  colorImages: {
+    'Black': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461517/Gemini_Generated_Image_lneqw1lneqw1lneq_bkwrs8.jpg']
+  },
+  sizes: ['One Size'],
+  colors: ['Black'],
+  stock: 10,
+  description: `👑 BLACK QUEEN - Premium Luxury Wear
+
+✨ BRAND: JAZMINE
+👗 WEARING BY: SADAF KANWAL
+
+🌟 DETAILS:
+• PREMIUM HIGH QUALITY SHAMOZ SILK FRONT
+• FULLY HEAVY ALTERNET EMBROIDERED NECK
+• EMBELISHED WITH HIGH QUALITY ADDA WORK
+• PREMIUM HIGH QUALITY SHAMOZ SILK BACK
+• PREMIUM HIGH QUALITY SHAMOZ SILK SLEEVES
+• PREMIUM HIGH QUALITY DIGITAL PRINTED SHAMOZ SILK TROUSER
+• CRINCKLE CHIFFON FULLY HEAVY EMBROIDERED DUPATTA
+• EMBELISHED WITH 4SIDE FANCY BEADS ATTACHED
+
+💫 A masterpiece of traditional elegance with modern sophistication. Perfect for weddings, mehndi, and special occasions.`,
+  material: 'Premium Shamoz Silk with Crinkle Chiffon Dupatta',
+  careInstructions: 'Dry clean only. Store in a cool, dry place.',
+  isNew: true,
+  isFeatured: true
+}, 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     {
       id: 209,
       name: '1 Carat Zircon Locket Set',

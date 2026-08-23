@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaStar, FaHeart, FaShoppingCart, FaTruck, FaLeaf, FaMedal, FaArrowRight, FaPlay } from 'react-icons/fa';
+import { FaStar, FaHeart, FaShoppingCart, FaArrowRight } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
-
-// ✅ Hero Images - Direct Cloudinary URLs used in slides
-// import heroImage from '../../assets/images/hero-image.png';
 
 const HomePage = () => {
   const { addToCart } = useCart();
@@ -66,16 +63,38 @@ const HomePage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    console.log('Current Slide:', currentSlide);
-  }, [currentSlide]);
-
   // ✅ Dry Fruits Products (4)
   const dryFruitsProducts = [
     { id: 1, name: 'American Almonds Premium', price: 1950, oldPrice: 2300, discount: 13, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png', type: 'dry', stock: 50 },
     { id: 2, name: 'Roasted Brown Cashews', price: 2000, oldPrice: 2400, discount: 17, rating: 4.9, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128406/brown_kaju_cu5gvs.png', type: 'dry', stock: 35 },
     { id: 3, name: 'Soft Shell Salted Pistachios', price: 2600, oldPrice: 3100, discount: 16, rating: 4.7, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128419/pista_without_shell_ymunmc.png', type: 'dry', stock: 40 },
     { id: 4, name: 'Soft Shell Walnuts', price: 1250, oldPrice: 1500, discount: 17, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128454/soft_shell_almonds_wfd5pr.png', type: 'dry', stock: 60 },
+  ];
+
+  // ✅ Fashion Products (4)
+  const fashionProducts = [
+    { 
+      id: 101, 
+      name: 'Black Queen - Embroidered Shamoz Silk Suit', 
+      price: 4450, 
+      oldPrice: 4950, 
+      discount: 10, 
+      rating: 4.9, 
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461517/Gemini_Generated_Image_lneqw1lneqw1lneq_bkwrs8.jpg', 
+      type: 'fashion', 
+      stock: 10 
+    },
+    { 
+      id: 209, 
+      name: '1 Carat Zircon Locket Set', 
+      price: 1650, 
+      oldPrice: 1900, 
+      discount: 19, 
+      rating: 4.8, 
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787209274/zircon_locket_black_hfodez.jpg', 
+      type: 'fashion', 
+      stock: 15 
+    },
   ];
 
   // ✅ Sweets Products (4)
@@ -86,38 +105,20 @@ const HomePage = () => {
     { id: 106, name: 'Roro Caramel Eclair', price: 650, oldPrice: 700, discount: 22, rating: 4.8, image: '/images/sweets/roro caramel eclair.jpg', type: 'sweet', stock: 60 },
   ];
 
-  // ✅ Customer Favorites (4)
-  const favoritesProducts = [
-    { id: 1, name: 'American Almonds Premium', price: 1950, oldPrice: 2300, discount: 13, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png', type: 'dry', stock: 50 },
-    { id: 2, name: 'Roasted Brown Cashews', price: 2000, oldPrice: 2400, discount: 17, rating: 4.9, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128406/brown_kaju_cu5gvs.png', type: 'dry', stock: 35 },
-    { id: 3, name: 'Soft Shell Salted Pistachios', price: 2600, oldPrice: 3100, discount: 16, rating: 4.7, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128419/pista_without_shell_ymunmc.png', type: 'dry', stock: 40 },
-    { id: 101, name: 'Caramel Dream Choco Bar', price: 1290, oldPrice: 1500, discount: 14, rating: 4.9, image: '/images/sweets/caramel dream choco bar.jpg', type: 'sweet', stock: 50 },
-  ];
-
-  const categories = [
-    { name: 'Dry Fruits', icon: '🥜', path: '/shop', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787299384/hero-image_gqluny.jpg' },
-    { name: 'Sweets', icon: '🍬', path: '/sweets', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787299385/hero-sweets_lbplgs.jpg' },
-    { name: 'Fashion', icon: '👗', path: '/fashion', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787299388/hero-fashion_miqdis.jpg' },
-  ];
-
-  const reviews = [
-    { name: 'Ayesha Khan', text: 'Best dry fruits I have ever tasted! Premium quality.' },
-    { name: 'Dr. Usman', text: '100% natural and fresh. Highly recommended!' },
-    { name: 'Fatima Ali', text: 'Perfect for gifting. Beautiful packaging!' },
-  ];
-
   const handleAddToCart = (product: any) => {
     addToCart(product);
     alert(`✅ ${product.name} added to cart!`);
   };
 
   const getDetailLink = (product: any) => {
-    return product.type === 'sweet' ? `/sweet-product/${product.id}` : `/dry-product/${product.id}`;
+    if (product.type === 'sweet') return `/sweet-product/${product.id}`;
+    if (product.type === 'fashion') return `/fashion/${product.id}`;
+    return `/dry-product/${product.id}`;
   };
 
   const slide = slides[currentSlide];
 
-  // ✅ Product Card Component
+  // ✅ Product Card Component - With object-cover for all images
   const ProductCard = ({ product }: { product: any }) => {
     const isInStock = product.stock > 0;
     return (
@@ -127,7 +128,7 @@ const HomePage = () => {
             <img 
               src={product.image} 
               alt={product.name} 
-              className="w-full h-40 sm:h-48 md:h-56 object-contain bg-white group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-40 sm:h-48 md:h-56 object-cover bg-[#F5F3FF] group-hover:scale-105 transition-transform duration-500"
               onError={(e) => {
                 e.currentTarget.src = 'https://via.placeholder.com/400x400/D4AF37/FFFFFF?text=' + product.name;
               }}
@@ -158,7 +159,6 @@ const HomePage = () => {
             <span className="text-gray-400 line-through text-[10px] sm:text-sm">PKR {product.oldPrice}</span>
           </div>
           
-          {/* Stock Status */}
           <div className="mt-1 flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${isInStock ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}></span>
             <span className={`text-[8px] sm:text-xs font-medium ${isInStock ? 'text-green-600' : 'text-red-500'}`}>
@@ -242,18 +242,15 @@ const HomePage = () => {
                     {slide.btnText} <FaArrowRight className="text-sm" />
                   </Link>
                 )}
-                <Link to="/about" className="border-2 border-[#D4AF37] text-[#D4AF37] px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 rounded-full font-semibold hover:bg-[#D4AF37] hover:text-white transition flex items-center gap-2 text-sm sm:text-base">
-                  <FaPlay className="text-sm" /> Our Story
-                </Link>
               </div>
               
               {/* Stats - Responsive Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mt-8 sm:mt-10 md:mt-12">
                 {[
                   { icon: <FaStar className="text-[#D4AF37]" />, value: '10,000+', label: 'Happy Customers' },
-                  { icon: <FaTruck className="text-[#D4AF37]" />, value: '100%', label: 'Nationwide' },
-                  { icon: <FaLeaf className="text-[#D4AF37]" />, value: 'Pure', label: '100% Natural' },
-                  { icon: <FaMedal className="text-[#D4AF37]" />, value: 'Trusted', label: 'Premium Quality' },
+                  { icon: <FaShoppingCart className="text-[#D4AF37]" />, value: '100%', label: 'Nationwide' },
+                  { icon: <FaStar className="text-[#D4AF37]" />, value: 'Pure', label: '100% Natural' },
+                  { icon: <FaStar className="text-[#D4AF37]" />, value: 'Trusted', label: 'Premium Quality' },
                 ].map((stat, i) => (
                   <div key={i} className="bg-white/80 p-2 sm:p-3 md:p-4 text-center rounded-xl sm:rounded-2xl border border-[#E5E7EB] shadow-sm">
                     <div className="text-lg sm:text-xl md:text-2xl flex justify-center">{stat.icon}</div>
@@ -302,43 +299,7 @@ const HomePage = () => {
       </section>
 
       {/* ============================================================
-      CATEGORIES - Responsive
-      ============================================================ */}
-      <section className="py-8 sm:py-12 md:py-16 bg-[#FFFDF7]">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="text-center mb-6 sm:mb-8 md:mb-12">
-            <span className="text-[#D4AF37] font-medium text-[10px] sm:text-xs tracking-wider uppercase">Categories</span>
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#111827] mt-1 sm:mt-2">Explore Our <span className="text-[#D4AF37]">Collections</span></h2>
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 max-w-3xl mx-auto">
-            {categories.map((cat) => (
-              <Link to={cat.path} key={cat.name}>
-                <div className="group relative overflow-hidden rounded-xl sm:rounded-2xl cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300">
-                  <div className="relative h-32 sm:h-40 md:h-48 lg:h-56 overflow-hidden">
-                    <img 
-                      src={cat.image} 
-                      alt={cat.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://via.placeholder.com/400x400/0F766E/FFFFFF?text=' + cat.name;
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 md:p-4 lg:p-5 text-white">
-                      <span className="text-2xl sm:text-3xl md:text-4xl block mb-0.5 sm:mb-1">{cat.icon}</span>
-                      <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold">{cat.name}</h3>
-                      <p className="text-[10px] sm:text-xs text-white/70 group-hover:text-[#D4AF37] transition-colors">View Collection →</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-      🥜 DRY FRUITS SECTION (4 Products)
+      🥜 DRY FRUITS SECTION
       ============================================================ */}
       <section className="py-8 sm:py-12 bg-[#F8FAFC]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
@@ -360,9 +321,31 @@ const HomePage = () => {
       </section>
 
       {/* ============================================================
-      🍬 SWEETS SECTION (4 Products)
+      👗 FASHION SECTION (Before Sweets)
       ============================================================ */}
       <section className="py-8 sm:py-12 bg-[#FFFDF7]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl sm:text-3xl">👗</span>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#111827]">Fashion Collection</h2>
+            </div>
+            <Link to="/fashion" className="text-[#D4AF37] hover:text-[#b8941f] transition flex items-center gap-1 text-sm font-medium">
+              More <FaArrowRight className="text-xs" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            {fashionProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+      🍬 SWEETS SECTION
+      ============================================================ */}
+      <section className="py-8 sm:py-12 bg-[#F8FAFC]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
@@ -381,67 +364,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ============================================================
-      ⭐ CUSTOMER FAVORITES (Best Sellers)
-      ============================================================ */}
-      <section className="py-8 sm:py-12 bg-[#F8FAFC]">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl sm:text-3xl">⭐</span>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#111827]">Customer Favorites</h2>
-            </div>
-            <Link to="/shop" className="text-[#D4AF37] hover:text-[#b8941f] transition flex items-center gap-1 text-sm font-medium">
-              More <FaArrowRight className="text-xs" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            {favoritesProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-      REVIEWS
-      ============================================================ */}
-      <section className="py-8 sm:py-12 md:py-16 bg-[#FFFDF7]">
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6">
-          <div className="text-center mb-6 sm:mb-8 md:mb-12">
-            <span className="text-[#D4AF37] font-medium text-[10px] sm:text-xs tracking-wider uppercase">Testimonials</span>
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#111827] mt-1 sm:mt-2">What Our <span className="text-[#D4AF37]">Customers Say</span></h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-            {reviews.map((r, i) => (
-              <div key={i} className="bg-white/80 backdrop-blur p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border border-[#E5E7EB] text-center shadow-sm">
-                <div className="flex justify-center text-[#D4AF37] text-base sm:text-lg md:text-xl mb-2 sm:mb-3">
-                  {[...Array(5)].map((_, j) => (<FaStar key={j} />))}
-                </div>
-                <p className="text-sm sm:text-base text-gray-600 italic">"{r.text}"</p>
-                <h4 className="font-semibold text-[#111827] mt-2 sm:mt-3 text-sm sm:text-base">{r.name}</h4>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-      NEWSLETTER
-      ============================================================ */}
-      <section className="py-8 sm:py-12 md:py-16 bg-[#F8FAFC]">
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6">
-          <div className="bg-white/80 backdrop-blur p-6 sm:p-8 md:p-12 text-center rounded-xl sm:rounded-2xl border border-[#E5E7EB] shadow-sm">
-            <div className="text-3xl sm:text-4xl md:text-5xl mb-3 sm:mb-4">📬</div>
-            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#111827]">Get Healthy Offers <span className="text-[#D4AF37]">Every Week</span></h3>
-            <p className="text-sm sm:text-base text-gray-500 mt-2 mb-4 sm:mb-6 max-w-lg mx-auto">Subscribe for premium offers, health tips, and exclusive discounts.</p>
-            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input type="email" placeholder="Enter your email" className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-full focus:outline-none focus:border-[#D4AF37] text-sm sm:text-base" />
-              <button className="bg-[#D4AF37] text-white px-6 sm:px-8 py-2 sm:py-2.5 rounded-full font-semibold hover:bg-[#b8941f] transition shadow-lg text-sm sm:text-base">Subscribe</button>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };

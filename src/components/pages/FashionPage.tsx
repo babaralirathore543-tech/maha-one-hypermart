@@ -42,6 +42,32 @@ const FashionPage = () => {
    
 
     // ==================== 👩 WOMEN ====================
+    {
+      id: 101,
+      name: 'Black Queen - Embroidered Shamoz Silk Suit',
+      price: 4450,
+      oldPrice: 4950,
+      discount: 10,
+      rating: 4.8,
+      category: 'women',
+      subCategory: 'dresses',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461517/Gemini_Generated_Image_lneqw1lneqw1lneq_bkwrs8.jpg',
+      images: [],
+      sizes: ['One Size'],
+      colors: [ 'Black',],
+      stock: 10,
+      description: '',
+      material: '',
+      careInstructions: '.'
+    },
+    
+
+    
+    
+  
+    
+    
+    
     // -- Lawn Suits
     
     
