@@ -105,6 +105,36 @@ const HomePage = () => {
     { id: 106, name: 'Roro Caramel Eclair', price: 650, oldPrice: 700, discount: 22, rating: 4.8, image: '/images/sweets/roro caramel eclair.jpg', type: 'sweet', stock: 60 },
   ];
 
+  // ✅ Customer Favorites (4)
+  const favoritesProducts = [
+    { id: 1, name: 'American Almonds Premium', price: 1950, oldPrice: 2300, discount: 13, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png', type: 'dry', stock: 50 },
+    { id: 2, name: 'Roasted Brown Cashews', price: 2000, oldPrice: 2400, discount: 17, rating: 4.9, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128406/brown_kaju_cu5gvs.png', type: 'dry', stock: 35 },
+    { id: 101, name: 'Caramel Dream Choco Bar', price: 1290, oldPrice: 1500, discount: 14, rating: 4.9, image: '/images/sweets/caramel dream choco bar.jpg', type: 'sweet', stock: 50 },
+    { id: 209, name: '1 Carat Zircon Locket Set', price: 1650, oldPrice: 1900, discount: 19, rating: 4.8, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787209274/zircon_locket_black_hfodez.jpg', type: 'fashion', stock: 15 },
+  ];
+
+  // ✅ Reviews
+  const reviews = [
+    { 
+      name: 'Ayesha Khan', 
+      text: 'Best dry fruits I have ever tasted! Premium quality. The packaging was excellent and delivery was on time.', 
+      rating: 5,
+      location: 'Lahore'
+    },
+    { 
+      name: 'Dr. Usman Ahmed', 
+      text: '100% natural and fresh. Highly recommended for health-conscious people. Will definitely order again.', 
+      rating: 5,
+      location: 'Karachi'
+    },
+    { 
+      name: 'Fatima Ali', 
+      text: 'Perfect for gifting. Beautiful packaging and amazing quality. My family loved the sweets collection!', 
+      rating: 5,
+      location: 'Islamabad'
+    },
+  ];
+
   const handleAddToCart = (product: any) => {
     addToCart(product);
     alert(`✅ ${product.name} added to cart!`);
@@ -116,9 +146,7 @@ const HomePage = () => {
     return `/dry-product/${product.id}`;
   };
 
-  const slide = slides[currentSlide];
-
-  // ✅ Product Card Component - With object-cover for all images
+  // ✅ Product Card Component
   const ProductCard = ({ product }: { product: any }) => {
     const isInStock = product.stock > 0;
     return (
@@ -209,7 +237,7 @@ const HomePage = () => {
             {/* LEFT */}
             <div>
               <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 bg-[#D4AF37]/10 rounded-full text-[#D4AF37] text-xs sm:text-sm font-medium mb-4 sm:mb-6 border border-[#D4AF37]/20">
-                {slide.badge}
+                {slides[currentSlide].badge}
               </div>
               
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-bold leading-[1.05]">
@@ -223,11 +251,11 @@ const HomePage = () => {
               </h1>
               
               <p className="text-sm sm:text-base md:text-lg text-gray-600 mt-4 sm:mt-6 max-w-lg leading-relaxed">
-                {slide.subtitle}
+                {slides[currentSlide].subtitle}
               </p>
               
               <div className="flex flex-wrap gap-3 sm:gap-4 mt-6 sm:mt-8">
-                {slide.isComingSoon ? (
+                {slides[currentSlide].isComingSoon ? (
                   <button 
                     onClick={() => alert('👗 Fashion Collection Coming Soon!')}
                     className="bg-gray-400 text-white px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 rounded-full font-semibold cursor-pointer shadow-lg hover:shadow-xl transition flex items-center gap-2 text-sm sm:text-base"
@@ -236,10 +264,10 @@ const HomePage = () => {
                   </button>
                 ) : (
                   <Link 
-                    to={slide.link} 
+                    to={slides[currentSlide].link} 
                     className="bg-[#D4AF37] text-white px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 rounded-full font-semibold hover:bg-[#b8941f] transition shadow-lg hover:shadow-xl flex items-center gap-2 text-sm sm:text-base"
                   >
-                    {slide.btnText} <FaArrowRight className="text-sm" />
+                    {slides[currentSlide].btnText} <FaArrowRight className="text-sm" />
                   </Link>
                 )}
               </div>
@@ -265,16 +293,16 @@ const HomePage = () => {
             <div className="relative flex justify-center mt-6 lg:mt-0">
               <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-lg">
                 <img 
-                  src={slide.image} 
-                  alt={slide.title}
+                  src={slides[currentSlide].image} 
+                  alt={slides[currentSlide].title}
                   className="rounded-2xl sm:rounded-3xl shadow-2xl w-full object-contain bg-white h-[250px] sm:h-[320px] md:h-[400px]"
                   onError={(e) => {
-                    e.currentTarget.src = 'https://via.placeholder.com/800x600/D4AF37/FFFFFF?text=' + slide.title;
+                    e.currentTarget.src = 'https://via.placeholder.com/800x600/D4AF37/FFFFFF?text=' + slides[currentSlide].title;
                   }}
                 />
                 <div className="absolute -inset-2 sm:-inset-4 border-2 border-[#D4AF37]/20 rounded-2xl sm:rounded-3xl pointer-events-none" />
                 <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 bg-white rounded-xl sm:rounded-2xl shadow-xl p-2 sm:p-3 border border-[#D4AF37]/10">
-                  <span className="text-2xl sm:text-3xl md:text-4xl">{slide.emoji}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl">{slides[currentSlide].emoji}</span>
                 </div>
                 <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-[#D4AF37] text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold shadow-lg">✨ Premium</div>
               </div>
@@ -321,7 +349,7 @@ const HomePage = () => {
       </section>
 
       {/* ============================================================
-      👗 FASHION SECTION (Before Sweets)
+      👗 FASHION SECTION
       ============================================================ */}
       <section className="py-8 sm:py-12 bg-[#FFFDF7]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
@@ -360,6 +388,84 @@ const HomePage = () => {
             {sweetsProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+      ⭐ CUSTOMER FAVORITES SECTION
+      ============================================================ */}
+      <section className="py-8 sm:py-12 bg-[#FFFDF7]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl sm:text-3xl">⭐</span>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#111827]">Customer Favorites</h2>
+            </div>
+            <Link to="/shop" className="text-[#D4AF37] hover:text-[#b8941f] transition flex items-center gap-1 text-sm font-medium">
+              View All <FaArrowRight className="text-xs" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            {favoritesProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+      REVIEWS SECTION
+      ============================================================ */}
+      <section className="py-12 sm:py-16 md:py-20 bg-[#F8FAFC]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="text-center mb-10 md:mb-14">
+            <span className="text-[#D4AF37] font-medium text-[10px] sm:text-xs tracking-wider uppercase">Testimonials</span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#111827] mt-2">
+              What Our <span className="text-[#D4AF37]">Customers Say</span>
+            </h2>
+            <p className="text-gray-500 mt-3 max-w-2xl mx-auto text-sm sm:text-base">
+              Real reviews from real customers who trust Maha One
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 md:gap-6 max-w-5xl mx-auto">
+            {reviews.map((review, index) => (
+              <div 
+                key={index} 
+                className="bg-white rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-[#E5E7EB] hover:-translate-y-1"
+              >
+                {/* Stars */}
+                <div className="flex text-[#D4AF37] text-sm md:text-base mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <FaStar key={i} className={i < review.rating ? 'text-[#D4AF37]' : 'text-gray-300'} />
+                  ))}
+                </div>
+                
+                {/* Review Text */}
+                <p className="text-gray-600 text-sm md:text-base italic leading-relaxed">
+                  "{review.text}"
+                </p>
+                
+                {/* Customer Name */}
+                <div className="mt-4 pt-4 border-t border-[#E5E7EB]">
+                  <h4 className="font-semibold text-[#111827] text-sm md:text-base">{review.name}</h4>
+                  <p className="text-xs text-gray-400">{review.location}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Trust Badge */}
+          <div className="text-center mt-10">
+            <div className="inline-flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow-sm border border-[#E5E7EB]">
+              <span className="text-2xl">⭐</span>
+              <span className="font-bold text-[#111827]">4.9</span>
+              <span className="text-gray-400">/</span>
+              <span className="text-gray-500">5.0</span>
+              <span className="w-px h-6 bg-[#E5E7EB] mx-2"></span>
+              <span className="text-sm text-gray-500">Based on 10,000+ reviews</span>
+            </div>
           </div>
         </div>
       </section>
