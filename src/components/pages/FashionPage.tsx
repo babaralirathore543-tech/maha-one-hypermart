@@ -45,12 +45,12 @@ const FashionPage = () => {
     {
       id: 101,
       name: 'Black Queen - Embroidered Shamoz Silk Suit',
-      price: 4450,
+      price: 4250,
       oldPrice: 4950,
       discount: 10,
       rating: 4.8,
       category: 'women',
-      subCategory: 'dresses',
+      subCategory: 'Unstiched',
       image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461517/Gemini_Generated_Image_lneqw1lneqw1lneq_bkwrs8.jpg',
       images: [],
       sizes: ['One Size'],
@@ -60,8 +60,42 @@ const FashionPage = () => {
       material: '',
       careInstructions: '.'
     },
-    
-
+    {
+     id: 102,
+     name: 'TYE & DYE Suit - 3-Piece Embroidered Shamoze Silk Suit',
+     price: 4190,
+     oldPrice: 5100,
+     discount: 18,
+     rating: 4.9,
+     category: 'women',
+     subCategory: 'Unstiched',
+     image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583325/1787569011956_iltiu9.jpg',
+      images: [],
+      sizes: ['One Size'],
+      colors: [ 'Green',],
+      stock: 10,
+      description: '',
+      material: '',
+      careInstructions: '.'
+    },
+    {
+     id: 103,
+     name: 'AGHA NOOR Unstitched Replica - Embroidered Suit',
+     price: 3299,
+     oldPrice: 4150,
+     discount: 21,
+     rating: 4.8,
+     category: 'women',
+     subCategory: 'Unstiched',
+     image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583885/1787583699344_ki0lze.jpg',
+      images: [],
+      sizes: ['One Size'],
+      colors: [ 'Green',],
+      stock: 10,
+      description: '',
+      material: '',
+      careInstructions: '.'
+    },
     
     
   

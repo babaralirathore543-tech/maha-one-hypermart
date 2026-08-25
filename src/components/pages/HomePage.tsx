@@ -85,6 +85,28 @@ const HomePage = () => {
       stock: 10 
     },
     { 
+      id: 102, 
+      name: 'TYE & DYE Suit - 3-Piece Embroidered Shamoze Silk Suit', 
+      price: 4190, 
+      oldPrice: 5100, 
+      discount: 18, 
+      rating: 4.9, 
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583325/1787569011956_iltiu9.jpg', 
+      type: 'fashion', 
+      stock: 10 
+    },
+    { 
+      id: 103, 
+      name: 'AGHA NOOR Unstitched Replica - Embroidered Suit', 
+      price: 3299, 
+      oldPrice: 4150, 
+      discount: 21, 
+      rating: 4.9, 
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583885/1787583699344_ki0lze.jpg', 
+      type: 'fashion', 
+      stock: 10 
+    },
+    { 
       id: 209, 
       name: '1 Carat Zircon Locket Set', 
       price: 1650, 

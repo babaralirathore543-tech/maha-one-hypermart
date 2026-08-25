@@ -46,13 +46,13 @@ const FashionDetailPage = () => {
    
    {
   id: 101,
-  name: 'Black Queen - Embroidered Shamoz Silk Suit',
-  price: 4450,
+  name: 'Black Queen - Embroidered Shamoze Silk Suit',
+  price: 4250,
   oldPrice: 4950,
-  discount: 10,
+  discount: 12,
   rating: 4.9,
   category: 'women',
-  subCategory: 'dresses',
+  subCategory: 'Unstiched',
   image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461517/Gemini_Generated_Image_lneqw1lneqw1lneq_bkwrs8.jpg',
   images: [
     'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461530/Gemini_Generated_Image_v258zjv258zjv258_kjk3v7.jpg',
@@ -86,8 +86,96 @@ const FashionDetailPage = () => {
   isNew: true,
   isFeatured: true
 }, 
-    
-    
+{
+  id: 102,
+  name: 'TYE & DYE Suit - 3-Piece Embroidered Shamoze Silk Suit',
+  price: 4190,
+  oldPrice: 5100,
+  discount: 18,
+  rating: 4.9,
+  category: 'women',
+  subCategory: 'Unstiched',
+  image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583325/1787569011956_iltiu9.jpg',
+  images: [
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583325/1787569011956_iltiu9.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583312/1787581244534_lvdw3y.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583311/1787581244572_fdkeb2.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583306/1787581244725_robym5.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583306/1787581244687_jktjkr.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583315/1787581244504_vza3iu.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583308/1787581244614_v8xdc4.jpg',
+  ],
+  colorImages: {
+    'Green': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583325/1787569011956_iltiu9.jpg'],
+    'Blue': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583312/1787581244534_lvdw3y.jpg'],
+    'Cream': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583311/1787581244572_fdkeb2.jpg'],
+    'Purple': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583306/1787581244725_robym5.jpg'],
+    'Orange': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583306/1787581244687_jktjkr.jpg'],
+    'Pink': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583308/1787581244614_v8xdc4.jpg']
+  },
+  sizes: ['One Size'],
+  colors: ['Green', 'Blue', 'Cream', 'Purple', 'Orange', 'Pink'],
+  stock: 15,
+  description: `
+
+Elevate your style with this beautiful 3-piece Shamoze Silk dress, featuring a stunning digital Tye & Dye print with elegant pearls and beads handwork. The coordinated Tye & Dye trouser and silk digital printed dupatta complete the sophisticated look.
+
+Details:
+
+Shamoze Silk Tye & Dye Printed Shirt
+Beautiful Pearls & Beads Handwork
+Separate Embroidered Sleeves
+Shamoze Silk Tye & Dye Printed Trouser
+Silk Digital Tye & Dye Printed Dupatta
+3-Piece Dress 👗.`,
+  material: 'Shirt: Shamoze Silk, Sleeves: Embroidered Fabric, Trouser: Shamoze Silk, Dupatta: Silk Digital Tye & Dye Print',
+  careInstructions: 'Dry clean only. Store in a cool, dry place.',
+  isNew: true,
+  isFeatured: true
+},    
+{
+  id: 103,
+  name: 'AGHA NOOR Unstitched Replica - Embroidered Suit',
+  price: 3299,
+  oldPrice: 4150,
+  discount: 21,
+  rating: 4.9,
+  category: 'women',
+  subCategory: '',
+  image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583885/1787583699344_ki0lze.jpg',
+  images: [
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583885/1787583699344_ki0lze.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583318/1787581244463_ljbbtx.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583320/1787581244425_fy3z8g.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583323/1787581244386_marq3j.jpg',
+    'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583325/1787581244345_sv3x4h.jpg'
+  ],
+  colorImages: {
+    'Green': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583318/1787581244463_ljbbtx.jpg'],
+    'Pink': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583320/1787581244425_fy3z8g.jpg']
+  },
+  sizes: ['One Size'],
+  colors: ['Green', 'Pink'],
+  stock: 10,
+  description: `Description
+
+AGHA NOOR Unstitched Replica is an elegant 3-piece embroidered suit designed with a premium and sophisticated look. Featuring delicate pearl embroidery on the neckline and front, beautifully detailed sleeves with sequence and pearl work, and an organza dupatta finished with ball lace on all four sides.
+
+Fabric: Organza Shirt | Organza Dupatta | Malai Trouser
+
+Details:
+
+Pearl embroidered neckline
+Pearl embroidered front
+Sequence & pearl embroidered sleeves
+Plain back
+Organza dupatta with ball lace on all 4 sides
+Plain malai trouser.`,
+  material: 'Shirt: Organza, Dupatta: Organza, Trouser: Malai',
+  careInstructions: 'Dry clean only. Store in a cool, dry place.',
+  isNew: true,
+  isFeatured: true
+},    
     
     
     
