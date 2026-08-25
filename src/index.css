@@ -43,7 +43,9 @@
   }
 }
 
-/* ✅ FLOATING BOX ANIMATION */
+/* ============================================================
+   ✅ FLOATING BOX ANIMATION
+   ============================================================ */
 @keyframes floatBox {
   0% {
     transform: translateY(0px);
@@ -70,6 +72,104 @@
 
 .dark .animate-float-box:hover {
   box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.7);
+}
+
+/* ============================================================
+   ✅ MAINTENANCE PAGE STYLES
+   ============================================================ */
+
+/* ✅ Slow Spin Animation */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+/* ✅ Maintenance Page Background Glow */
+.maintenance-glow {
+  background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+}
+
+/* ✅ Maintenance Glass Card */
+.maintenance-glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 32px;
+}
+
+/* ✅ Maintenance Timer Box */
+.maintenance-timer-box {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.maintenance-timer-box:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+/* ✅ Maintenance Social Icons */
+.maintenance-social-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.maintenance-social-icon:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  transform: translateY(-3px);
+}
+
+/* ✅ Maintenance Contact Button */
+.maintenance-contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50px;
+  color: white;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.maintenance-contact-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+/* ✅ Maintenance Responsive */
+@media (max-width: 640px) {
+  .maintenance-timer-box {
+    padding: 16px 12px;
+  }
+  
+  .maintenance-timer-box .timer-number {
+    font-size: 2rem !important;
+  }
 }
 
 /* ============================================================

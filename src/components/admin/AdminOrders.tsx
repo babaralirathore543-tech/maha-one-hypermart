@@ -1,3 +1,4 @@
+// src/components/admin/AdminOrders.tsx
 import React, { useState, useEffect } from 'react';
 import { 
   FaEye, 
@@ -11,7 +12,9 @@ import {
   FaUser,
   FaPhone,
   FaEnvelope,
-  FaMapMarkerAlt
+  FaMapMarkerAlt,
+  FaPalette,
+  FaRuler
 } from 'react-icons/fa';
 import { db, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from '../../config/firebase';
 
@@ -23,6 +26,11 @@ interface OrderItem {
   total: number;
   image?: string;
   weight?: string;
+  // ✅ NAYA: Colour + Size fields
+  colour?: string;
+  size?: string;
+  variantId?: string;
+  sku?: string;
 }
 
 interface Order {
@@ -43,7 +51,7 @@ interface Order {
   shippingAddress: {
     name: string;
     street: string;
-  city: string;
+    city: string;
     province: string;
     postalCode: string;
     country: string;
@@ -180,6 +188,18 @@ const AdminOrders: React.FC = () => {
     }
   };
 
+  // ✅ Get Colour Count
+  const getColourCount = (order: Order) => {
+    const colours = new Set(order.items?.map(item => item.colour).filter(Boolean));
+    return colours.size;
+  };
+
+  // ✅ Get Size Count
+  const getSizeCount = (order: Order) => {
+    const sizes = new Set(order.items?.map(item => item.size).filter(Boolean));
+    return sizes.size;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -240,8 +260,29 @@ const AdminOrders: React.FC = () => {
                       <p className="text-sm font-medium text-gray-800">{order.userName || 'Unknown'}</p>
                       <p className="text-xs text-gray-400">{order.userPhone || 'N/A'}</p>
                     </td>
+                    {/* ✅ Updated: Items with Colour + Size */}
                     <td className="py-3 px-4">
-                      <p className="text-sm text-gray-600">{order.items?.length || 0} items</p>
+                      <div className="space-y-1">
+                        {order.items?.slice(0, 2).map((item, idx) => (
+                          <div key={idx} className="text-xs">
+                            <span className="text-gray-800">{item.name}</span>
+                            {item.colour && (
+                              <span className="text-gray-400 ml-1">
+                                <FaPalette className="inline text-[10px]" /> {item.colour}
+                              </span>
+                            )}
+                            {item.size && (
+                              <span className="text-gray-400 ml-1">
+                                <FaRuler className="inline text-[10px]" /> {item.size}
+                              </span>
+                            )}
+                            <span className="text-gray-400 ml-1">x{item.quantity}</span>
+                          </div>
+                        ))}
+                        {order.items?.length > 2 && (
+                          <p className="text-xs text-gray-400">+{order.items.length - 2} more items</p>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4">
                       <p className="text-sm font-bold text-[#0F766E]">PKR {order.total?.toLocaleString() || 0}</p>
@@ -298,7 +339,7 @@ const AdminOrders: React.FC = () => {
         </div>
       )}
 
-      {/* ✅ Order Details Modal */}
+      {/* ✅ Order Details Modal - Updated with Colour + Size */}
       {showModal && selectedOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
@@ -364,9 +405,14 @@ const AdminOrders: React.FC = () => {
                 </div>
               </div>
 
-              {/* Order Items */}
+              {/* Order Items - ✅ Updated with Colour + Size */}
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-700 mb-2">Order Items</h4>
+                <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <FaBox className="text-[#0F766E]" /> Order Items
+                  <span className="text-xs text-gray-400 ml-2">
+                    {getColourCount(selectedOrder)} colours • {getSizeCount(selectedOrder)} sizes
+                  </span>
+                </h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {selectedOrder.items?.map((item, index) => (
                     <div key={index} className="flex items-center gap-3 bg-white p-2 rounded-lg border">
@@ -374,11 +420,28 @@ const AdminOrders: React.FC = () => {
                         src={item.image || '/images/placeholder.jpg'} 
                         alt={item.name}
                         className="w-12 h-12 object-cover rounded"
-                        onError={(e) => { e.currentTarget.src = '/images/placeholder.jpg'; }}
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/images/placeholder.jpg'; }}
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.name}</p>
-                        <p className="text-xs text-gray-500">Qty: {item.quantity} × PKR {item.price}</p>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                          <span>Qty: {item.quantity} × PKR {item.price}</span>
+                          {item.colour && (
+                            <span className="flex items-center gap-1 bg-purple-50 px-2 py-0.5 rounded">
+                              <FaPalette className="text-purple-500" size={10} />
+                              {item.colour}
+                            </span>
+                          )}
+                          {item.size && (
+                            <span className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded">
+                              <FaRuler className="text-blue-500" size={10} />
+                              {item.size}
+                            </span>
+                          )}
+                          {item.sku && (
+                            <span className="text-gray-400 text-[10px]">SKU: {item.sku}</span>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm font-bold text-[#0F766E] whitespace-nowrap">PKR {item.total}</p>
                     </div>
