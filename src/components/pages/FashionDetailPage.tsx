@@ -1,9 +1,9 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { 
   FaStar, FaShoppingCart, FaArrowLeft, 
   FaTruck, FaShieldAlt, FaLeaf, FaChevronLeft, FaChevronRight,
-  FaCircle
+  FaCircle, FaChevronRight as FaArrowRight
 } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 
@@ -54,6 +54,9 @@ const FashionDetailPage = () => {
   const [selectedColor, setSelectedColor] = useState('');
   const [mainImage, setMainImage] = useState('');
   const [imageLoaded, setImageLoaded] = useState(false);
+  
+  // ✅ Slider refs
+  const sliderRef = useRef<HTMLDivElement>(null);
 
   // ✅ Products Data
   const fashionProducts: FashionProduct[] = [
@@ -194,7 +197,7 @@ const FashionDetailPage = () => {
       isNew: true,
       isFeatured: true
     },
-  {
+    {
       id: 104,
       name: 'MARIA B Exclusive Heavy Embroidered Saree',
       price: 6250,
@@ -216,10 +219,9 @@ const FashionDetailPage = () => {
         'Turquoise': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787652027/1787651444034_t1avmm.jpg'],
         'Black': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787652027/1787651443978_s7ei26.jpg'],
         'Pink': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787650742/1787649270496_m30x38.jpg']
-
       },
       sizes: ['One Size'],
-      colors: ['Grey', 'Turquoise', 'Black', 'Pink',],
+      colors: ['Grey', 'Turquoise', 'Black', 'Pink'],
       stock: 15,
       description: `👗 A luxurious and elegant saree featuring intricate heavy embroidery, beautiful Adda work, detailed cut-work borders, and hanging tassels. Perfect for weddings, festive occasions, and formal events.
 
@@ -300,11 +302,27 @@ Petticoat included
     'Purple': 'bg-purple-500', 'Navy': 'bg-blue-900', 'Teal': 'bg-teal-500',
     'Maroon': 'bg-red-800', 'Olive': 'bg-green-700', 'Peach': 'bg-orange-200',
     'Lavender': 'bg-purple-200', 'Mint': 'bg-green-200', 'Coral': 'bg-red-300',
-    'Cream': 'bg-amber-50'
+    'Cream': 'bg-amber-50', 'Turquoise': 'bg-teal-400'
   };
 
   // ✅ Format description as bullet points
   const descriptionLines = formatDescription(product.description);
+
+  // ✅ Get suggested products (all other products except current)
+  const suggestedProducts = fashionProducts.filter(p => p.id !== product.id);
+
+  // ✅ Scroll functions for slider
+  const scrollLeft = () => {
+    if (sliderRef.current) {
+      sliderRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (sliderRef.current) {
+      sliderRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="bg-[#FFFDF7] dark:bg-[#111827] min-h-screen">
@@ -640,6 +658,105 @@ Petticoat included
             </div>
           </div>
         </div>
+
+        {/* ============================================================
+        ✅ SUGGESTED PRODUCTS SLIDER
+        ============================================================ */}
+        {suggestedProducts.length > 0 && (
+          <div className="mt-8 sm:mt-10 md:mt-12">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#111827] dark:text-white flex items-center gap-2">
+                <span className="text-[#D4AF37]">✨</span> You May Also Like
+              </h2>
+              <Link to="/fashion" className="text-[#D4AF37] hover:text-[#b8941f] transition text-xs sm:text-sm font-medium flex items-center gap-1">
+                View All <FaArrowRight className="text-xs" />
+              </Link>
+            </div>
+
+            <div className="relative">
+              {/* Slider Controls - Left */}
+              <button
+                onClick={scrollLeft}
+                className="absolute -left-2 sm:-left-4 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-[#1F2937] rounded-full p-1.5 sm:p-2 shadow-lg border border-[#E5E7EB] dark:border-gray-700 hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition"
+              >
+                <FaChevronLeft className="text-gray-600 dark:text-gray-400 text-sm sm:text-base" />
+              </button>
+
+              {/* Slider Container */}
+              <div
+                ref={sliderRef}
+                className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {suggestedProducts.map((suggested) => (
+                  <Link
+                    key={suggested.id}
+                    to={`/fashion/${suggested.id}`}
+                    className="flex-shrink-0 w-[140px] sm:w-[160px] md:w-[180px] lg:w-[200px] bg-white dark:bg-[#1F2937] rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-[#E5E7EB] dark:border-gray-700 hover:-translate-y-1 group"
+                  >
+                    <div className="relative aspect-square bg-[#F5F3FF] dark:bg-[#1F2937]">
+                      <img
+                        src={suggested.image}
+                        alt={suggested.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          e.currentTarget.src = `https://via.placeholder.com/300x300/D4AF37/FFFFFF?text=${suggested.name}`;
+                        }}
+                      />
+                      <span className="absolute top-1 left-1 bg-red-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        -{suggested.discount}%
+                      </span>
+                      {suggested.isNew && (
+                        <span className="absolute top-1 left-10 bg-green-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                          NEW
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-2 sm:p-3">
+                      <h4 className="font-semibold text-[#111827] dark:text-white text-[10px] sm:text-xs line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
+                        {suggested.name}
+                      </h4>
+                      <div className="flex items-center gap-1 mt-0.5 sm:mt-1">
+                        <span className="text-[#D4AF37] font-bold text-xs sm:text-sm">
+                          PKR {suggested.price.toLocaleString()}
+                        </span>
+                        <span className="text-gray-400 line-through text-[8px] sm:text-[10px]">
+                          PKR {suggested.oldPrice.toLocaleString()}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (suggested.stock > 0) {
+                            addToCart({ ...suggested, quantity: 1 });
+                            alert(`✅ ${suggested.name} added to cart!`);
+                          }
+                        }}
+                        disabled={suggested.stock === 0}
+                        className={`w-full mt-1 px-2 py-1 rounded-full text-[8px] sm:text-[10px] font-medium transition flex items-center justify-center gap-1 ${
+                          suggested.stock > 0
+                            ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <FaShoppingCart className="text-[8px] sm:text-[10px]" />
+                        {suggested.stock > 0 ? 'Add' : 'Sold'}
+                      </button>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Slider Controls - Right */}
+              <button
+                onClick={scrollRight}
+                className="absolute -right-2 sm:-right-4 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-[#1F2937] rounded-full p-1.5 sm:p-2 shadow-lg border border-[#E5E7EB] dark:border-gray-700 hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition"
+              >
+                <FaChevronRight className="text-gray-600 dark:text-gray-400 text-sm sm:text-base" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
