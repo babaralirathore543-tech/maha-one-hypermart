@@ -155,7 +155,7 @@ const FashionDetailPage = () => {
       discount: 21,
       rating: 4.9,
       category: 'women',
-      subCategory: '',
+      subCategory: 'Unstiched',
       image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583885/1787583699344_ki0lze.jpg',
       images: [
         'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583885/1787583699344_ki0lze.jpg',
@@ -193,7 +193,55 @@ const FashionDetailPage = () => {
       careInstructions: 'Dry clean only.',
       isNew: true,
       isFeatured: true
-    }
+    },
+  {
+      id: 104,
+      name: 'MARIA B Exclusive Heavy Embroidered Saree',
+      price: 6250,
+      oldPrice: 7500,
+      discount: 17,
+      rating: 4.9,
+      category: 'women',
+      subCategory: 'Sarees',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787650742/1787649270496_m30x38.jpg',
+      images: [
+        'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787650742/1787649270496_m30x38.jpg',
+        'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787650743/1787649270462_hmbtam.jpg',
+        'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787652027/1787651444034_t1avmm.jpg',
+        'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787652027/1787651443978_s7ei26.jpg',
+        'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787652028/1787651443914_rql0fm.jpg'
+      ],
+      colorImages: {
+        'Grey': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787650743/1787649270462_hmbtam.jpg'],
+        'Turquoise': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787652027/1787651444034_t1avmm.jpg'],
+        'Black': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787652027/1787651443978_s7ei26.jpg'],
+        'Pink': ['https://res.cloudinary.com/kw3pdwrb/image/upload/v1787650742/1787649270496_m30x38.jpg']
+
+      },
+      sizes: ['One Size'],
+      colors: ['Grey', 'Turquoise', 'Black', 'Pink',],
+      stock: 15,
+      description: `👗 A luxurious and elegant saree featuring intricate heavy embroidery, beautiful Adda work, detailed cut-work borders, and hanging tassels. Perfect for weddings, festive occasions, and formal events.
+
+⭐ BRAND: MARIA B
+
+🌟Fully heavy embroidered net front and back
+Cut-work borders
+Heavy Adda work on front body
+Heavy Adda work neckline
+Heavy embroidered sleeves with Adda work
+Cut-work sleeve cuffs
+Hanging tassels
+Heavy Jhall embroidered pallu
+Cut-work pallu borders
+Hanging tassels on pallu
+Petticoat included
+✨ Premium quality with delicate embroidery.`,
+      material: 'Net Saree with Embroidered Net Fabric, Adda Work, Cut-Work Borders and Petticoat.',
+      careInstructions: 'Dry clean only.',
+      isNew: true,
+      isFeatured: true
+    },
   ];
 
   const product = fashionProducts.find(p => p.id === parseInt(id || '0'));

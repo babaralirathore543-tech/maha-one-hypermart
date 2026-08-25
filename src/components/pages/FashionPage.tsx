@@ -37,10 +37,6 @@ const FashionPage = () => {
 
   // ✅ All Fashion Products (with Cloudinary URLs)
   const fashionProducts: FashionProduct[] = [
-    // ==================== 👨 MEN ====================
-    // -- Shirts
-   
-
     // ==================== 👩 WOMEN ====================
     {
       id: 101,
@@ -54,56 +50,66 @@ const FashionPage = () => {
       image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461517/Gemini_Generated_Image_lneqw1lneqw1lneq_bkwrs8.jpg',
       images: [],
       sizes: ['One Size'],
-      colors: [ 'Black',],
+      colors: ['Black'],
       stock: 10,
       description: '',
       material: '',
       careInstructions: '.'
     },
     {
-     id: 102,
-     name: 'TYE & DYE Suit - 3-Piece Embroidered Shamoze Silk Suit',
-     price: 4190,
-     oldPrice: 5100,
-     discount: 18,
-     rating: 4.9,
-     category: 'women',
-     subCategory: 'Unstiched',
-     image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583325/1787569011956_iltiu9.jpg',
+      id: 102,
+      name: 'TYE & DYE Suit - 3-Piece Embroidered Shamoze Silk Suit',
+      price: 4190,
+      oldPrice: 5100,
+      discount: 18,
+      rating: 4.9,
+      category: 'women',
+      subCategory: 'Unstiched',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583325/1787569011956_iltiu9.jpg',
       images: [],
       sizes: ['One Size'],
-      colors: [ 'Green',],
+      colors: ['Green'],
       stock: 10,
       description: '',
       material: '',
       careInstructions: '.'
     },
     {
-     id: 103,
-     name: 'AGHA NOOR Unstitched Replica - Embroidered Suit',
-     price: 3299,
-     oldPrice: 4150,
-     discount: 21,
-     rating: 4.8,
-     category: 'women',
-     subCategory: 'Unstiched',
-     image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583885/1787583699344_ki0lze.jpg',
+      id: 103,
+      name: 'AGHA NOOR Unstitched Replica - Embroidered Suit',
+      price: 3299,
+      oldPrice: 4150,
+      discount: 21,
+      rating: 4.8,
+      category: 'women',
+      subCategory: 'Unstiched',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583885/1787583699344_ki0lze.jpg',
       images: [],
       sizes: ['One Size'],
-      colors: [ 'Green',],
+      colors: ['Green'],
       stock: 10,
       description: '',
       material: '',
       careInstructions: '.'
     },
-    
-    
-  
-    
-    
-    
-    // -- Lawn Suits
-    
+    {
+      id: 104,
+      name: 'MARIA B Exclusive Heavy Embroidered Saree',
+      price: 6250,
+      oldPrice: 7500,
+      discount: 17,
+      rating: 4.8,
+      category: 'women',
+      subCategory: 'Sarees',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787650742/1787649270496_m30x38.jpg',
+      images: [],
+      sizes: ['One Size'],
+      colors: ['Pink'],
+      stock: 15,
+      description: '',
+      material: '',
+      careInstructions: '.'
+    },
     
     // -- Women Accessories
     {
@@ -124,12 +130,6 @@ const FashionPage = () => {
       material: 'Zircon with Alloy Setting',
       careInstructions: 'Wipe with soft cloth. Keep in jewelry box..'
     },
-
-    // ==================== 👶 KIDS ====================
-   
-
-    // ==================== 🕶️ ACCESSORIES ====================
-    
   ];
 
   // ✅ Get unique subcategories for each category
@@ -186,7 +186,8 @@ const FashionPage = () => {
   };
 
   return (
-    <div className="bg-[#FFFDF7] py-6 sm:py-8 md:py-12 min-h-screen">
+    // ✅ FIXED: Added pt-16 for mobile search bar
+    <div className="bg-[#FFFDF7] pt-16 sm:pt-6 md:pt-8 lg:pt-12 pb-6 sm:pb-8 md:pb-12 min-h-screen">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         
         {/* ✅ Page Header */}
@@ -210,11 +211,11 @@ const FashionPage = () => {
                   setSelectedCategory(cat.id);
                   setSelectedSubCategory('all');
                 }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1.5 ${
+                className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1.5 ${(
                   selectedCategory === cat.id
                     ? 'bg-[#D4AF37] text-white shadow-md'
                     : 'bg-[#F8FAFC] text-gray-600 hover:bg-[#E5E7EB] border border-[#E5E7EB]'
-                }`}
+                )}`}
               >
                 {cat.icon}
                 {cat.label}
@@ -229,11 +230,11 @@ const FashionPage = () => {
           <div className="flex flex-wrap justify-center gap-2 mb-6">
             <button
               onClick={() => setSelectedSubCategory('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${(
                 selectedSubCategory === 'all'
                   ? 'bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]'
                   : 'bg-[#F8FAFC] text-gray-500 hover:bg-[#E5E7EB] border border-[#E5E7EB]'
-              }`}
+              )}`}
             >
               All
             </button>
@@ -244,11 +245,11 @@ const FashionPage = () => {
                 <button
                   key={sub}
                   onClick={() => setSelectedSubCategory(sub)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition capitalize flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition capitalize flex items-center gap-1 ${(
                     selectedSubCategory === sub
                       ? 'bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]'
                       : 'bg-[#F8FAFC] text-gray-500 hover:bg-[#E5E7EB] border border-[#E5E7EB]'
-                  }`}
+                  )}`}
                 >
                   {icon} {sub}
                   <span className="ml-1 text-[10px] opacity-75">({count})</span>
@@ -376,7 +377,7 @@ const FashionPage = () => {
                     </span>
                   </div>
 
-                  {/* ✅ STOCK INDICATOR - SIRF PRICE KE NECHE */}
+                  {/* ✅ STOCK INDICATOR */}
                   <div className="mt-1.5 flex items-center gap-1.5">
                     {product.stock > 0 ? (
                       <>
@@ -409,11 +410,11 @@ const FashionPage = () => {
                       }
                     }}
                     disabled={product.stock === 0}
-                    className={`w-full mt-2 bg-[#0F766E] text-white px-3 py-2 rounded-full text-xs font-medium transition flex items-center justify-center gap-2 ${
+                    className={`w-full mt-2 bg-[#0F766E] text-white px-3 py-2 rounded-full text-xs font-medium transition flex items-center justify-center gap-2 ${(
                       product.stock > 0
                         ? 'hover:bg-[#065F46]'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
+                    )}`}
                   >
                     <FaShoppingCart /> {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
                   </button>
