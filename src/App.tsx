@@ -11,6 +11,9 @@ import AdminPanel from './components/admin/AdminPanel';
 import AdminProductForm from './components/pages/AdminProductForm';
 import Popup from './components/common/Popup';
 
+// ✅ Import Eid Milad Page
+import EidMiladPage from './components/pages/EidMiladPage';
+
 // ✅ Import Maintenance Page
 import MaintenancePage from './components/pages/MaintenancePage';
 
@@ -69,10 +72,36 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 function App() {
-  // ✅ Maintenance Mode - True = Maintenance ON, False = Normal
-  const MAINTENANCE_MODE = true; // ⚠️ True kar do when maintenance needed
+  // ============================================
+  // ✨ TOGGLE PAGES
+  // ============================================
+  
+  // ✅ For 12 Rabi ul Awwal - Show Eid Milad Page
+  // True = Show Eid Milad Page, False = Normal
+  const SHOW_EID_MILAD = true; // ⚠️ True kar do for 12 Rabi ul Awwal
 
-  // ✅ If maintenance mode is ON - Show Maintenance Page
+  // ✅ Maintenance Mode
+  // True = Show Maintenance Page, False = Normal
+  const MAINTENANCE_MODE = false; // ⚠️ True kar do when maintenance needed
+
+  // ============================================
+  // ROUTING
+  // ============================================
+
+  // ✅ If Eid Milad page is ON
+  if (SHOW_EID_MILAD) {
+    return (
+      <ThemeProvider>
+        <Router>
+          <Routes>
+            <Route path="*" element={<EidMiladPage />} />
+          </Routes>
+        </Router>
+      </ThemeProvider>
+    );
+  }
+
+  // ✅ If maintenance mode is ON
   if (MAINTENANCE_MODE) {
     return (
       <ThemeProvider>
@@ -92,7 +121,7 @@ function App() {
     );
   }
 
-  // ✅ Normal App (Maintenance OFF)
+  // ✅ Normal App (Maintenance OFF + Eid Milad OFF)
   return (
     <ThemeProvider>
       <CartProvider>
