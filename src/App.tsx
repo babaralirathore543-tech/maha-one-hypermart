@@ -182,7 +182,7 @@ function App() {
   // true = Eid Milad page
   // false = normal website
 
-  const SHOW_EID_MILAD = false;
+  const SHOW_EID_MILAD = true;
 
 
   // Maintenance mode
