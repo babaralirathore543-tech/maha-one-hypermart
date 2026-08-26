@@ -2,182 +2,362 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-  FaSave, FaTimes, FaPlus, FaTrash, 
-  FaPalette, FaSpinner, FaArrowLeft,
-  FaRuler, FaLink, FaCloudUploadAlt,
-  FaChevronRight
+  FaSave, FaTimes, FaPlus, 
+  FaSpinner, FaArrowLeft,
+  FaLink, FaCloudUploadAlt,
+  FaChevronRight, FaCircle
 } from 'react-icons/fa';
 import { db, storage } from '../../config/firebase';
 import { 
-  collection, addDoc, getDoc, doc, updateDoc
+  collection, addDoc, getDoc, doc, updateDoc,
+  query, where, getDocs
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+// ✅ Product Interface - Final Structure
 interface ProductFormData {
   name: string;
+  brand: string;
+  sku: string;
+  category: string;
+  gender: string;
+  productType: string;
+  subCategory: string;
+  style: string;
   price: number;
   oldPrice: number;
   discount: number;
-  rating: number;
-  category: string;
-  subCategory: string;
-  subSubCategory: string;
+  costPrice: number;
+  stock: number;
+  lowStockAlert: number;
   image: string;
   images: string[];
   colorImages: { [key: string]: string[] };
   sizes: string[];
   colors: string[];
-  stock: number;
+  shortDescription: string;
   description: string;
   material: string;
   careInstructions: string;
   isNew: boolean;
   isFeatured: boolean;
+  isBestSeller: boolean;
+  isOnSale: boolean;
+  status: 'active' | 'draft' | 'out-of-stock';
+  rating: number;
+  reviewCount: number;
 }
 
-// ✅ Category Data
-const categoryData: Record<string, any> = {
+// ✅ Type Definitions for Category Data
+interface SubCategoryItem {
+  label: string;
+  styles: string[];
+}
+
+interface ProductTypeItem {
+  label: string;
+  sizes?: string[];
+  subCategories: {
+    [key: string]: SubCategoryItem;
+  };
+}
+
+interface GenderItem {
+  label: string;
+  icon: string;
+  productTypes: {
+    [key: string]: ProductTypeItem;
+  };
+}
+
+interface CategoryItem {
+  label: string;
+  icon: string;
+  prefix: string;
+  genders: {
+    [key: string]: GenderItem;
+  };
+}
+
+interface CategoryData {
+  [key: string]: CategoryItem;
+}
+
+// ✅ COMPLETE CATEGORY DATA WITH SIZES
+const categoryData: CategoryData = {
   'fashion': {
     label: 'Fashion',
     icon: '👗',
-    subCategories: {
+    prefix: 'MOF',
+    genders: {
       'women': {
         label: 'Women',
-        subSubCategories: {
-          'stitched': {
-            label: 'Stitched',
-            options: ['Sarees', 'Maxxi', 'Lawn', 'Kurti', 'Dresses', 'Frocks']
+        icon: '👩',
+        productTypes: {
+          'clothing': {
+            label: '👗 Clothing',
+            sizes: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+            subCategories: {
+              'unstitched': { 
+                label: 'Unstitched', 
+                styles: ['2 Piece', '3 Piece', 'Lawn', 'Formal', 'Casual', 'Party Wear', 'Luxury Pret', 'Embroidered'] 
+              },
+              'ready-to-wear': { 
+                label: 'Ready to Wear', 
+                styles: ['Casual Wear', 'Formal Wear', 'Party Wear', 'Luxury Pret'] 
+              },
+              'sarees': { 
+                label: 'Sarees', 
+                styles: ['Silk Saree', 'Net Saree', 'Cotton Saree', 'Embroidered Saree', 'Wedding Saree', 'Party Wear Saree'] 
+              },
+              'abayas': { 
+                label: 'Abayas & Modest Wear', 
+                styles: ['Classic Abaya', 'Embroidered Abaya', 'Open Abaya', 'Closed Abaya', 'Khimar'] 
+              },
+              'nightwear': { 
+                label: 'Nightwear', 
+                styles: ['Cotton Nightwear', 'Silk Nightwear', 'Satin Nightwear', 'Pajama Sets'] 
+              }
+            }
           },
-          'unstitched': {
-            label: 'Unstitched',
-            options: ['Suits', 'Fabrics', 'Embroidered', 'Lawn Suits']
+          'footwear': {
+            label: '👠 Footwear',
+            sizes: ['5(US)', '5.5(US)', '6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)'],
+            subCategories: {
+              'heels': { 
+                label: 'Heels', 
+                styles: ['High Heels', 'Block Heels', 'Wedges', 'Kitten Heels', 'Platform Heels', 'Stilettos'] 
+              },
+              'flats': { 
+                label: 'Flats', 
+                styles: ['Ballerinas', 'Loafers', 'Flat Sandals'] 
+              },
+              'slippers': { 
+                label: 'Slippers', 
+                styles: ['Flip Flops', 'Slide Slippers', 'House Slippers'] 
+              },
+              'sandals': { 
+                label: 'Sandals', 
+                styles: ['Strappy Sandals', 'Gladiator Sandals', 'Casual Sandals', 'Formal Sandals'] 
+              },
+              'khussa': { 
+                label: 'Khussa', 
+                styles: ['Traditional Khussa', 'Embroidered Khussa', 'Casual Khussa'] 
+              },
+              'sneakers': { 
+                label: 'Sneakers', 
+                styles: ['Casual Sneakers', 'Sports Sneakers', 'Fashion Sneakers', 'Platform Sneakers'] 
+              }
+            }
+          },
+          'bags': {
+            label: '👜 Bags',
+            sizes: ['One Size'],
+            subCategories: {
+              'hand-bags': { 
+                label: 'Hand Bags', 
+                styles: ['Tote Bag', 'Shoulder Bag', 'Crossbody Bag', 'Clutch'] 
+              },
+              'shoulder-bags': { 
+                label: 'Shoulder Bags', 
+                styles: ['Casual Shoulder', 'Formal Shoulder', 'Party Shoulder'] 
+              },
+              'tote-bags': { 
+                label: 'Tote Bags', 
+                styles: ['Leather Tote', 'Fabric Tote', 'Canvas Tote'] 
+              },
+              'crossbody-bags': { 
+                label: 'Crossbody Bags', 
+                styles: ['Leather Crossbody', 'Fabric Crossbody', 'Mini Crossbody'] 
+              },
+              'clutches': { 
+                label: 'Clutches', 
+                styles: ['Classic Clutch', 'Embroidered Clutch', 'Beaded Clutch', 'Box Clutch'] 
+              },
+              'wallets': { 
+                label: 'Wallets', 
+                styles: ['Leather Wallet', 'Fabric Wallet', 'Card Holder', 'Coin Purse'] 
+              }
+            }
+          },
+          'accessories': {
+            label: '💎 Accessories',
+            sizes: ['One Size'],
+            subCategories: {
+              'jewellery': { 
+                label: 'Jewellery', 
+                styles: ['Necklaces', 'Earrings', 'Rings', 'Bracelets', 'Anklets', 'Jewellery Sets'] 
+              },
+              'watches': { 
+                label: 'Watches', 
+                styles: ['Analog Watch', 'Digital Watch', 'Smart Watch', 'Fashion Watch'] 
+              },
+              'sunglasses': { 
+                label: 'Sunglasses', 
+                styles: ['Aviator', 'Wayfarer', 'Cat Eye', 'Round', 'Oversized'] 
+              },
+              'scarves-hijabs': { 
+                label: 'Scarves & Hijabs', 
+                styles: ['Silk Scarf', 'Cotton Hijab', 'Chiffon Hijab', 'Wool Scarf', 'Printed Scarf'] 
+              },
+              'hair-accessories': { 
+                label: 'Hair Accessories', 
+                styles: ['Hair Clips', 'Hair Bands', 'Hair Ties', 'Headbands', 'Scrunchies'] 
+              }
+            }
           }
         }
       },
       'men': {
         label: 'Men',
-        subSubCategories: {
-          'stitched': {
-            label: 'Stitched',
-            options: ['Shirts', 'T-Shirts', 'Jeans', 'Kurta', 'Trousers']
+        icon: '👨',
+        productTypes: {
+          'clothing': {
+            label: '👔 Clothing',
+            sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+            subCategories: {
+              'unstitched': { label: 'Unstitched', styles: ['Shalwar Kameez', 'Kurta Fabric', 'Waistcoat', 'Sherwani', 'Embroidered Fabric'] },
+              'shirts': { label: 'Shirts', styles: ['Formal Shirt', 'Casual Shirt', 'Party Shirt'] },
+              't-shirts': { label: 'T-Shirts', styles: ['Casual T-Shirt', 'Polo T-Shirt', 'Graphic T-Shirt'] },
+              'jeans': { label: 'Jeans', styles: ['Slim Fit', 'Regular Fit', 'Straight Fit', 'Skinny Fit'] },
+              'kurta': { label: 'Kurta', styles: ['Simple Kurta', 'Embroidered Kurta', 'Wedding Kurta'] },
+              'trousers': { label: 'Trousers', styles: ['Formal Trousers', 'Casual Trousers', 'Chino'] },
+              'suits': { label: 'Suits & Blazers', styles: ['Formal Suit', 'Party Suit', 'Wedding Suit'] }
+            }
           },
-          'unstitched': {
-            label: 'Unstitched',
-            options: ['Shalwar Kameez', 'Fabrics', 'Kurta Fabric']
+          'footwear': {
+            label: '👞 Footwear',
+            sizes: ['6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)'],
+            subCategories: {
+              'formal-shoes': { label: 'Formal Shoes', styles: ['Oxford', 'Derby', 'Loafers', 'Monk Strap'] },
+              'casual-shoes': { label: 'Casual Shoes', styles: ['Sneakers', 'Slip-ons', 'Boat Shoes'] },
+              'sandals': { label: 'Sandals', styles: ['Leather Sandals', 'Casual Sandals', 'Formal Sandals'] },
+              'slippers': { label: 'Slippers', styles: ['House Slippers', 'Flip Flops'] }
+            }
+          },
+          'bags': {
+            label: '💼 Bags',
+            sizes: ['One Size'],
+            subCategories: {
+              'backpacks': { label: 'Backpacks', styles: ['Casual Backpack', 'Office Backpack', 'Travel Backpack'] },
+              'messenger-bags': { label: 'Messenger Bags', styles: ['Leather Messenger', 'Canvas Messenger'] },
+              'briefcases': { label: 'Briefcases', styles: ['Leather Briefcase', 'Fabric Briefcase'] },
+              'wallets': { label: 'Wallets', styles: ['Leather Wallet', 'Slim Wallet', 'Card Holder'] }
+            }
+          },
+          'accessories': {
+            label: '⌚ Accessories',
+            sizes: ['One Size'],
+            subCategories: {
+              'watches': { label: 'Watches', styles: ['Analog', 'Digital', 'Smart', 'Fashion'] },
+              'sunglasses': { label: 'Sunglasses', styles: ['Aviator', 'Wayfarer', 'Round'] },
+              'belts': { label: 'Belts', styles: ['Leather Belt', 'Fabric Belt', 'Formal Belt'] },
+              'ties': { label: 'Ties', styles: ['Silk Tie', 'Knit Tie', 'Pattern Tie'] }
+            }
           }
         }
       },
       'kids': {
         label: 'Kids',
-        subSubCategories: {
+        icon: '🧒',
+        productTypes: {
           'boys': {
-            label: 'Boys',
-            options: ['Shirts', 'T-Shirts', 'Kurta', 'Jeans', 'Trousers']
+            label: '👦 Boys',
+            sizes: ['XS(4-5)', 'S(6-7)', 'M(8-10)', 'L(12-14)', 'XL(16)'],
+            subCategories: {
+              'shirts': { label: 'Shirts', styles: ['Formal', 'Casual', 'Party'] },
+              't-shirts': { label: 'T-Shirts', styles: ['Casual', 'Graphic', 'Polo'] },
+              'jeans': { label: 'Jeans', styles: ['Slim', 'Regular'] },
+              'kurta': { label: 'Kurta', styles: ['Simple', 'Embroidered'] },
+              'trousers': { label: 'Trousers', styles: ['Formal', 'Casual'] }
+            }
           },
           'girls': {
-            label: 'Girls',
-            options: ['Dresses', 'Frocks', 'Kurti', 'Lawn']
+            label: '👧 Girls',
+            sizes: ['XS(4-5)', 'S(6-7)', 'M(8-10)', 'L(12-14)', 'XL(16)'],
+            subCategories: {
+              'dresses': { label: 'Dresses', styles: ['Party Dress', 'Casual Dress', 'Wedding Dress'] },
+              'frocks': { label: 'Frocks', styles: ['Casual Frocks', 'Party Frocks', 'Wedding Frocks'] },
+              'kurti': { label: 'Kurti', styles: ['Casual Kurti', 'Party Kurti'] },
+              'lawn': { label: 'Lawn', styles: ['Casual Lawn', 'Party Lawn'] }
+            }
+          },
+          'baby': {
+            label: '👶 Baby',
+            sizes: ['0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M'],
+            subCategories: {
+              'onesies': { label: 'Onesies', styles: ['Cotton Onesies', 'Organic Onesies'] },
+              'sleepwear': { label: 'Sleepwear', styles: ['Cotton Sleepwear', 'Warm Sleepwear'] },
+              'sets': { label: 'Sets', styles: ['Casual Sets', 'Party Sets'] }
+            }
+          },
+          'footwear': {
+            label: '👟 Footwear',
+            sizes: ['10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)', '12.5(US)', '13(US)', '13.5(US)', '1(US)', '1.5(US)', '2(US)', '2.5(US)', '3(US)'],
+            subCategories: {
+              'shoes': { label: 'Shoes', styles: ['Casual Shoes', 'School Shoes', 'Sports Shoes'] },
+              'sandals': { label: 'Sandals', styles: ['Casual Sandals', 'Party Sandals'] },
+              'slippers': { label: 'Slippers', styles: ['House Slippers', 'Casual Slippers'] }
+            }
+          },
+          'accessories': {
+            label: '🎀 Accessories',
+            sizes: ['One Size'],
+            subCategories: {
+              'bags': { label: 'Bags', styles: ['Backpack', 'Tote', 'Crossbody'] },
+              'hats': { label: 'Hats', styles: ['Summer Hat', 'Winter Hat'] },
+              'hair-accessories': { label: 'Hair Accessories', styles: ['Clips', 'Bands', 'Ties'] }
+            }
           }
         }
-      }
-    }
-  },
-  'dryfruits': {
-    label: 'Dry Fruits',
-    icon: '🥜',
-    subCategories: {
-      'nuts': {
-        label: 'Nuts',
-        subSubCategories: {
-          'almonds': { label: 'Almonds', options: ['Premium', 'Medium', 'Soft Shell'] },
-          'cashews': { label: 'Cashews', options: ['Roasted', 'Salted', 'White'] },
-          'pistachios': { label: 'Pistachios', options: ['Shelled', 'Roasted', 'Salted'] },
-          'walnuts': { label: 'Walnuts', options: ['Soft Shell', 'Kernel'] }
-        }
       },
-      'seeds': {
-        label: 'Seeds',
-        subSubCategories: {
-          'chia': { label: 'Chia Seeds', options: ['Premium', 'Organic'] },
-          'pumpkin': { label: 'Pumpkin Seeds', options: ['Roasted', 'Raw'] },
-          'sunflower': { label: 'Sunflower Seeds', options: ['Roasted', 'Raw'] }
-        }
-      },
-      'dried-fruits': {
-        label: 'Dried Fruits',
-        subSubCategories: {
-          'raisins': { label: 'Raisins', options: ['Sundar Khani', 'Kandhari', 'Black', 'Munakka'] },
-          'dates': { label: 'Dates', options: ['Ajwa', 'Medjool', 'Safawi'] },
-          'figs': { label: 'Figs', options: ['Dried', 'Organic'] }
-        }
-      }
-    }
-  },
-  'sweets': {
-    label: 'Sweets',
-    icon: '🍬',
-    subCategories: {
-      'traditional': {
-        label: 'Traditional',
-        subSubCategories: {
-          'gulab-jaman': { label: 'Gulab Jaman', options: ['Classic', 'Premium'] },
-          'jalebi': { label: 'Jalebi', options: ['Crispy', 'Soft'] },
-          'barfi': { label: 'Barfi', options: ['Milk', 'Coconut', 'Pista'] },
-          'ladoo': { label: 'Ladoo', options: ['Besan', 'Coconut', 'Moti'] }
-        }
-      },
-      'premium': {
-        label: 'Premium',
-        subSubCategories: {
-          'choco-bars': { label: 'Choco Bars', options: ['Caramel', 'Crispy Wafer', 'Coconut'] },
-          'eclairs': { label: 'Eclairs', options: ['Caramel', 'Chocolate'] },
-          'wafer-bars': { label: 'Wafer Bars', options: ['Chocolate', 'Strawberry'] }
-        }
-      },
-      'gifting': {
-        label: 'Gifting',
-        subSubCategories: {
-          'sweet-boxes': { label: 'Sweet Boxes', options: ['Premium Box', 'Standard Box'] },
-          'gift-packs': { label: 'Gift Packs', options: ['Festive Pack', 'Wedding Pack'] }
-        }
-      }
-    }
-  },
-  'cakes': {
-    label: 'Cakes',
-    icon: '🎂',
-    subCategories: {
-      'celebration': {
-        label: 'Celebration',
-        subSubCategories: {
-          'anniversary': { label: 'Anniversary', options: ['1-2kg', '3-5kg'] },
-          'party': { label: 'Party', options: ['1-2kg', '3-5kg'] }
-        }
-      },
-      'birthday': {
-        label: 'Birthday',
-        subSubCategories: {
-          'kids': { label: 'Kids', options: ['1-2kg', '3-5kg'] },
-          'adults': { label: 'Adults', options: ['1-2kg', '3-5kg'] }
-        }
-      },
-      'wedding': {
-        label: 'Wedding',
-        subSubCategories: {
-          'traditional': { label: 'Traditional', options: ['1-2kg', '3-5kg'] },
-          'modern': { label: 'Modern', options: ['1-2kg', '3-5kg'] }
-        }
-      },
-      'custom': {
-        label: 'Custom',
-        subSubCategories: {
-          'themed': { label: 'Themed', options: ['1-2kg', '3-5kg'] },
-          'photo': { label: 'Photo', options: ['1-2kg', '3-5kg'] }
+      'unisex': {
+        label: 'Unisex',
+        icon: '👤',
+        productTypes: {
+          'accessories': {
+            label: '🎒 Accessories',
+            sizes: ['One Size'],
+            subCategories: {
+              'bags': { label: 'Bags', styles: ['Backpacks', 'Totes', 'Crossbody', 'Duffel'] },
+              'watches': { label: 'Watches', styles: ['Analog', 'Digital', 'Smart'] },
+              'sunglasses': { label: 'Sunglasses', styles: ['Aviator', 'Wayfarer', 'Round', 'Square'] },
+              'hats': { label: 'Hats', styles: ['Caps', 'Beanies', 'Bucket Hats'] }
+            }
+          }
         }
       }
     }
   }
 };
+
+// ✅ Colour Options
+const colourOptions = [
+  'Black', 'White', 'Red', 'Blue', 'Green', 'Yellow', 'Pink',
+  'Purple', 'Orange', 'Brown', 'Grey', 'Navy', 'Teal', 'Maroon',
+  'Olive', 'Cream', 'Beige', 'Gold', 'Silver', 'Rose Gold',
+  'Turquoise', 'Lavender', 'Mint', 'Coral', 'Peach', 'Tan',
+  'Charcoal', 'Burgundy', 'Mustard', 'Emerald', 'Ruby'
+];
+
+// ✅ Size Options - Complete with US Sizes
+const sizeOptions = [
+  // 👕 Clothing Sizes
+  'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL',
+  // 👟 Women Footwear Sizes (US)
+  '5(US)', '5.5(US)', '6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)',
+  // 👞 Men Footwear Sizes (US)
+  '6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)',
+  // 👶 Kids Sizes
+  'XS(4-5)', 'S(6-7)', 'M(8-10)', 'L(12-14)', 'XL(16)',
+  '0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M',
+  '10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)', '12.5(US)', '13(US)', '13.5(US)', '1(US)', '1.5(US)', '2(US)', '2.5(US)', '3(US)',
+  // 📦 Other
+  'One Size', 'Free Size'
+];
+
+// ✅ Main Categories
+const mainCategories = Object.keys(categoryData);
 
 const AdminProductForm: React.FC = () => {
   const navigate = useNavigate();
@@ -186,24 +366,35 @@ const AdminProductForm: React.FC = () => {
 
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
+    brand: '',
+    sku: '',
+    category: '',
+    gender: '',
+    productType: '',
+    subCategory: '',
+    style: '',
     price: 0,
     oldPrice: 0,
     discount: 0,
-    rating: 0,
-    category: '',
-    subCategory: '',
-    subSubCategory: '',
+    costPrice: 0,
+    stock: 0,
+    lowStockAlert: 5,
     image: '',
     images: [],
     colorImages: {},
     sizes: [],
     colors: [],
-    stock: 0,
+    shortDescription: '',
     description: '',
     material: '',
     careInstructions: '',
     isNew: false,
-    isFeatured: false
+    isFeatured: false,
+    isBestSeller: false,
+    isOnSale: false,
+    status: 'active',
+    rating: 0,
+    reviewCount: 0
   });
 
   const [loading, setLoading] = useState(false);
@@ -213,38 +404,103 @@ const AdminProductForm: React.FC = () => {
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
   
-  const [newColor, setNewColor] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
   const [newColorImages, setNewColorImages] = useState<string[]>([]);
   const [newColorUrlInput, setNewColorUrlInput] = useState('');
   const [showColorUrlInput, setShowColorUrlInput] = useState(false);
   
   const [newSize, setNewSize] = useState('');
+  const [usedProductIds, setUsedProductIds] = useState<string[]>([]);
 
-  // ✅ Get categories list
-  const mainCategories = Object.keys(categoryData);
+  // ✅ Get current category data with proper typing
+  const currentCategory = formData.category ? categoryData[formData.category] : null;
+  const categoryPrefix = currentCategory?.prefix || '';
 
-  // ✅ Get subcategories for selected category
+  // ✅ Get current gender data with proper typing
+  const currentGender = formData.gender && currentCategory 
+    ? currentCategory.genders[formData.gender] 
+    : null;
+
+  // ✅ Get current product type data with proper typing
+  const currentProductType = formData.productType && currentGender
+    ? currentGender.productTypes[formData.productType]
+    : null;
+
+  // ✅ Get current subcategory data with proper typing
+  const currentSubCategory = formData.subCategory && currentProductType
+    ? currentProductType.subCategories[formData.subCategory]
+    : null;
+
+  // ✅ Get genders for selected category
+  const getGenders = () => {
+    if (!formData.category || !currentCategory) return {};
+    return currentCategory.genders;
+  };
+
+  // ✅ Get product types for selected gender
+  const getProductTypes = () => {
+    if (!formData.category || !formData.gender || !currentGender) return {};
+    return currentGender.productTypes;
+  };
+
+  // ✅ Get subcategories for selected product type
   const getSubCategories = () => {
-    if (!formData.category) return {};
-    return categoryData[formData.category]?.subCategories || {};
+    if (!formData.category || !formData.gender || !formData.productType || !currentProductType) return {};
+    return currentProductType.subCategories;
   };
 
-  // ✅ Get sub-subcategories for selected subcategory
-  const getSubSubCategories = () => {
-    if (!formData.category || !formData.subCategory) return {};
-    const subCats = getSubCategories();
-    return subCats[formData.subCategory]?.subSubCategories || {};
+  // ✅ Get styles for selected subcategory
+  const getStyles = (): string[] => {
+    if (!formData.category || !formData.gender || !formData.productType || !formData.subCategory || !currentSubCategory) return [];
+    return currentSubCategory.styles || [];
   };
 
-  // ✅ Get final options
-  const getFinalOptions = (): string[] => {
-    if (!formData.category || !formData.subCategory || !formData.subSubCategory) return [];
-    const subSubCats = getSubSubCategories();
-    return subSubCats[formData.subSubCategory]?.options || [];
+  // ✅ Get sizes for selected product type
+  const getSizes = (): string[] => {
+    if (!formData.category || !formData.gender || !formData.productType || !currentProductType) return [];
+    return currentProductType.sizes || sizeOptions;
   };
 
-  const sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'One Size', 'Free Size'];
+  // ✅ Generate Product IDs
+  const generateProductIds = (prefix: string) => {
+    const ids: string[] = [];
+    for (let i = 1; i <= 100; i++) {
+      ids.push(`${prefix}-${String(i).padStart(3, '0')}`);
+    }
+    return ids;
+  };
 
+  // ✅ Fetch used product IDs
+  const fetchUsedProductIds = async (prefix: string) => {
+    try {
+      const q = query(
+        collection(db, 'products'),
+        where('sku', '>=', `${prefix}-001`),
+        where('sku', '<=', `${prefix}-100`)
+      );
+      const snapshot = await getDocs(q);
+      const usedIds = snapshot.docs.map(doc => doc.data().sku);
+      setUsedProductIds(usedIds);
+    } catch (error) {
+      console.error('Error fetching product IDs:', error);
+    }
+  };
+
+  // ✅ When category changes, update product IDs
+  useEffect(() => {
+    if (formData.category && categoryPrefix) {
+      fetchUsedProductIds(categoryPrefix);
+      if (!formData.sku) {
+        const allIds = generateProductIds(categoryPrefix);
+        const available = allIds.filter(id => !usedProductIds.includes(id));
+        if (available.length > 0) {
+          setFormData(prev => ({ ...prev, sku: available[0] }));
+        }
+      }
+    }
+  }, [formData.category, categoryPrefix]);
+
+  // ✅ Fetch product if edit mode
   useEffect(() => {
     if (isEditMode && id) {
       fetchProduct(id);
@@ -259,24 +515,35 @@ const AdminProductForm: React.FC = () => {
         const data = productDoc.data();
         setFormData({
           name: data.name || '',
+          brand: data.brand || '',
+          sku: data.sku || '',
+          category: data.category || '',
+          gender: data.gender || '',
+          productType: data.productType || '',
+          subCategory: data.subCategory || '',
+          style: data.style || '',
           price: data.price || 0,
           oldPrice: data.oldPrice || 0,
-          discount: data.discount || data.discountPrice || 0,
-          rating: data.rating || 0,
-          category: data.category || '',
-          subCategory: data.subCategory || '',
-          subSubCategory: data.subSubCategory || '',
+          discount: data.discount || 0,
+          costPrice: data.costPrice || 0,
+          stock: data.stock || 0,
+          lowStockAlert: data.lowStockAlert || 5,
           image: data.image || '',
           images: data.images || [],
           colorImages: data.colorImages || {},
           sizes: data.sizes || [],
           colors: data.colors || [],
-          stock: data.stock || 0,
+          shortDescription: data.shortDescription || '',
           description: data.description || '',
           material: data.material || '',
           careInstructions: data.careInstructions || '',
           isNew: data.isNew || false,
-          isFeatured: data.isFeatured || false
+          isFeatured: data.isFeatured || false,
+          isBestSeller: data.isBestSeller || false,
+          isOnSale: data.isOnSale || false,
+          status: data.status || 'active',
+          rating: data.rating || 0,
+          reviewCount: data.reviewCount || 0
         });
       }
     } catch (error) {
@@ -358,8 +625,8 @@ const AdminProductForm: React.FC = () => {
 
   const handleColorImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || !newColor) {
-      alert('Please add a colour name first');
+    if (!files || !selectedColor) {
+      alert('Please select a colour first');
       return;
     }
 
@@ -384,8 +651,8 @@ const AdminProductForm: React.FC = () => {
       alert('Please enter a valid image URL');
       return;
     }
-    if (!newColor) {
-      alert('Please add a colour name first');
+    if (!selectedColor) {
+      alert('Please select a colour first');
       return;
     }
     setNewColorImages(prev => [...prev, newColorUrlInput]);
@@ -394,21 +661,21 @@ const AdminProductForm: React.FC = () => {
   };
 
   const addColor = () => {
-    if (!newColor.trim()) {
-      alert('Please enter a colour name');
+    if (!selectedColor) {
+      alert('Please select a colour');
       return;
     }
-    if (formData.colors.includes(newColor)) {
+    if (formData.colors.includes(selectedColor)) {
       alert('This colour already exists');
       return;
     }
 
     setFormData(prev => ({
       ...prev,
-      colors: [...prev.colors, newColor],
-      colorImages: { ...prev.colorImages, [newColor]: newColorImages }
+      colors: [...prev.colors, selectedColor],
+      colorImages: { ...prev.colorImages, [selectedColor]: newColorImages }
     }));
-    setNewColor('');
+    setSelectedColor('');
     setNewColorImages([]);
     setNewColorUrlInput('');
   };
@@ -427,7 +694,7 @@ const AdminProductForm: React.FC = () => {
 
   const addSize = () => {
     if (!newSize.trim()) {
-      alert('Please enter a size');
+      alert('Please select a size');
       return;
     }
     if (formData.sizes.includes(newSize)) {
@@ -455,15 +722,6 @@ const AdminProductForm: React.FC = () => {
     }));
   };
 
-  const removeColorImage = (color: string, index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      colorImages: {
-        ...prev.colorImages,
-        [color]: prev.colorImages[color].filter((_, i) => i !== index)
-      }
-    }));
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -476,33 +734,85 @@ const AdminProductForm: React.FC = () => {
     }));
   };
 
-  // ✅ Handle Category Change - Reset sub categories
+  // ✅ Handle Category Change
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({
       ...prev,
       category: value,
+      gender: '',
+      productType: '',
       subCategory: '',
-      subSubCategory: ''
+      style: '',
+      sku: ''
     }));
   };
 
-  // ✅ Handle Sub Category Change - Reset sub-sub categories
+  // ✅ Handle Gender Change
+  const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      gender: value,
+      productType: '',
+      subCategory: '',
+      style: ''
+    }));
+  };
+
+  // ✅ Handle Product Type Change
+  const handleProductTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      productType: value,
+      subCategory: '',
+      style: ''
+    }));
+  };
+
+  // ✅ Handle Subcategory Change
   const handleSubCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({
       ...prev,
       subCategory: value,
-      subSubCategory: ''
+      style: ''
     }));
   };
+
+  // ✅ Check if SKU is used
+  const isSkuUsed = (sku: string) => {
+    return usedProductIds.includes(sku);
+  };
+
+  // ✅ Get status color for SKU
+  const getSkuStatus = (sku: string) => {
+    if (isSkuUsed(sku)) {
+      return 'bg-red-100 text-red-700 border-red-300';
+    }
+    return 'bg-green-100 text-green-700 border-green-300';
+  };
+
+  // ✅ Calculate discount automatically
+  useEffect(() => {
+    if (formData.oldPrice > formData.price) {
+      const discount = Math.round(((formData.oldPrice - formData.price) / formData.oldPrice) * 100);
+      setFormData(prev => ({ ...prev, discount }));
+    } else {
+      setFormData(prev => ({ ...prev, discount: 0 }));
+    }
+  }, [formData.price, formData.oldPrice]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation
     if (!formData.name) { alert('Please enter product name'); return; }
     if (!formData.price) { alert('Please enter price'); return; }
     if (!formData.category) { alert('Please select category'); return; }
+    if (!formData.gender) { alert('Please select gender'); return; }
+    if (!formData.productType) { alert('Please select product type'); return; }
     if (!formData.image) { alert('Please upload or add main image URL'); return; }
     if (formData.colors.length === 0) { alert('Please add at least one colour'); return; }
     if (formData.sizes.length === 0) { alert('Please add at least one size'); return; }
@@ -511,30 +821,37 @@ const AdminProductForm: React.FC = () => {
     setError(null);
 
     try {
-      const discountPrice = formData.discount || 
-        (formData.oldPrice > formData.price ? 
-          Math.round(((formData.oldPrice - formData.price) / formData.oldPrice) * 100) : 0);
-
       const productData = {
         name: formData.name,
-        price: formData.price,
-        discountPrice: discountPrice,
-        rating: formData.rating || 0,
+        brand: formData.brand || '',
+        sku: formData.sku || '',
         category: formData.category,
+        gender: formData.gender,
+        productType: formData.productType,
         subCategory: formData.subCategory || '',
-        subSubCategory: formData.subSubCategory || '',
+        style: formData.style || '',
+        price: formData.price,
+        oldPrice: formData.oldPrice || 0,
+        discount: formData.discount || 0,
+        costPrice: formData.costPrice || 0,
+        stock: formData.stock || 0,
+        lowStockAlert: formData.lowStockAlert || 5,
         image: formData.image,
         images: formData.images || [],
         colorImages: formData.colorImages || {},
         sizes: formData.sizes || [],
         colors: formData.colors || [],
-        stock: formData.stock || 0,
+        shortDescription: formData.shortDescription || '',
         description: formData.description || '',
         material: formData.material || '',
         careInstructions: formData.careInstructions || '',
-        isActive: true,
         isNew: formData.isNew || false,
         isFeatured: formData.isFeatured || false,
+        isBestSeller: formData.isBestSeller || false,
+        isOnSale: formData.isOnSale || false,
+        status: formData.status || 'active',
+        rating: formData.rating || 0,
+        reviewCount: formData.reviewCount || 0,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -568,10 +885,12 @@ const AdminProductForm: React.FC = () => {
     );
   }
 
-  // ✅ Get all select options
+  // ✅ Get all select options with proper typing
+  const genders = getGenders();
+  const productTypes = getProductTypes();
   const subCategories = getSubCategories();
-  const subSubCategories = getSubSubCategories();
-  const finalOptions = getFinalOptions();
+  const styles = getStyles();
+  const availableSizes = getSizes();
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -589,7 +908,7 @@ const AdminProductForm: React.FC = () => {
               {isEditMode ? '✏️ Edit Product' : '➕ Add New Product'}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              {isEditMode ? 'Update product details' : 'Create a new product with colours and sizes'}
+              {isEditMode ? 'Update product details' : 'Create a new product'}
             </p>
           </div>
         </div>
@@ -608,9 +927,11 @@ const AdminProductForm: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* ========== BASIC INFO ========== */}
+        {/* ============================================================
+        1. BASIC INFORMATION
+        ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">📋 Basic Information</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📋 1. Basic Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
@@ -624,12 +945,66 @@ const AdminProductForm: React.FC = () => {
                 required
               />
             </div>
-            
-            {/* ✅ MAIN CATEGORY */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Main Category <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+              <input
+                type="text"
+                name="brand"
+                value={formData.brand}
+                onChange={handleInputChange}
+                placeholder="e.g., MARIA B"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">SKU / Code</label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={formData.sku}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
+                  className={`flex-1 px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none ${getSkuStatus(formData.sku)}`}
+                >
+                  <option value="">Select SKU</option>
+                  {generateProductIds(categoryPrefix).map((id) => (
+                    <option key={id} value={id} className={isSkuUsed(id) ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50'}>
+                      {id} {isSkuUsed(id) ? '🔴 (Used)' : '🟢 (Available)'}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs whitespace-nowrap">
+                  {formData.sku && (
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getSkuStatus(formData.sku)}`}>
+                      <FaCircle className="text-[8px]" />
+                      {isSkuUsed(formData.sku) ? 'Used' : 'Available'}
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+              >
+                <option value="active">🟢 Active</option>
+                <option value="draft">🟡 Draft</option>
+                <option value="out-of-stock">🔴 Out of Stock</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================================
+        2. CATEGORY
+        ============================================================ */}
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🏷️ 2. Category</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Main Category *</label>
               <select
                 value={formData.category}
                 onChange={handleCategoryChange}
@@ -637,94 +1012,126 @@ const AdminProductForm: React.FC = () => {
                 required
               >
                 <option value="">Select Category</option>
-                {mainCategories.map((cat: string) => (
-                  <option key={cat} value={cat}>
-                    {categoryData[cat]?.icon || '📦'} {categoryData[cat]?.label || cat}
-                  </option>
+                {mainCategories.map((cat) => {
+                  const catData = categoryData[cat];
+                  return (
+                    <option key={cat} value={cat}>
+                      {catData?.icon || '📦'} {catData?.label || cat}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">For *</label>
+              <select
+                value={formData.gender}
+                onChange={handleGenderChange}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                required
+              >
+                <option value="">Select</option>
+                {Object.keys(genders).map((key) => {
+                  const gender = genders[key];
+                  return (
+                    <option key={key} value={key}>
+                      {gender?.icon || ''} {gender?.label || key}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Product Type *</label>
+              <select
+                value={formData.productType}
+                onChange={handleProductTypeChange}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                required
+              >
+                <option value="">Select Product Type</option>
+                {Object.keys(productTypes).map((key) => {
+                  const pt = productTypes[key];
+                  return (
+                    <option key={key} value={key}>
+                      {pt?.label || key}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
+              <select
+                value={formData.subCategory}
+                onChange={handleSubCategoryChange}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+              >
+                <option value="">Select Subcategory</option>
+                {Object.keys(subCategories).map((key) => {
+                  const sc = subCategories[key];
+                  return (
+                    <option key={key} value={key}>
+                      {sc?.label || key}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Style</label>
+              <select
+                value={formData.style}
+                onChange={(e) => setFormData(prev => ({ ...prev, style: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+              >
+                <option value="">Select Style</option>
+                {styles.map((style: string) => (
+                  <option key={style} value={style}>{style}</option>
                 ))}
               </select>
             </div>
 
-            {/* ✅ SUB CATEGORY */}
-            {formData.category && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sub Category <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.subCategory}
-                  onChange={handleSubCategoryChange}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
-                  required
-                >
-                  <option value="">Select Sub Category</option>
-                  {Object.keys(subCategories).map((key: string) => (
-                    <option key={key} value={key}>
-                      {subCategories[key]?.label || key}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* ✅ SUB-SUB CATEGORY */}
-            {formData.subCategory && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sub-Sub Category <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.subSubCategory}
-                  onChange={(e) => setFormData(prev => ({ ...prev, subSubCategory: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
-                  required
-                >
-                  <option value="">Select Sub-Sub Category</option>
-                  {Object.keys(subSubCategories).map((key: string) => (
-                    <option key={key} value={key}>
-                      {subSubCategories[key]?.label || key}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* ✅ FINAL OPTIONS */}
-            {formData.subSubCategory && finalOptions.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Product Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.subSubCategory}
-                  onChange={(e) => setFormData(prev => ({ ...prev, subSubCategory: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
-                  required
-                >
-                  <option value="">Select Type</option>
-                  {finalOptions.map((opt: string) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* ✅ Category Path Display */}
+            {/* Category Path Display */}
             {formData.category && (
               <div className="md:col-span-2">
                 <div className="bg-[#F8FAFC] p-3 rounded-lg border border-gray-200 flex items-center gap-2 text-sm text-gray-600 flex-wrap">
                   <span className="text-xl">{categoryData[formData.category]?.icon || '📦'}</span>
                   <span className="font-medium">{categoryData[formData.category]?.label || formData.category}</span>
+                  {formData.gender && (
+                    <>
+                      <FaChevronRight className="text-gray-400 text-xs" />
+                      <span>{genders[formData.gender]?.icon || ''} {genders[formData.gender]?.label || formData.gender}</span>
+                    </>
+                  )}
+                  {formData.productType && (
+                    <>
+                      <FaChevronRight className="text-gray-400 text-xs" />
+                      <span>{productTypes[formData.productType]?.label || formData.productType}</span>
+                    </>
+                  )}
                   {formData.subCategory && (
                     <>
                       <FaChevronRight className="text-gray-400 text-xs" />
                       <span>{subCategories[formData.subCategory]?.label || formData.subCategory}</span>
                     </>
                   )}
-                  {formData.subSubCategory && (
+                  {formData.style && (
                     <>
                       <FaChevronRight className="text-gray-400 text-xs" />
-                      <span>{subSubCategories[formData.subSubCategory]?.label || formData.subSubCategory}</span>
+                      <span className="text-[#D4AF37] font-medium">{formData.style}</span>
+                    </>
+                  )}
+                  {formData.sku && (
+                    <>
+                      <FaChevronRight className="text-gray-400 text-xs" />
+                      <span className={`font-mono font-semibold ${isSkuUsed(formData.sku) ? 'text-red-500' : 'text-green-600'}`}>
+                        {formData.sku}
+                      </span>
                     </>
                   )}
                 </div>
@@ -733,9 +1140,11 @@ const AdminProductForm: React.FC = () => {
           </div>
         </div>
 
-        {/* ========== PRICING ========== */}
+        {/* ============================================================
+        3. PRICING
+        ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">💰 Pricing & Stock</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">💰 3. Pricing</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.) *</label>
@@ -750,18 +1159,44 @@ const AdminProductForm: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Discount %</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Old / Regular Price</label>
               <input
                 type="number"
-                name="discount"
-                value={formData.discount}
+                name="oldPrice"
+                value={formData.oldPrice}
                 onChange={handleInputChange}
-                placeholder="17"
+                placeholder="7500"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Total Stock</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Discount (Auto)</label>
+              <div className="px-4 py-2 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-semibold">
+                {formData.discount || 0}%
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (Admin)</label>
+              <input
+                type="number"
+                name="costPrice"
+                value={formData.costPrice}
+                onChange={handleInputChange}
+                placeholder="5000"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================================
+        4. INVENTORY
+        ============================================================ */}
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📦 4. Inventory</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity *</label>
               <input
                 type="number"
                 name="stock"
@@ -769,33 +1204,32 @@ const AdminProductForm: React.FC = () => {
                 onChange={handleInputChange}
                 placeholder="15"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Low Stock Alert</label>
               <input
                 type="number"
-                name="rating"
-                value={formData.rating}
+                name="lowStockAlert"
+                value={formData.lowStockAlert}
                 onChange={handleInputChange}
-                placeholder="4.9"
-                step="0.1"
-                min="0"
-                max="5"
+                placeholder="3"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
             </div>
           </div>
         </div>
 
-        {/* ========== IMAGES ========== */}
+        {/* ============================================================
+        5. IMAGES
+        ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🖼️ Images</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🖼️ 5. Images</h3>
           
           {/* Main Image */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Main Image *</label>
-            
+            <label className="block text-sm font-medium text-gray-700 mb-1">Main Product Image *</label>
             <div className="flex items-center gap-4 mb-2">
               <input
                 type="file"
@@ -812,7 +1246,6 @@ const AdminProductForm: React.FC = () => {
                 {uploading ? <FaSpinner className="animate-spin" /> : <FaCloudUploadAlt />}
                 {uploading ? 'Uploading...' : 'Upload Image'}
               </label>
-              
               <button
                 type="button"
                 onClick={() => setShowUrlInput(!showUrlInput)}
@@ -821,7 +1254,6 @@ const AdminProductForm: React.FC = () => {
                 <FaLink /> Add URL
               </button>
             </div>
-
             {showUrlInput && (
               <div className="flex items-center gap-2 mb-2">
                 <input
@@ -847,7 +1279,6 @@ const AdminProductForm: React.FC = () => {
                 </button>
               </div>
             )}
-
             {formData.image && (
               <div className="relative inline-block mt-2">
                 <img src={formData.image} alt="Main" className="w-24 h-24 object-cover rounded-lg border" />
@@ -862,10 +1293,9 @@ const AdminProductForm: React.FC = () => {
             )}
           </div>
 
-          {/* Gallery Images */}
+          {/* Additional Images */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Gallery Images</label>
-            
+            <label className="block text-sm font-medium text-gray-700 mb-1">Additional Product Images</label>
             <div className="flex items-center gap-4 mb-2">
               <input
                 type="file"
@@ -883,7 +1313,6 @@ const AdminProductForm: React.FC = () => {
                 {uploading ? <FaSpinner className="animate-spin" /> : <FaCloudUploadAlt />}
                 {uploading ? 'Uploading...' : 'Upload Images'}
               </label>
-              
               <button
                 type="button"
                 onClick={() => setShowUrlInput(!showUrlInput)}
@@ -892,7 +1321,6 @@ const AdminProductForm: React.FC = () => {
                 <FaLink /> Add URL
               </button>
             </div>
-
             {showUrlInput && (
               <div className="flex items-center gap-2 mb-2">
                 <input
@@ -918,7 +1346,6 @@ const AdminProductForm: React.FC = () => {
                 </button>
               </div>
             )}
-
             <div className="flex flex-wrap gap-2 mt-2">
               {formData.images.map((img: string, index: number) => (
                 <div key={index} className="relative">
@@ -936,189 +1363,182 @@ const AdminProductForm: React.FC = () => {
           </div>
         </div>
 
-        {/* ========== COLOURS ========== */}
+        {/* ============================================================
+        6. VARIANTS
+        ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <FaPalette className="text-[#0F766E]" /> Colours with Images
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🎨 6. Variants</h3>
           
-          <div className="border rounded-lg p-4 mb-4 bg-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <input
-                type="text"
-                placeholder="Colour name (e.g., Grey, Pink, Black)"
-                value={newColor}
-                onChange={(e) => setNewColor(e.target.value)}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-              />
-              <div className="flex items-center gap-2 flex-wrap">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleColorImagesUpload}
-                  className="hidden"
-                  id="colorImagesUpload"
-                  disabled={uploading}
-                />
-                <label
-                  htmlFor="colorImagesUpload"
-                  className="bg-[#0F766E] text-white px-3 py-2 rounded-lg hover:bg-[#065F46] transition cursor-pointer text-sm flex items-center gap-2"
+          {/* Colors */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Colors</label>
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <select
+                  value={selectedColor}
+                  onChange={(e) => setSelectedColor(e.target.value)}
+                  className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
                 >
-                  {uploading ? <FaSpinner className="animate-spin" /> : <FaCloudUploadAlt />}
-                  {uploading ? 'Uploading...' : 'Upload Images'}
-                </label>
+                  <option value="">Select Colour</option>
+                  {colourOptions.map((color) => (
+                    <option key={color} value={color}>{color}</option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleColorImagesUpload}
+                    className="hidden"
+                    id="colorImagesUpload"
+                    disabled={uploading}
+                  />
+                  <label
+                    htmlFor="colorImagesUpload"
+                    className="bg-[#0F766E] text-white px-3 py-2 rounded-lg hover:bg-[#065F46] transition cursor-pointer text-sm flex items-center gap-2"
+                  >
+                    {uploading ? <FaSpinner className="animate-spin" /> : <FaCloudUploadAlt />}
+                    {uploading ? 'Uploading...' : 'Upload Images'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowColorUrlInput(!showColorUrlInput)}
+                    className="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
+                  >
+                    <FaLink /> Add URL
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setShowColorUrlInput(!showColorUrlInput)}
-                  className="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
-                >
-                  <FaLink /> Add URL
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={addColor}
-                className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
-              >
-                <FaPlus className="inline mr-1" /> Add Colour
-              </button>
-            </div>
-
-            {showColorUrlInput && (
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="text"
-                  placeholder="https://example.com/colour-image.jpg"
-                  value={newColorUrlInput}
-                  onChange={(e) => setNewColorUrlInput(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={handleColorImageUrl}
+                  onClick={addColor}
                   className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
                 >
-                  Add URL
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowColorUrlInput(false); setNewColorUrlInput(''); }}
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
-                >
-                  Cancel
+                  <FaPlus className="inline mr-1" /> Add Colour
                 </button>
               </div>
-            )}
-
-            {newColorImages.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {newColorImages.map((img: string, i: number) => (
-                  <img key={i} src={img} className="w-12 h-12 object-cover rounded border" />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {formData.colors.map((color: string) => (
-              <div key={color} className="border rounded-lg p-3 bg-white shadow-sm">
-                <div className="flex justify-between items-center mb-2">
+              {showColorUrlInput && (
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="text"
+                    placeholder="https://example.com/colour-image.jpg"
+                    value={newColorUrlInput}
+                    onChange={(e) => setNewColorUrlInput(e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleColorImageUrl}
+                    className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
+                  >
+                    Add URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowColorUrlInput(false); setNewColorUrlInput(''); }}
+                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+              {newColorImages.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {newColorImages.map((img: string, i: number) => (
+                    <img key={i} src={img} className="w-12 h-12 object-cover rounded border" />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.colors.map((color: string) => (
+                <div key={color} className="border rounded-lg p-2 bg-white shadow-sm flex items-center gap-2">
                   <span className="font-medium text-gray-800">{color}</span>
                   <button
                     type="button"
                     onClick={() => removeColor(color)}
                     className="text-red-500 hover:text-red-700 text-sm"
                   >
-                    <FaTrash />
+                    ×
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {formData.colorImages[color]?.map((img: string, i: number) => (
-                    <div key={i} className="relative">
-                      <img src={img} className="w-12 h-12 object-cover rounded border" />
-                      <button
-                        type="button"
-                        onClick={() => removeColorImage(color, i)}
-                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                  {(!formData.colorImages[color] || formData.colorImages[color].length === 0) && (
-                    <span className="text-xs text-gray-400">No images</span>
-                  )}
-                </div>
-              </div>
-            ))}
-            {formData.colors.length === 0 && (
-              <div className="col-span-3 text-center text-gray-400 text-sm py-4">
-                No colours added yet. Add colours with images above.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ========== SIZES ========== */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <FaRuler className="text-[#0F766E]" /> Sizes
-          </h3>
-          
-          <div className="flex flex-wrap gap-3">
-            <select
-              value={newSize}
-              onChange={(e) => setNewSize(e.target.value)}
-              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-            >
-              <option value="">Select Size</option>
-              {sizeOptions.map((s: string) => (
-                <option key={s} value={s}>{s}</option>
               ))}
-            </select>
-            <button
-              type="button"
-              onClick={addSize}
-              className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
-            >
-              <FaPlus className="inline mr-1" /> Add Size
-            </button>
+              {formData.colors.length === 0 && (
+                <span className="text-sm text-gray-400">No colors added yet</span>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mt-3">
-            {formData.sizes.map((size: string) => (
-              <span
-                key={size}
-                className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+          {/* Sizes - ✅ Dynamic Sizes based on Product Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sizes</label>
+            <div className="flex flex-wrap gap-3">
+              <select
+                value={newSize}
+                onChange={(e) => setNewSize(e.target.value)}
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
               >
-                {size}
-                <button
-                  type="button"
-                  onClick={() => removeSize(size)}
-                  className="text-red-500 hover:text-red-700"
+                <option value="">Select Size</option>
+                {/* ✅ Category-specific sizes */}
+                {availableSizes.map((s: string) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={addSize}
+                className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
+              >
+                <FaPlus className="inline mr-1" /> Add Size
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.sizes.map((size: string) => (
+                <span
+                  key={size}
+                  className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
                 >
-                  ×
-                </button>
-              </span>
-            ))}
-            {formData.sizes.length === 0 && (
-              <span className="text-sm text-gray-400">No sizes added yet</span>
-            )}
+                  {size}
+                  <button
+                    type="button"
+                    onClick={() => removeSize(size)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              {formData.sizes.length === 0 && (
+                <span className="text-sm text-gray-400">No sizes added yet</span>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ========== DESCRIPTION ========== */}
+        {/* ============================================================
+        7. DETAILS
+        ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">📝 Description & Details</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📝 7. Product Details</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+              <input
+                type="text"
+                name="shortDescription"
+                value={formData.shortDescription}
+                onChange={handleInputChange}
+                placeholder="Brief product description..."
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                placeholder="Product description..."
+                placeholder="Full product description..."
                 rows={6}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none resize-y"
               />
@@ -1130,7 +1550,7 @@ const AdminProductForm: React.FC = () => {
                 name="material"
                 value={formData.material}
                 onChange={handleInputChange}
-                placeholder="e.g., Net Saree with Embroidered Net Fabric"
+                placeholder="e.g., Shamoz Silk, Net Fabric"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
             </div>
@@ -1141,16 +1561,18 @@ const AdminProductForm: React.FC = () => {
                 name="careInstructions"
                 value={formData.careInstructions}
                 onChange={handleInputChange}
-                placeholder="e.g., Dry clean only"
+                placeholder="e.g., Dry clean recommended"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
             </div>
           </div>
         </div>
 
-        {/* ========== FEATURES ========== */}
+        {/* ============================================================
+        8. LABELS
+        ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">⭐ Features</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🏷️ 8. Product Labels</h3>
           <div className="flex flex-wrap items-center gap-6">
             <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
               <input
@@ -1172,10 +1594,32 @@ const AdminProductForm: React.FC = () => {
               />
               ⭐ Featured Product
             </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                name="isBestSeller"
+                checked={formData.isBestSeller}
+                onChange={handleInputChange}
+                className="w-4 h-4 text-[#0F766E] rounded focus:ring-[#0F766E]"
+              />
+              🏆 Best Seller
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                name="isOnSale"
+                checked={formData.isOnSale}
+                onChange={handleInputChange}
+                className="w-4 h-4 text-[#0F766E] rounded focus:ring-[#0F766E]"
+              />
+              🔥 On Sale
+            </label>
           </div>
         </div>
 
-        {/* ========== SUBMIT ========== */}
+        {/* ============================================================
+        9. SUBMIT
+        ============================================================ */}
         <div className="flex justify-end gap-3">
           <button
             type="button"

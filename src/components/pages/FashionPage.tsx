@@ -1,436 +1,644 @@
+// src/components/pages/FashionPage.tsx
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
-import { FaStar, FaHeart, FaShoppingCart, FaMale, FaFemale, FaChild } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { 
+  FaStar, FaHeart, FaShoppingCart, FaMale, FaFemale, FaChild, 
+  FaFilter, FaTimes, FaChevronDown, FaChevronUp
+} from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
+import { db, collection, getDocs } from '../../config/firebase';
 
-// ✅ Product Interface
+// ✅ Product Interface - Matching Admin Product Form
 interface FashionProduct {
-  id: number;
+  id: string;
   name: string;
   price: number;
-  oldPrice: number;
-  discount: number;
+  oldPrice?: number;
+  discountPrice?: number;
+  discount?: number;
   rating: number;
-  category: 'men' | 'women' | 'kids' | 'accessories' | 'watches';
+  category: string;
+  gender?: string;
+  productType?: string;
   subCategory: string;
+  subSubCategory: string;
+  style?: string;
+  productId: string;
   image: string;
   images: string[];
+  colorImages?: { [key: string]: string[] };
   sizes: string[];
   colors: string[];
   stock: number;
   description: string;
-  material: string;
-  careInstructions: string;
-  isNew?: boolean;
-  isFeatured?: boolean;
+  shortDescription?: string;
+  material?: string;
+  careInstructions?: string;
+  isNew: boolean;
+  isFeatured: boolean;
+  isBestSeller?: boolean;
+  isOnSale?: boolean;
+  status?: string;
+  createdAt?: any;
+  updatedAt?: any;
 }
+
+// ✅ Category Icons Mapping
+const categoryIcons: Record<string, string> = {
+  'clothing': '👗',
+  'footwear': '👠',
+  'bags': '👜',
+  'accessories': '💎',
+  'unstitched': '🧵',
+  'ready-to-wear': '👔',
+  'sarees': '🥻',
+  'abayas': '🧕',
+  'nightwear': '🌙',
+  'heels': '👠',
+  'flats': '👟',
+  'slippers': '🩴',
+  'sandals': '👡',
+  'khussa': '👞',
+  'sneakers': '👟',
+  'hand-bags': '👜',
+  'shoulder-bags': '👜',
+  'tote-bags': '👜',
+  'crossbody-bags': '👜',
+  'clutches': '👛',
+  'wallets': '👛',
+  'jewellery': '💍',
+  'watches': '⌚',
+  'sunglasses': '🕶️',
+  'scarves-hijabs': '🧣',
+  'hair-accessories': '🎀',
+  'shirts': '👔',
+  't-shirts': '👕',
+  'jeans': '👖',
+  'kurta': '👕',
+  'trousers': '👖',
+  'suits': '🤵',
+  'formal-shoes': '👞',
+  'casual-shoes': '👟',
+  'backpacks': '🎒',
+  'messenger-bags': '💼',
+  'briefcases': '💼',
+  'belts': '🔗',
+  'ties': '👔',
+  'boys': '👦',
+  'girls': '👧',
+  'baby': '👶',
+  'dresses': '👗',
+  'frocks': '👗',
+  'kurti': '👕',
+  'lawn': '🌿',
+  'onesies': '👶',
+  'sleepwear': '🌙',
+  'hats': '🧢',
+  // ✅ Fixed: Removed duplicate 'bags' entry (line 97)
+};
+
+// ✅ Gender Icons
+const genderIcons: Record<string, string> = {
+  'women': '👩',
+  'men': '👨',
+  'kids': '🧒',
+  'unisex': '👤'
+};
 
 const FashionPage = () => {
   const { addToCart } = useCart();
   
   // ✅ State
+  const [products, setProducts] = useState<FashionProduct[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<FashionProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedGender, setSelectedGender] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
   const [selectedSize, setSelectedSize] = useState('all');
   const [selectedColor, setSelectedColor] = useState('all');
   const [sortBy, setSortBy] = useState('popular');
+  const [showFilters, setShowFilters] = useState(false);
+  const [imageError, setImageError] = useState<{ [key: string]: boolean }>({});
 
-  // ✅ All Fashion Products (with Cloudinary URLs)
-  const fashionProducts: FashionProduct[] = [
-    // ==================== 👩 WOMEN ====================
-    {
-      id: 101,
-      name: 'Black Queen - Embroidered Shamoz Silk Suit',
-      price: 4250,
-      oldPrice: 4950,
-      discount: 10,
-      rating: 4.8,
-      category: 'women',
-      subCategory: 'Unstiched',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787461517/Gemini_Generated_Image_lneqw1lneqw1lneq_bkwrs8.jpg',
-      images: [],
-      sizes: ['One Size'],
-      colors: ['Black'],
-      stock: 10,
-      description: '',
-      material: '',
-      careInstructions: '.'
-    },
-    {
-      id: 102,
-      name: 'TYE & DYE Suit - 3-Piece Embroidered Shamoze Silk Suit',
-      price: 4190,
-      oldPrice: 5100,
-      discount: 18,
-      rating: 4.9,
-      category: 'women',
-      subCategory: 'Unstiched',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583325/1787569011956_iltiu9.jpg',
-      images: [],
-      sizes: ['One Size'],
-      colors: ['Green'],
-      stock: 10,
-      description: '',
-      material: '',
-      careInstructions: '.'
-    },
-    {
-      id: 103,
-      name: 'AGHA NOOR Unstitched Replica - Embroidered Suit',
-      price: 3299,
-      oldPrice: 4150,
-      discount: 21,
-      rating: 4.8,
-      category: 'women',
-      subCategory: 'Unstiched',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787583885/1787583699344_ki0lze.jpg',
-      images: [],
-      sizes: ['One Size'],
-      colors: ['Green'],
-      stock: 10,
-      description: '',
-      material: '',
-      careInstructions: '.'
-    },
-    {
-      id: 104,
-      name: 'MARIA B Exclusive Heavy Embroidered Saree',
-      price: 6250,
-      oldPrice: 7500,
-      discount: 17,
-      rating: 4.8,
-      category: 'women',
-      subCategory: 'Sarees',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787650742/1787649270496_m30x38.jpg',
-      images: [],
-      sizes: ['One Size'],
-      colors: ['Pink'],
-      stock: 15,
-      description: '',
-      material: '',
-      careInstructions: '.'
-    },
-    
-    // -- Women Accessories
-    {
-      id: 209,
-      name: '0ne Carat Zircon Locket Set',
-      price: 1650,
-      oldPrice: 1900,
-      discount: 19,
-      rating: 4.8,
-      category: 'women',
-      subCategory: 'accessories',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787209274/zircon_locket_black_hfodez.jpg',
-      images: [],
-      sizes: ['One Size'],
-      colors: ['Green', 'Black', 'Red', 'Blue'],
-      stock: 15,
-      description: 'Beautiful 1 Carat Zircon Locket Set with elegant design.',
-      material: 'Zircon with Alloy Setting',
-      careInstructions: 'Wipe with soft cloth. Keep in jewelry box..'
-    },
-  ];
+  // ✅ Fetch Products from Firebase
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const querySnapshot = await getDocs(collection(db, 'products'));
+        const productsData: FashionProduct[] = [];
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          // ✅ Filter only fashion category
+          if (data.category === 'fashion') {
+            productsData.push({
+              id: doc.id,
+              name: data.name || '',
+              price: data.price || 0,
+              oldPrice: data.oldPrice || 0,
+              discountPrice: data.discountPrice || 0,
+              discount: data.discount || data.discountPrice || 0,
+              rating: data.rating || 0,
+              category: data.category || 'fashion',
+              gender: data.gender || '',
+              productType: data.productType || '',
+              subCategory: data.subCategory || '',
+              subSubCategory: data.subSubCategory || '',
+              style: data.style || '',
+              productId: data.productId || '',
+              image: data.image || '',
+              images: data.images || [],
+              colorImages: data.colorImages || {},
+              sizes: data.sizes || [],
+              colors: data.colors || [],
+              stock: data.stock || 0,
+              description: data.description || '',
+              shortDescription: data.shortDescription || '',
+              material: data.material || '',
+              careInstructions: data.careInstructions || '',
+              isNew: data.isNew || false,
+              isFeatured: data.isFeatured || false,
+              isBestSeller: data.isBestSeller || false,
+              isOnSale: data.isOnSale || false,
+              status: data.status || 'active',
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt
+            });
+          }
+        });
+        
+        setProducts(productsData);
+        setFilteredProducts(productsData);
+      } catch (error) {
+        console.error('Error fetching fashion products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // ✅ Get unique subcategories for each category
-  const getSubcategories = (category: string) => {
-    const products = category === 'all' 
-      ? fashionProducts 
-      : fashionProducts.filter(p => p.category === category);
-    
-    const subs = [...new Set(products.map(p => p.subCategory))];
-    return subs;
-  };
+    fetchProducts();
+  }, []);
+
+  // ✅ Get unique genders, categories, sizes & colors
+  // ✅ Removed: allGenders (not used)
+  const allCategories = [...new Set(products.map(p => p.productType).filter(Boolean))];
+  const allSizes = [...new Set(products.flatMap(p => p.sizes || []))];
+  const allColors = [...new Set(products.flatMap(p => p.colors || []))];
 
   // ✅ Filter Logic
-  const filteredProducts = fashionProducts
-    .filter(p => selectedCategory === 'all' || p.category === selectedCategory)
-    .filter(p => selectedSubCategory === 'all' || p.subCategory === selectedSubCategory)
-    .filter(p => selectedSize === 'all' || p.sizes.includes(selectedSize))
-    .filter(p => selectedColor === 'all' || p.colors.includes(selectedColor))
-    .sort((a, b) => {
-      if (sortBy === 'popular') return b.rating - a.rating;
+  useEffect(() => {
+    let filtered = products;
+
+    // Filter by gender
+    if (selectedGender !== 'all') {
+      filtered = filtered.filter(p => p.gender === selectedGender);
+    }
+
+    // Filter by category (productType)
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(p => p.productType === selectedCategory);
+    }
+
+    // Filter by size
+    if (selectedSize !== 'all') {
+      filtered = filtered.filter(p => p.sizes && p.sizes.includes(selectedSize));
+    }
+
+    // Filter by color
+    if (selectedColor !== 'all') {
+      filtered = filtered.filter(p => p.colors && p.colors.includes(selectedColor));
+    }
+
+    // Sort
+    filtered = filtered.sort((a, b) => {
+      if (sortBy === 'popular') return (b.rating || 0) - (a.rating || 0);
       if (sortBy === 'price-low') return a.price - b.price;
       if (sortBy === 'price-high') return b.price - a.price;
-      if (sortBy === 'discount') return b.discount - a.discount;
+      if (sortBy === 'discount') return (b.discount || 0) - (a.discount || 0);
       return 0;
     });
 
-  // ✅ Get all sizes & colors for filters
-  const allSizes = [...new Set(fashionProducts.flatMap(p => p.sizes))];
-  const allColors = [...new Set(fashionProducts.flatMap(p => p.colors))];
+    setFilteredProducts(filtered);
+  }, [products, selectedGender, selectedCategory, selectedSize, selectedColor, sortBy]);
 
-  // ✅ Category tabs with counts
-  const categories = [
-    { id: 'all', label: 'All', icon: null },
-    { id: 'men', label: 'Men', icon: <FaMale /> },
-    { id: 'women', label: 'Women', icon: <FaFemale /> },
-    { id: 'kids', label: 'Kids', icon: <FaChild /> },
-    { id: 'accessories', label: 'Accessories', icon: null },
-  ];
-
-  // ✅ Subcategory icons mapping
-  const subCategoryIcons: Record<string, string> = {
-    shirts: '👔',
-    kurta: '👕',
-    jeans: '👖',
-    tshirts: '👕',
-    lawn: '👗',
-    dupatta: '🧣',
-    dresses: '👗',
-    accessories: '👜',
-    sunglasses: '🕶️',
-    luxury: '⌚',
-    smart: '⌚',
-    casual: '⌚'
+  // ✅ Get price with discount
+  const getDiscountedPrice = (product: FashionProduct) => {
+    if (product.discountPrice && product.discountPrice < product.price) {
+      return product.discountPrice;
+    }
+    if (product.discount && product.discount > 0) {
+      return product.price - (product.price * product.discount / 100);
+    }
+    return product.price;
   };
 
+  // ✅ Get discount percentage
+  const getDiscountPercent = (product: FashionProduct) => {
+    if (product.discount) return product.discount;
+    if (product.discountPrice && product.discountPrice < product.price) {
+      return Math.round(((product.price - product.discountPrice) / product.price) * 100);
+    }
+    return 0;
+  };
+
+  // ✅ Gender tabs with counts
+  const genders = [
+    { id: 'all', label: 'All', icon: null },
+    { id: 'women', label: 'Women', icon: <FaFemale className="text-sm sm:text-base" /> },
+    { id: 'men', label: 'Men', icon: <FaMale className="text-sm sm:text-base" /> },
+    { id: 'kids', label: 'Kids', icon: <FaChild className="text-sm sm:text-base" /> },
+    { id: 'unisex', label: 'Unisex', icon: <FaChild className="text-sm sm:text-base" /> },
+  ];
+
+  // ✅ Category tabs with counts
+  const categoryTabs = [
+    { id: 'all', label: 'All' },
+    ...allCategories.filter((cat): cat is string => typeof cat === 'string').map((cat) => ({ 
+      id: cat, 
+      label: categoryIcons[cat] || '📦',
+      fullLabel: cat?.replace(/-/g, ' ') || cat
+    }))
+  ];
+
+  // ✅ Handle image error
+  const handleImageError = (productId: string) => {
+    setImageError(prev => ({ ...prev, [productId]: true }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] bg-[#FFFDF7]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 border-[#D4AF37] mx-auto"></div>
+          <p className="mt-4 text-gray-600 text-sm sm:text-base">Loading fashion collection...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    // ✅ FIXED: Added pt-16 for mobile search bar
     <div className="bg-[#FFFDF7] pt-16 sm:pt-6 md:pt-8 lg:pt-12 pb-6 sm:pb-8 md:pb-12 min-h-screen">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         
         {/* ✅ Page Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#111827]">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#111827]">
             👗 Fashion <span className="text-[#D4AF37]">Collection</span>
           </h1>
-          <p className="text-gray-500 mt-2 max-w-2xl mx-auto">
+          <p className="text-gray-500 text-xs sm:text-sm md:text-base mt-1 sm:mt-2 max-w-2xl mx-auto">
             Discover the latest trends in ethnic wear, casual wear, and accessories.
           </p>
+          <div className="text-xs text-gray-400 mt-2">
+            {products.length} products available
+          </div>
         </div>
 
-        {/* ✅ Category Tabs */}
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6">
-          {categories.map(cat => {
-            const count = fashionProducts.filter(p => cat.id === 'all' || p.category === cat.id).length;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  setSelectedCategory(cat.id);
-                  setSelectedSubCategory('all');
-                }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1.5 ${(
-                  selectedCategory === cat.id
-                    ? 'bg-[#D4AF37] text-white shadow-md'
-                    : 'bg-[#F8FAFC] text-gray-600 hover:bg-[#E5E7EB] border border-[#E5E7EB]'
-                )}`}
-              >
-                {cat.icon}
-                {cat.label}
-                <span className="ml-1 text-xs opacity-75">({count})</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* ✅ Subcategory Tabs */}
-        {selectedCategory !== 'all' && (
-          <div className="flex flex-wrap justify-center gap-2 mb-6">
-            <button
-              onClick={() => setSelectedSubCategory('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${(
-                selectedSubCategory === 'all'
-                  ? 'bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]'
-                  : 'bg-[#F8FAFC] text-gray-500 hover:bg-[#E5E7EB] border border-[#E5E7EB]'
-              )}`}
-            >
-              All
-            </button>
-            {getSubcategories(selectedCategory).map(sub => {
-              const count = fashionProducts.filter(p => p.subCategory === sub).length;
-              const icon = subCategoryIcons[sub] || '📦';
-              return (
-                <button
-                  key={sub}
-                  onClick={() => setSelectedSubCategory(sub)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition capitalize flex items-center gap-1 ${(
-                    selectedSubCategory === sub
-                      ? 'bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]'
-                      : 'bg-[#F8FAFC] text-gray-500 hover:bg-[#E5E7EB] border border-[#E5E7EB]'
-                  )}`}
-                >
-                  {icon} {sub}
-                  <span className="ml-1 text-[10px] opacity-75">({count})</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ✅ Filters Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-white p-4 rounded-xl shadow-sm border border-[#E5E7EB]">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Size Filter */}
-            <select
-              value={selectedSize}
-              onChange={(e) => setSelectedSize(e.target.value)}
-              className="px-3 py-1.5 rounded-full border border-[#E5E7EB] text-sm bg-[#F8FAFC] focus:outline-none focus:border-[#D4AF37]"
-            >
-              <option value="all">All Sizes</option>
-              {allSizes.map(size => (
-                <option key={size} value={size}>{size}</option>
-              ))}
-            </select>
-
-            {/* Color Filter */}
-            <select
-              value={selectedColor}
-              onChange={(e) => setSelectedColor(e.target.value)}
-              className="px-3 py-1.5 rounded-full border border-[#E5E7EB] text-sm bg-[#F8FAFC] focus:outline-none focus:border-[#D4AF37]"
-            >
-              <option value="all">All Colors</option>
-              {allColors.map(color => (
-                <option key={color} value={color}>{color}</option>
-              ))}
-            </select>
-
-            {/* Sort */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-1.5 rounded-full border border-[#E5E7EB] text-sm bg-[#F8FAFC] focus:outline-none focus:border-[#D4AF37]"
-            >
-              <option value="popular">Most Popular</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="discount">Discount</option>
-            </select>
-          </div>
-
+        {/* ✅ Mobile Filter Toggle */}
+        <div className="lg:hidden flex items-center justify-between mb-4">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200 text-sm"
+          >
+            <FaFilter className="text-[#D4AF37]" />
+            Filters
+            {showFilters ? <FaChevronUp className="text-xs" /> : <FaChevronDown className="text-xs" />}
+            {(selectedGender !== 'all' || selectedCategory !== 'all' || selectedSize !== 'all' || selectedColor !== 'all') && (
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+            )}
+          </button>
           <span className="text-sm text-gray-500">
             {filteredProducts.length} products
           </span>
         </div>
 
-        {/* ✅ Products Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {filteredProducts.map((product) => (
-            <Link to={`/fashion/${product.id}`} key={product.id}>
-              <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-[#E5E7EB] hover:-translate-y-1 group">
-                <div className="relative">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-48 sm:h-56 md:h-64 object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => {
-                      e.currentTarget.src = `https://via.placeholder.com/400x400/D4AF37/FFFFFF?text=${product.name}`;
-                    }}
-                  />
-                  
-                  {/* Badges */}
-                  <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    -{product.discount}%
-                  </span>
-                  
-                  {product.isNew && (
-                    <span className="absolute top-2 left-14 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                      NEW
-                    </span>
-                  )}
-                  
+        {/* ✅ Filters Section */}
+        <div className={`${showFilters ? 'block' : 'hidden lg:block'} mb-6`}>
+          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 border border-gray-100">
+            
+            {/* Gender Tabs */}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4">
+              <span className="text-xs sm:text-sm font-medium text-gray-700 mr-1">Gender:</span>
+              {genders.map((g) => {
+                const count = products.filter((p) => g.id === 'all' || p.gender === g.id).length;
+                return (
                   <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      alert('❤️ Added to Wishlist!');
-                    }}
-                    className="absolute top-2 right-2 bg-white/90 rounded-full p-2 hover:bg-[#D4AF37] transition"
+                    key={g.id}
+                    onClick={() => setSelectedGender(g.id)}
+                    className={`px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium transition flex items-center gap-1 ${
+                      selectedGender === g.id
+                        ? 'bg-[#D4AF37] text-white shadow-md'
+                        : 'bg-[#F8FAFC] text-gray-600 hover:bg-[#E5E7EB] border border-gray-200'
+                    }`}
                   >
-                    <FaHeart className="text-gray-600 hover:text-white" />
+                    {g.icon}
+                    {g.label}
+                    <span className="text-[8px] sm:text-[10px] opacity-75">({count})</span>
                   </button>
-                  
-                  {product.stock < 10 && product.stock > 0 && (
-                    <span className="absolute bottom-2 left-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                      Only {product.stock} left
-                    </span>
-                  )}
-                  
-                  {product.isFeatured && (
-                    <span className="absolute bottom-2 right-2 bg-[#D4AF37] text-white text-xs font-bold px-2 py-1 rounded-full">
-                      ★ Featured
-                    </span>
-                  )}
-                </div>
+                );
+              })}
+            </div>
 
-                <div className="p-3 sm:p-4">
-                  {/* Rating */}
-                  <div className="flex items-center gap-1 text-[#D4AF37] text-xs">
-                    {[...Array(5)].map((_, i) => (
-                      <FaStar key={i} className={i < Math.floor(product.rating) ? 'text-[#D4AF37]' : 'text-gray-300'} />
-                    ))}
-                    <span className="text-gray-400 text-[10px] ml-1">({product.rating})</span>
-                  </div>
-
-                  {/* Name */}
-                  <h3 className="font-semibold text-[#111827] text-sm md:text-base line-clamp-2 mt-1">
-                    {product.name}
-                  </h3>
-
-                  {/* Price */}
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[#D4AF37] font-bold text-sm md:text-lg">
-                      PKR {product.price.toLocaleString()}
-                    </span>
-                    <span className="text-gray-400 line-through text-xs">
-                      PKR {product.oldPrice.toLocaleString()}
-                    </span>
-                  </div>
-
-                  {/* ✅ STOCK INDICATOR */}
-                  <div className="mt-1.5 flex items-center gap-1.5">
-                    {product.stock > 0 ? (
-                      <>
-                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                        <span className="text-[10px] text-green-600 font-medium">
-                          In Stock ({product.stock} available)
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                        <span className="text-[10px] text-red-500 font-medium">Out of Stock</span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Subcategory Badge */}
-                  <span className="inline-block mt-1 text-[10px] bg-[#F8FAFC] px-2 py-0.5 rounded border border-[#E5E7EB] text-gray-500 capitalize">
-                    {product.subCategory}
-                  </span>
-
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (product.stock > 0) {
-                        addToCart({ ...product, quantity: 1 });
-                      } else {
-                        alert('❌ This product is out of stock!');
-                      }
-                    }}
-                    disabled={product.stock === 0}
-                    className={`w-full mt-2 bg-[#0F766E] text-white px-3 py-2 rounded-full text-xs font-medium transition flex items-center justify-center gap-2 ${(
-                      product.stock > 0
-                        ? 'hover:bg-[#065F46]'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    )}`}
-                  >
-                    <FaShoppingCart /> {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
-                  </button>
-                </div>
+            {/* Category Tabs */}
+            {selectedGender !== 'all' && (
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4 border-t pt-4 border-gray-100">
+                <span className="text-xs sm:text-sm font-medium text-gray-700 mr-1">Category:</span>
+                {categoryTabs.map((cat) => {
+                  const count = products.filter((p) => 
+                    (selectedGender === 'all' || p.gender === selectedGender) &&
+                    (cat.id === 'all' || p.productType === cat.id)
+                  ).length;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium transition flex items-center gap-1 ${
+                        selectedCategory === cat.id
+                          ? 'bg-[#D4AF37] text-white shadow-md'
+                          : 'bg-[#F8FAFC] text-gray-600 hover:bg-[#E5E7EB] border border-gray-200'
+                      }`}
+                    >
+                      {cat.label}
+                      <span className="hidden sm:inline text-[8px] sm:text-[10px] opacity-75">({count})</span>
+                    </button>
+                  );
+                })}
               </div>
-            </Link>
-          ))}
+            )}
+
+            {/* Size & Color Filters */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t pt-4 border-gray-100">
+              {/* Size Filter */}
+              {allSizes.length > 0 && (
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="text-[10px] sm:text-xs text-gray-500">Size:</span>
+                  <select
+                    value={selectedSize}
+                    onChange={(e) => setSelectedSize(e.target.value)}
+                    className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full border border-gray-200 text-[10px] sm:text-xs bg-[#F8FAFC] focus:outline-none focus:border-[#D4AF37]"
+                  >
+                    <option value="all">All</option>
+                    {allSizes.map((size) => (
+                      <option key={size} value={size}>{size}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Color Filter */}
+              {allColors.length > 0 && (
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="text-[10px] sm:text-xs text-gray-500">Color:</span>
+                  <select
+                    value={selectedColor}
+                    onChange={(e) => setSelectedColor(e.target.value)}
+                    className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full border border-gray-200 text-[10px] sm:text-xs bg-[#F8FAFC] focus:outline-none focus:border-[#D4AF37]"
+                  >
+                    <option value="all">All</option>
+                    {allColors.map((color) => (
+                      <option key={color} value={color}>{color}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Sort */}
+              <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+                <span className="text-[10px] sm:text-xs text-gray-500">Sort:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full border border-gray-200 text-[10px] sm:text-xs bg-[#F8FAFC] focus:outline-none focus:border-[#D4AF37]"
+                >
+                  <option value="popular">Popular</option>
+                  <option value="price-low">Price: Low</option>
+                  <option value="price-high">Price: High</option>
+                  <option value="discount">Discount</option>
+                </select>
+              </div>
+
+              {/* Reset Filters */}
+              {(selectedGender !== 'all' || selectedCategory !== 'all' || selectedSize !== 'all' || selectedColor !== 'all') && (
+                <button
+                  onClick={() => {
+                    setSelectedGender('all');
+                    setSelectedCategory('all');
+                    setSelectedSize('all');
+                    setSelectedColor('all');
+                    setSortBy('popular');
+                  }}
+                  className="text-[10px] sm:text-xs text-red-500 hover:text-red-700 transition"
+                >
+                  <FaTimes className="inline mr-1" /> Reset
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* ✅ No Products Found */}
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-semibold text-gray-600">No products found</h3>
-            <p className="text-gray-400 mt-1">Try adjusting your filters</p>
+        {/* ✅ Products Grid */}
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-8 sm:py-12 md:py-16">
+            <div className="text-4xl sm:text-5xl md:text-6xl mb-4">👗</div>
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-600">No products found</h3>
+            <p className="text-gray-400 text-xs sm:text-sm mt-1">Try adjusting your filters</p>
+            <button
+              onClick={() => {
+                setSelectedGender('all');
+                setSelectedCategory('all');
+                setSelectedSize('all');
+                setSelectedColor('all');
+                setSortBy('popular');
+              }}
+              className="mt-4 text-[#D4AF37] hover:underline text-sm"
+            >
+              Clear all filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+            {filteredProducts.map((product) => {
+              const finalPrice = getDiscountedPrice(product);
+              const discountPercent = getDiscountPercent(product);
+              const isInStock = product.stock > 0;
+              const hasError = imageError[product.id];
+              
+              return (
+                <Link to={`/fashion/${product.id}`} key={product.id} className="group">
+                  <div className="bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-1 h-full flex flex-col">
+                    
+                    {/* ✅ Image Container - Fixed Aspect Ratio */}
+                    <div className="relative overflow-hidden aspect-[3/4] sm:aspect-[4/5] bg-[#F8FAFC]">
+                      <img
+                        src={hasError ? `https://via.placeholder.com/400x500/D4AF37/FFFFFF?text=${product.name}` : product.image}
+                        alt={product.name}
+                        className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105`}
+                        onError={() => handleImageError(product.id)}
+                        loading="lazy"
+                      />
+                      
+                      {/* Badges Row - Image par */}
+                      <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                        {discountPercent > 0 && (
+                          <span className="bg-red-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg">
+                            -{discountPercent}%
+                          </span>
+                        )}
+                        {product.isNew && (
+                          <span className="bg-green-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg">
+                            NEW
+                          </span>
+                        )}
+                        {product.isBestSeller && (
+                          <span className="bg-[#D4AF37] text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg">
+                            ★ BEST
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Wishlist Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          alert('❤️ Added to Wishlist!');
+                        }}
+                        className="absolute top-2 right-2 bg-white/90 backdrop-blur rounded-full p-1.5 sm:p-2 hover:bg-[#D4AF37] transition shadow-md"
+                      >
+                        <FaHeart className="text-xs sm:text-sm text-gray-600 group-hover:text-white transition" />
+                      </button>
+                      
+                      {/* Category Badge on Image */}
+                      {product.productType && (
+                        <div className="absolute bottom-2 right-2">
+                          <span className="text-[8px] sm:text-[10px] bg-black/60 backdrop-blur text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full capitalize">
+                            {categoryIcons[product.productType] || '📦'} {product.productType?.replace(/-/g, ' ')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ✅ Product Info - Card Style */}
+                    <div className="p-2.5 sm:p-3 md:p-4 flex-1 flex flex-col">
+                      
+                      {/* Rating */}
+                      <div className="flex items-center gap-0.5 text-[#D4AF37] text-[8px] sm:text-[10px]">
+                        {[...Array(5)].map((_, i) => (
+                          <FaStar key={i} className={i < Math.floor(product.rating || 0) ? 'text-[#D4AF37]' : 'text-gray-300'} />
+                        ))}
+                        <span className="text-gray-400 ml-0.5 text-[8px] sm:text-[10px]">({product.rating || 0})</span>
+                      </div>
+
+                      {/* Name */}
+                      <h3 className="font-semibold text-[#111827] text-xs sm:text-sm md:text-base mt-0.5 line-clamp-2 group-hover:text-[#D4AF37] transition">
+                        {product.name}
+                      </h3>
+
+                      {/* Short Description - Card Style */}
+                      {product.shortDescription && (
+                        <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">
+                          {product.shortDescription}
+                        </p>
+                      )}
+
+                      {/* Product ID */}
+                      {product.productId && (
+                        <p className="text-[8px] sm:text-[10px] text-gray-400 font-mono mt-0.5">{product.productId}</p>
+                      )}
+
+                      {/* Gender Badge */}
+                      {product.gender && (
+                        <span className="text-[8px] sm:text-[10px] text-gray-400 mt-0.5">
+                          {genderIcons[product.gender] || '👤'} {product.gender}
+                        </span>
+                      )}
+
+                      {/* ✅ STOCK INDICATOR - Blinking Green Dot + Text */}
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className={`w-2 h-2 rounded-full ${isInStock ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}></span>
+                        <span className={`text-[10px] sm:text-xs font-medium ${isInStock ? 'text-green-600' : 'text-red-500'}`}>
+                          {isInStock ? `In Stock (${product.stock})` : 'Out of Stock'}
+                        </span>
+                      </div>
+
+                      {/* Price */}
+                      <div className="flex items-center gap-1 sm:gap-2 mt-1">
+                        <span className="text-[#D4AF37] font-bold text-sm sm:text-base md:text-lg">
+                          Rs. {finalPrice.toLocaleString()}
+                        </span>
+                        {product.oldPrice && product.oldPrice > finalPrice && (
+                          <span className="text-gray-400 line-through text-[10px] sm:text-xs">
+                            Rs. {product.oldPrice.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Colors & Sizes Tags */}
+                      <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-1">
+                        {product.colors && product.colors.slice(0, 3).map((color) => (
+                          <span key={color} className="text-[8px] sm:text-[10px] bg-gray-100 px-1 py-0.5 rounded text-gray-600">
+                            {color}
+                          </span>
+                        ))}
+                        {product.colors && product.colors.length > 3 && (
+                          <span className="text-[8px] sm:text-[10px] text-gray-400">+{product.colors.length - 3}</span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-0.5">
+                        {product.sizes && product.sizes.slice(0, 3).map((size) => (
+                          <span key={size} className="text-[8px] sm:text-[10px] bg-gray-100 px-1 py-0.5 rounded text-gray-600">
+                            {size}
+                          </span>
+                        ))}
+                        {product.sizes && product.sizes.length > 3 && (
+                          <span className="text-[8px] sm:text-[10px] text-gray-400">+{product.sizes.length - 3}</span>
+                        )}
+                      </div>
+
+                      {/* Add to Cart Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (isInStock) {
+                            addToCart({ 
+                              ...product, 
+                              price: finalPrice,
+                              quantity: 1 
+                            });
+                            alert(`✅ ${product.name} added to cart!`);
+                          } else {
+                            alert('❌ This product is out of stock!');
+                          }
+                        }}
+                        disabled={!isInStock}
+                        className={`w-full mt-2 sm:mt-3 px-2 py-1.5 sm:py-2 rounded-full text-[8px] sm:text-[10px] md:text-xs font-medium transition flex items-center justify-center gap-1 sm:gap-2 ${
+                          isInStock
+                            ? 'bg-[#0F766E] text-white hover:bg-[#065F46] active:scale-95'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <FaShoppingCart className="text-[8px] sm:text-[10px] md:text-xs" />
+                        <span>{isInStock ? 'Add to Cart' : 'Out of Stock'}</span>
+                      </button>
+
+                      {/* On Sale Badge */}
+                      {product.isOnSale && (
+                        <div className="mt-1 text-[8px] sm:text-[10px] text-red-500 font-medium text-center animate-pulse">
+                          🔥 On Sale!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
+
+        {/* ✅ Results Count */}
+        <div className="text-center text-xs text-gray-400 mt-4 sm:mt-6">
+          Showing {filteredProducts.length} of {products.length} products
+        </div>
       </div>
     </div>
   );

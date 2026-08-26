@@ -1,11 +1,11 @@
 // src/components/admin/AdminProducts.tsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // ✅ Import useNavigate
+import { useNavigate } from 'react-router-dom';
 import { db } from '../../config/firebase';
 import { collection, getDocs, deleteDoc, doc, addDoc } from 'firebase/firestore';
 import { 
   FaEdit, FaTrash, FaPlus, FaPalette, FaRuler, FaBoxes, 
-  FaSave,  FaSpinner, FaSearch, 
+FaSave, FaSpinner, FaSearch, 
   FaChevronDown, FaChevronUp 
 } from 'react-icons/fa';
 
@@ -31,7 +31,7 @@ interface Product {
 }
 
 const AdminProducts: React.FC = () => {
-  const navigate = useNavigate(); // ✅ Yeh line add karo
+  const navigate = useNavigate();
   
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -230,7 +230,6 @@ const AdminProducts: React.FC = () => {
               className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none w-48 sm:w-56 text-sm"
             />
           </div>
-          {/* ✅ FIXED: Add Product button with navigation */}
           <button 
             onClick={() => navigate('/admin/products/add')}
             className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition flex items-center gap-2 text-sm"
@@ -367,7 +366,12 @@ const AdminProducts: React.FC = () => {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex gap-1">
-                            <button className="text-blue-600 hover:text-blue-800 transition p-1.5 rounded hover:bg-blue-50">
+                            {/* ✅ EDIT BUTTON - Fixed Route */}
+                            <button 
+                              onClick={() => navigate(`/admin/products/edit/${product.id}`)}
+                              className="text-blue-600 hover:text-blue-800 transition p-1.5 rounded hover:bg-blue-50"
+                              title="Edit Product"
+                            >
                               <FaEdit size={15} />
                             </button>
                             <button 

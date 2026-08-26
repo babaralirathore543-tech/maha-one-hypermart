@@ -1,6 +1,17 @@
 node_modules/
+
 dist/
+
 .env
+
 .vercel/
+
 .vercel
+
 .env*
+
+# Firebase Admin private credentials - NEVER commit
+serviceAccountKey.json
+
+# Temporary admin setup script
+setAdmin.js

@@ -1,11 +1,13 @@
 import { initializeApp } from "firebase/app";
-import { 
-  getStorage, 
-  ref, 
-  uploadBytesResumable, 
-  getDownloadURL 
+
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
 } from "firebase/storage";
-import { 
+
+import {
   getFirestore,
   collection,
   addDoc,
@@ -21,45 +23,41 @@ import {
   onSnapshot,
   setDoc,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
 } from "firebase/firestore";
-import { 
+
+import {
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
 } from "firebase/auth";
 
-// ✅ Types ko alag se import karein
-import type { 
+import type {
   DocumentData,
   QuerySnapshot,
-  DocumentSnapshot
+  DocumentSnapshot,
 } from "firebase/firestore";
 
-// ⚠️ Apna Firebase Config yahan paste karein
 const firebaseConfig = {
-  apiKey: "AIzaSyC45h2NcwDdvFw3QAVG9qTwYYYs4uLqG2M",
-  authDomain: "maha-one-hypermart.firebaseapp.com",
-  projectId: "maha-one-hypermart",
-  storageBucket: "maha-one-hypermart.firebasestorage.app",
-  messagingSenderId: "527233139626",
-  appId: "1:527233139626:web:7513f41f6f06b9820f61d3",
-  measurementId: "G-WCDFS8XQTF"
+  apiKey: "AIzaSyCZ18pYTFh87y3y7PNkiVvqK3SIiQYbU1Q",
+  authDomain: "mahaone-hypermart.firebaseapp.com",
+  projectId: "mahaone-hypermart",
+  storageBucket: "mahaone-hypermart.firebasestorage.app",
+  messagingSenderId: "419627062846",
+  appId: "1:419627062846:web:12e8e08781a43cc8ac636f",
+  measurementId: "G-PP4SZ8HFQ9",
 };
 
-// ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// ✅ Initialize Services
 const db = getFirestore(app);
 const storage = getStorage(app);
 const auth = getAuth(app);
 
-// ✅ Export Services (Values)
-export { 
+export {
   app,
   auth,
   signInWithEmailAndPassword,
@@ -86,12 +84,11 @@ export {
   storage,
   ref,
   uploadBytesResumable,
-  getDownloadURL
+  getDownloadURL,
 };
 
-// ✅ Export Types
-export type { 
+export type {
   DocumentData,
   QuerySnapshot,
-  DocumentSnapshot
+  DocumentSnapshot,
 };
