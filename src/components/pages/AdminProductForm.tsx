@@ -3,14 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   FaSave, FaTimes, FaPlus, FaTrash, 
-  FaPalette,  FaSpinner, FaArrowLeft,
-   FaRuler,
-  FaLink, FaCloudUploadAlt
+  FaPalette, FaSpinner, FaArrowLeft,
+  FaRuler, FaLink, FaCloudUploadAlt,
+  FaChevronRight
 } from 'react-icons/fa';
 import { db, storage } from '../../config/firebase';
 import { 
-  collection, addDoc, getDoc, doc, updateDoc,
-  
+  collection, addDoc, getDoc, doc, updateDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -22,6 +21,7 @@ interface ProductFormData {
   rating: number;
   category: string;
   subCategory: string;
+  subSubCategory: string;
   image: string;
   images: string[];
   colorImages: { [key: string]: string[] };
@@ -34,6 +34,150 @@ interface ProductFormData {
   isNew: boolean;
   isFeatured: boolean;
 }
+
+// ✅ Category Data
+const categoryData: Record<string, any> = {
+  'fashion': {
+    label: 'Fashion',
+    icon: '👗',
+    subCategories: {
+      'women': {
+        label: 'Women',
+        subSubCategories: {
+          'stitched': {
+            label: 'Stitched',
+            options: ['Sarees', 'Maxxi', 'Lawn', 'Kurti', 'Dresses', 'Frocks']
+          },
+          'unstitched': {
+            label: 'Unstitched',
+            options: ['Suits', 'Fabrics', 'Embroidered', 'Lawn Suits']
+          }
+        }
+      },
+      'men': {
+        label: 'Men',
+        subSubCategories: {
+          'stitched': {
+            label: 'Stitched',
+            options: ['Shirts', 'T-Shirts', 'Jeans', 'Kurta', 'Trousers']
+          },
+          'unstitched': {
+            label: 'Unstitched',
+            options: ['Shalwar Kameez', 'Fabrics', 'Kurta Fabric']
+          }
+        }
+      },
+      'kids': {
+        label: 'Kids',
+        subSubCategories: {
+          'boys': {
+            label: 'Boys',
+            options: ['Shirts', 'T-Shirts', 'Kurta', 'Jeans', 'Trousers']
+          },
+          'girls': {
+            label: 'Girls',
+            options: ['Dresses', 'Frocks', 'Kurti', 'Lawn']
+          }
+        }
+      }
+    }
+  },
+  'dryfruits': {
+    label: 'Dry Fruits',
+    icon: '🥜',
+    subCategories: {
+      'nuts': {
+        label: 'Nuts',
+        subSubCategories: {
+          'almonds': { label: 'Almonds', options: ['Premium', 'Medium', 'Soft Shell'] },
+          'cashews': { label: 'Cashews', options: ['Roasted', 'Salted', 'White'] },
+          'pistachios': { label: 'Pistachios', options: ['Shelled', 'Roasted', 'Salted'] },
+          'walnuts': { label: 'Walnuts', options: ['Soft Shell', 'Kernel'] }
+        }
+      },
+      'seeds': {
+        label: 'Seeds',
+        subSubCategories: {
+          'chia': { label: 'Chia Seeds', options: ['Premium', 'Organic'] },
+          'pumpkin': { label: 'Pumpkin Seeds', options: ['Roasted', 'Raw'] },
+          'sunflower': { label: 'Sunflower Seeds', options: ['Roasted', 'Raw'] }
+        }
+      },
+      'dried-fruits': {
+        label: 'Dried Fruits',
+        subSubCategories: {
+          'raisins': { label: 'Raisins', options: ['Sundar Khani', 'Kandhari', 'Black', 'Munakka'] },
+          'dates': { label: 'Dates', options: ['Ajwa', 'Medjool', 'Safawi'] },
+          'figs': { label: 'Figs', options: ['Dried', 'Organic'] }
+        }
+      }
+    }
+  },
+  'sweets': {
+    label: 'Sweets',
+    icon: '🍬',
+    subCategories: {
+      'traditional': {
+        label: 'Traditional',
+        subSubCategories: {
+          'gulab-jaman': { label: 'Gulab Jaman', options: ['Classic', 'Premium'] },
+          'jalebi': { label: 'Jalebi', options: ['Crispy', 'Soft'] },
+          'barfi': { label: 'Barfi', options: ['Milk', 'Coconut', 'Pista'] },
+          'ladoo': { label: 'Ladoo', options: ['Besan', 'Coconut', 'Moti'] }
+        }
+      },
+      'premium': {
+        label: 'Premium',
+        subSubCategories: {
+          'choco-bars': { label: 'Choco Bars', options: ['Caramel', 'Crispy Wafer', 'Coconut'] },
+          'eclairs': { label: 'Eclairs', options: ['Caramel', 'Chocolate'] },
+          'wafer-bars': { label: 'Wafer Bars', options: ['Chocolate', 'Strawberry'] }
+        }
+      },
+      'gifting': {
+        label: 'Gifting',
+        subSubCategories: {
+          'sweet-boxes': { label: 'Sweet Boxes', options: ['Premium Box', 'Standard Box'] },
+          'gift-packs': { label: 'Gift Packs', options: ['Festive Pack', 'Wedding Pack'] }
+        }
+      }
+    }
+  },
+  'cakes': {
+    label: 'Cakes',
+    icon: '🎂',
+    subCategories: {
+      'celebration': {
+        label: 'Celebration',
+        subSubCategories: {
+          'anniversary': { label: 'Anniversary', options: ['1-2kg', '3-5kg'] },
+          'party': { label: 'Party', options: ['1-2kg', '3-5kg'] }
+        }
+      },
+      'birthday': {
+        label: 'Birthday',
+        subSubCategories: {
+          'kids': { label: 'Kids', options: ['1-2kg', '3-5kg'] },
+          'adults': { label: 'Adults', options: ['1-2kg', '3-5kg'] }
+        }
+      },
+      'wedding': {
+        label: 'Wedding',
+        subSubCategories: {
+          'traditional': { label: 'Traditional', options: ['1-2kg', '3-5kg'] },
+          'modern': { label: 'Modern', options: ['1-2kg', '3-5kg'] }
+        }
+      },
+      'custom': {
+        label: 'Custom',
+        subSubCategories: {
+          'themed': { label: 'Themed', options: ['1-2kg', '3-5kg'] },
+          'photo': { label: 'Photo', options: ['1-2kg', '3-5kg'] }
+        }
+      }
+    }
+  }
+};
 
 const AdminProductForm: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +192,7 @@ const AdminProductForm: React.FC = () => {
     rating: 0,
     category: '',
     subCategory: '',
+    subSubCategory: '',
     image: '',
     images: [],
     colorImages: {},
@@ -75,17 +220,28 @@ const AdminProductForm: React.FC = () => {
   
   const [newSize, setNewSize] = useState('');
 
-  const categoryOptions = [
-    'women', 'men', 'kids', 'fashion', 'sarees', 
-    'dresses', 'jewellery', 'unstitched', 'shoes',
-    'accessories', 'bags', 'dryfruits', 'sweets', 'cakes'
-  ];
+  // ✅ Get categories list
+  const mainCategories = Object.keys(categoryData);
 
-  const subCategoryOptions = [
-    'Sarees', 'Dresses', 'Jewellery', 'Unstitched',
-    'Shoes', 'Accessories', 'Bags', 'Dry Fruits',
-    'Sweets', 'Cakes', 'Bridal', 'Festive'
-  ];
+  // ✅ Get subcategories for selected category
+  const getSubCategories = () => {
+    if (!formData.category) return {};
+    return categoryData[formData.category]?.subCategories || {};
+  };
+
+  // ✅ Get sub-subcategories for selected subcategory
+  const getSubSubCategories = () => {
+    if (!formData.category || !formData.subCategory) return {};
+    const subCats = getSubCategories();
+    return subCats[formData.subCategory]?.subSubCategories || {};
+  };
+
+  // ✅ Get final options
+  const getFinalOptions = (): string[] => {
+    if (!formData.category || !formData.subCategory || !formData.subSubCategory) return [];
+    const subSubCats = getSubSubCategories();
+    return subSubCats[formData.subSubCategory]?.options || [];
+  };
 
   const sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'One Size', 'Free Size'];
 
@@ -109,6 +265,7 @@ const AdminProductForm: React.FC = () => {
           rating: data.rating || 0,
           category: data.category || '',
           subCategory: data.subCategory || '',
+          subSubCategory: data.subSubCategory || '',
           image: data.image || '',
           images: data.images || [],
           colorImages: data.colorImages || {},
@@ -319,11 +476,30 @@ const AdminProductForm: React.FC = () => {
     }));
   };
 
-  // ✅ FIXED: Submit with correct field mapping
+  // ✅ Handle Category Change - Reset sub categories
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      category: value,
+      subCategory: '',
+      subSubCategory: ''
+    }));
+  };
+
+  // ✅ Handle Sub Category Change - Reset sub-sub categories
+  const handleSubCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      subCategory: value,
+      subSubCategory: ''
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!formData.name) { alert('Please enter product name'); return; }
     if (!formData.price) { alert('Please enter price'); return; }
     if (!formData.category) { alert('Please select category'); return; }
@@ -335,19 +511,18 @@ const AdminProductForm: React.FC = () => {
     setError(null);
 
     try {
-      // ✅ Calculate discountPrice (match existing structure)
       const discountPrice = formData.discount || 
         (formData.oldPrice > formData.price ? 
           Math.round(((formData.oldPrice - formData.price) / formData.oldPrice) * 100) : 0);
 
-      // ✅ Map fields to match existing Firestore structure
       const productData = {
         name: formData.name,
         price: formData.price,
-        discountPrice: discountPrice,  // ✅ Instead of discount
+        discountPrice: discountPrice,
         rating: formData.rating || 0,
         category: formData.category,
         subCategory: formData.subCategory || '',
+        subSubCategory: formData.subSubCategory || '',
         image: formData.image,
         images: formData.images || [],
         colorImages: formData.colorImages || {},
@@ -357,7 +532,7 @@ const AdminProductForm: React.FC = () => {
         description: formData.description || '',
         material: formData.material || '',
         careInstructions: formData.careInstructions || '',
-        isActive: true,  // ✅ Existing field
+        isActive: true,
         isNew: formData.isNew || false,
         isFeatured: formData.isFeatured || false,
         createdAt: new Date(),
@@ -392,6 +567,11 @@ const AdminProductForm: React.FC = () => {
       </div>
     );
   }
+
+  // ✅ Get all select options
+  const subCategories = getSubCategories();
+  const subSubCategories = getSubSubCategories();
+  const finalOptions = getFinalOptions();
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -444,35 +624,112 @@ const AdminProductForm: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* ✅ MAIN CATEGORY */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Main Category <span className="text-red-500">*</span>
+              </label>
               <select
-                name="category"
                 value={formData.category}
-                onChange={handleInputChange}
+                onChange={handleCategoryChange}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
                 required
               >
                 <option value="">Select Category</option>
-                {categoryOptions.map(cat => (
-                  <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                {mainCategories.map((cat: string) => (
+                  <option key={cat} value={cat}>
+                    {categoryData[cat]?.icon || '📦'} {categoryData[cat]?.label || cat}
+                  </option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category</label>
-              <select
-                name="subCategory"
-                value={formData.subCategory}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
-              >
-                <option value="">Select Sub Category</option>
-                {subCategoryOptions.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
+
+            {/* ✅ SUB CATEGORY */}
+            {formData.category && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sub Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.subCategory}
+                  onChange={handleSubCategoryChange}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                  required
+                >
+                  <option value="">Select Sub Category</option>
+                  {Object.keys(subCategories).map((key: string) => (
+                    <option key={key} value={key}>
+                      {subCategories[key]?.label || key}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* ✅ SUB-SUB CATEGORY */}
+            {formData.subCategory && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sub-Sub Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.subSubCategory}
+                  onChange={(e) => setFormData(prev => ({ ...prev, subSubCategory: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                  required
+                >
+                  <option value="">Select Sub-Sub Category</option>
+                  {Object.keys(subSubCategories).map((key: string) => (
+                    <option key={key} value={key}>
+                      {subSubCategories[key]?.label || key}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* ✅ FINAL OPTIONS */}
+            {formData.subSubCategory && finalOptions.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Product Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.subSubCategory}
+                  onChange={(e) => setFormData(prev => ({ ...prev, subSubCategory: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                  required
+                >
+                  <option value="">Select Type</option>
+                  {finalOptions.map((opt: string) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* ✅ Category Path Display */}
+            {formData.category && (
+              <div className="md:col-span-2">
+                <div className="bg-[#F8FAFC] p-3 rounded-lg border border-gray-200 flex items-center gap-2 text-sm text-gray-600 flex-wrap">
+                  <span className="text-xl">{categoryData[formData.category]?.icon || '📦'}</span>
+                  <span className="font-medium">{categoryData[formData.category]?.label || formData.category}</span>
+                  {formData.subCategory && (
+                    <>
+                      <FaChevronRight className="text-gray-400 text-xs" />
+                      <span>{subCategories[formData.subCategory]?.label || formData.subCategory}</span>
+                    </>
+                  )}
+                  {formData.subSubCategory && (
+                    <>
+                      <FaChevronRight className="text-gray-400 text-xs" />
+                      <span>{subSubCategories[formData.subSubCategory]?.label || formData.subSubCategory}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -663,7 +920,7 @@ const AdminProductForm: React.FC = () => {
             )}
 
             <div className="flex flex-wrap gap-2 mt-2">
-              {formData.images.map((img, index) => (
+              {formData.images.map((img: string, index: number) => (
                 <div key={index} className="relative">
                   <img src={img} alt={`Gallery ${index}`} className="w-20 h-20 object-cover rounded-lg border" />
                   <button
@@ -756,7 +1013,7 @@ const AdminProductForm: React.FC = () => {
 
             {newColorImages.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
-                {newColorImages.map((img, i) => (
+                {newColorImages.map((img: string, i: number) => (
                   <img key={i} src={img} className="w-12 h-12 object-cover rounded border" />
                 ))}
               </div>
@@ -764,7 +1021,7 @@ const AdminProductForm: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {formData.colors.map((color) => (
+            {formData.colors.map((color: string) => (
               <div key={color} className="border rounded-lg p-3 bg-white shadow-sm">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium text-gray-800">{color}</span>
@@ -777,7 +1034,7 @@ const AdminProductForm: React.FC = () => {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {formData.colorImages[color]?.map((img, i) => (
+                  {formData.colorImages[color]?.map((img: string, i: number) => (
                     <div key={i} className="relative">
                       <img src={img} className="w-12 h-12 object-cover rounded border" />
                       <button
@@ -816,7 +1073,7 @@ const AdminProductForm: React.FC = () => {
               className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
             >
               <option value="">Select Size</option>
-              {sizeOptions.map(s => (
+              {sizeOptions.map((s: string) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
@@ -830,7 +1087,7 @@ const AdminProductForm: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap gap-2 mt-3">
-            {formData.sizes.map((size) => (
+            {formData.sizes.map((size: string) => (
               <span
                 key={size}
                 className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"

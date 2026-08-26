@@ -78,7 +78,7 @@ function App() {
   
   // ✅ For 12 Rabi ul Awwal - Show Eid Milad Page
   // True = Show Eid Milad Page, False = Normal
-  const SHOW_EID_MILAD = true; // ⚠️ True kar do for 12 Rabi ul Awwal
+  const SHOW_EID_MILAD = false; // ⚠️ True kar do for 12 Rabi ul Awwal
 
   // ✅ Maintenance Mode
   // True = Show Maintenance Page, False = Normal
