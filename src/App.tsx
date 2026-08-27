@@ -16,6 +16,7 @@ import Popup from './components/common/Popup';
 
 import AdminPanel from './components/admin/AdminPanel';
 import AdminProductForm from './components/pages/AdminProductForm';
+import AdminCakesProductForm from './components/pages/AdminCakesProductForm';
 
 import EidMiladPage from './components/pages/EidMiladPage';
 import MaintenancePage from './components/pages/MaintenancePage';
@@ -182,7 +183,7 @@ function App() {
   // true = Eid Milad page
   // false = normal website
 
-  const SHOW_EID_MILAD = true;
+  const SHOW_EID_MILAD = false;
 
 
   // Maintenance mode
@@ -463,7 +464,7 @@ function App() {
                       }
                     />
 
-                    {/* ADD PRODUCT */}
+                    {/* ✅ FASHION PRODUCT ADD/EDIT */}
 
                     <Route
                       path="/admin/products/add"
@@ -474,13 +475,31 @@ function App() {
                       }
                     />
 
-                    {/* EDIT PRODUCT */}
-
                     <Route
                       path="/admin/products/edit/:id"
                       element={
                         <AdminRoute>
                           <AdminProductForm />
+                        </AdminRoute>
+                      }
+                    />
+
+                    {/* ✅ NEW: CAKES & BAKERY PRODUCT ADD/EDIT */}
+
+                    <Route
+                      path="/admin/cakes/add"
+                      element={
+                        <AdminRoute>
+                          <AdminCakesProductForm />
+                        </AdminRoute>
+                      }
+                    />
+
+                    <Route
+                      path="/admin/cakes/edit/:id"
+                      element={
+                        <AdminRoute>
+                          <AdminCakesProductForm />
                         </AdminRoute>
                       }
                     />

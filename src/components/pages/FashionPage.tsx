@@ -533,13 +533,7 @@ const FashionPage = () => {
                         {product.name}
                       </h3>
 
-                      {/* Short Description - Card Style */}
-                      {product.shortDescription && (
-                        <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">
-                          {product.shortDescription}
-                        </p>
-                      )}
-
+                    
                       {/* Product ID */}
                       {product.productId && (
                         <p className="text-[8px] sm:text-[10px] text-gray-400 font-mono mt-0.5">{product.productId}</p>

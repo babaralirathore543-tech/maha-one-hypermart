@@ -1,11 +1,11 @@
-// src/components/pages/AdminProductForm.tsx
+// src/components/pages/AdminCakesProductForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   FaSave, FaTimes, FaPlus, 
-  FaSpinner, FaArrowLeft,
-  FaLink, FaCloudUploadAlt,
-  FaChevronRight, FaCircle
+  FaSpinner, FaArrowLeft, FaLink, FaCloudUploadAlt,
+  FaChevronRight, FaCircle, FaUtensils, 
+  FaClock, FaEgg, FaBirthdayCake,
 } from 'react-icons/fa';
 import { db, storage } from '../../config/firebase';
 import { 
@@ -14,352 +14,196 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-// ✅ Product Interface - Final Structure
+// ✅ Product Interface
 interface ProductFormData {
+  // Basic
   name: string;
   brand: string;
   sku: string;
+  
+  // Category
   category: string;
-  gender: string;
+  department: string;
   productType: string;
-  subCategory: string;
   style: string;
+  
+  // Pricing
   price: number;
   oldPrice: number;
   discount: number;
   costPrice: number;
+  
+  // Inventory
   stock: number;
   lowStockAlert: number;
+  orderType: 'ready-stock' | 'made-to-order' | 'pre-order';
+  
+  // Images
   image: string;
   images: string[];
-  colorImages: { [key: string]: string[] };
+  
+  // Variants
   sizes: string[];
   colors: string[];
+  
+  // Cake Details
+  cakeDetails: {
+    flavor: string;
+    weight: string;
+    shape: string;
+    servings: string;
+    eggless: boolean;
+    customizationAvailable: boolean;
+    advanceOrderRequired: boolean;
+    preparationTime: string;
+    customMessage: string;
+  };
+  
+  // Food Details (Bakery/Savory)
+  foodDetails: {
+    weight: string;
+    quantity: number;
+    ingredients: string[];
+    expiryDate: string;
+    storageInstructions: string;
+  };
+  
+  // Details
   shortDescription: string;
   description: string;
-  material: string;
-  careInstructions: string;
+  ingredients: string[];
+  nutritionalInfo: string;
+  
+  // Labels
   isNew: boolean;
   isFeatured: boolean;
   isBestSeller: boolean;
   isOnSale: boolean;
+  
+  // Status
   status: 'active' | 'draft' | 'out-of-stock';
+  
+  // System
   rating: number;
   reviewCount: number;
 }
 
-// ✅ Type Definitions for Category Data
-interface SubCategoryItem {
-  label: string;
-  styles: string[];
-}
-
-interface ProductTypeItem {
-  label: string;
-  sizes?: string[];
-  subCategories: {
-    [key: string]: SubCategoryItem;
-  };
-}
-
-interface GenderItem {
-  label: string;
-  icon: string;
-  productTypes: {
-    [key: string]: ProductTypeItem;
-  };
-}
-
-interface CategoryItem {
-  label: string;
-  icon: string;
-  prefix: string;
-  genders: {
-    [key: string]: GenderItem;
-  };
-}
-
-interface CategoryData {
-  [key: string]: CategoryItem;
-}
-
-// ✅ COMPLETE CATEGORY DATA WITH SIZES
-const categoryData: CategoryData = {
-  'fashion': {
-    label: 'Fashion',
-    icon: '👗',
-    prefix: 'MOF',
-    genders: {
-      'women': {
-        label: 'Women',
-        icon: '👩',
+// ✅ Category Data
+const categoryData: Record<string, any> = {
+  'cakes-bakery': {
+    label: 'Cakes & Bakery',
+    icon: '🎂',
+    prefix: 'MOB',
+    departments: {
+      'cakes': {
+        label: 'Cakes',
+        icon: '🎂',
         productTypes: {
-          'clothing': {
-            label: '👗 Clothing',
-            sizes: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
-            subCategories: {
-              'unstitched': { 
-                label: 'Unstitched', 
-                styles: ['2 Piece', '3 Piece', 'Lawn', 'Formal', 'Casual', 'Party Wear', 'Luxury Pret', 'Embroidered'] 
-              },
-              'ready-to-wear': { 
-                label: 'Ready to Wear', 
-                styles: ['Casual Wear', 'Formal Wear', 'Party Wear', 'Luxury Pret'] 
-              },
-              'sarees': { 
-                label: 'Sarees', 
-                styles: ['Silk Saree', 'Net Saree', 'Cotton Saree', 'Embroidered Saree', 'Wedding Saree', 'Party Wear Saree'] 
-              },
-              'abayas': { 
-                label: 'Abayas & Modest Wear', 
-                styles: ['Classic Abaya', 'Embroidered Abaya', 'Open Abaya', 'Closed Abaya', 'Khimar'] 
-              },
-              'nightwear': { 
-                label: 'Nightwear', 
-                styles: ['Cotton Nightwear', 'Silk Nightwear', 'Satin Nightwear', 'Pajama Sets'] 
-              }
-            }
-          },
-          'footwear': {
-            label: '👠 Footwear',
-            sizes: ['5(US)', '5.5(US)', '6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)'],
-            subCategories: {
-              'heels': { 
-                label: 'Heels', 
-                styles: ['High Heels', 'Block Heels', 'Wedges', 'Kitten Heels', 'Platform Heels', 'Stilettos'] 
-              },
-              'flats': { 
-                label: 'Flats', 
-                styles: ['Ballerinas', 'Loafers', 'Flat Sandals'] 
-              },
-              'slippers': { 
-                label: 'Slippers', 
-                styles: ['Flip Flops', 'Slide Slippers', 'House Slippers'] 
-              },
-              'sandals': { 
-                label: 'Sandals', 
-                styles: ['Strappy Sandals', 'Gladiator Sandals', 'Casual Sandals', 'Formal Sandals'] 
-              },
-              'khussa': { 
-                label: 'Khussa', 
-                styles: ['Traditional Khussa', 'Embroidered Khussa', 'Casual Khussa'] 
-              },
-              'sneakers': { 
-                label: 'Sneakers', 
-                styles: ['Casual Sneakers', 'Sports Sneakers', 'Fashion Sneakers', 'Platform Sneakers'] 
-              }
-            }
-          },
-          'bags': {
-            label: '👜 Bags',
-            sizes: ['One Size'],
-            subCategories: {
-              'hand-bags': { 
-                label: 'Hand Bags', 
-                styles: ['Tote Bag', 'Shoulder Bag', 'Crossbody Bag', 'Clutch'] 
-              },
-              'shoulder-bags': { 
-                label: 'Shoulder Bags', 
-                styles: ['Casual Shoulder', 'Formal Shoulder', 'Party Shoulder'] 
-              },
-              'tote-bags': { 
-                label: 'Tote Bags', 
-                styles: ['Leather Tote', 'Fabric Tote', 'Canvas Tote'] 
-              },
-              'crossbody-bags': { 
-                label: 'Crossbody Bags', 
-                styles: ['Leather Crossbody', 'Fabric Crossbody', 'Mini Crossbody'] 
-              },
-              'clutches': { 
-                label: 'Clutches', 
-                styles: ['Classic Clutch', 'Embroidered Clutch', 'Beaded Clutch', 'Box Clutch'] 
-              },
-              'wallets': { 
-                label: 'Wallets', 
-                styles: ['Leather Wallet', 'Fabric Wallet', 'Card Holder', 'Coin Purse'] 
-              }
-            }
-          },
-          'accessories': {
-            label: '💎 Accessories',
-            sizes: ['One Size'],
-            subCategories: {
-              'jewellery': { 
-                label: 'Jewellery', 
-                styles: ['Necklaces', 'Earrings', 'Rings', 'Bracelets', 'Anklets', 'Jewellery Sets'] 
-              },
-              'watches': { 
-                label: 'Watches', 
-                styles: ['Analog Watch', 'Digital Watch', 'Smart Watch', 'Fashion Watch'] 
-              },
-              'sunglasses': { 
-                label: 'Sunglasses', 
-                styles: ['Aviator', 'Wayfarer', 'Cat Eye', 'Round', 'Oversized'] 
-              },
-              'scarves-hijabs': { 
-                label: 'Scarves & Hijabs', 
-                styles: ['Silk Scarf', 'Cotton Hijab', 'Chiffon Hijab', 'Wool Scarf', 'Printed Scarf'] 
-              },
-              'hair-accessories': { 
-                label: 'Hair Accessories', 
-                styles: ['Hair Clips', 'Hair Bands', 'Hair Ties', 'Headbands', 'Scrunchies'] 
-              }
-            }
-          }
+          'birthday-cakes': { label: 'Birthday Cakes' },
+          'wedding-cakes': { label: 'Wedding Cakes' },
+          'anniversary-cakes': { label: 'Anniversary Cakes' },
+          'customized-cakes': { label: 'Customized Cakes' },
+          'bento-cakes': { label: 'Bento Cakes' },
+          'cupcakes': { label: 'Cupcakes' },
+          'cheesecakes': { label: 'Cheesecakes' },
+          'pastry-cakes': { label: 'Pastry Cakes' }
+        },
+        styles: {
+          'birthday-cakes': ['Chocolate', 'Vanilla', 'Strawberry', 'Red Velvet', 'Blueberry', 'Caramel', 'Pistachio', 'Mango'],
+          'wedding-cakes': ['Classic White', 'Gold', 'Rose', 'Lavender', 'Pearl', 'Rustic', 'Elegant'],
+          'anniversary-cakes': ['Chocolate', 'Red Velvet', 'Caramel', 'Strawberry', 'Cream', 'Fruit'],
+          'customized-cakes': ['Photo Cake', 'Themed Cake', 'Name Cake', 'Number Cake', 'Character Cake'],
+          'bento-cakes': ['Chocolate', 'Vanilla', 'Strawberry', 'Matcha', 'Oreo'],
+          'cupcakes': ['Chocolate', 'Vanilla', 'Strawberry', 'Red Velvet', 'Caramel', 'Sprinkles'],
+          'cheesecakes': ['Classic', 'Strawberry', 'Blueberry', 'Chocolate', 'Caramel', 'Lemon'],
+          'pastry-cakes': ['Chocolate', 'Vanilla', 'Strawberry', 'Caramel', 'Cream']
         }
       },
-      'men': {
-        label: 'Men',
-        icon: '👨',
+      'bakery': {
+        label: 'Bakery',
+        icon: '🍞',
         productTypes: {
-          'clothing': {
-            label: '👔 Clothing',
-            sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
-            subCategories: {
-              'unstitched': { label: 'Unstitched', styles: ['Shalwar Kameez', 'Kurta Fabric', 'Waistcoat', 'Sherwani', 'Embroidered Fabric'] },
-              'shirts': { label: 'Shirts', styles: ['Formal Shirt', 'Casual Shirt', 'Party Shirt'] },
-              't-shirts': { label: 'T-Shirts', styles: ['Casual T-Shirt', 'Polo T-Shirt', 'Graphic T-Shirt'] },
-              'jeans': { label: 'Jeans', styles: ['Slim Fit', 'Regular Fit', 'Straight Fit', 'Skinny Fit'] },
-              'kurta': { label: 'Kurta', styles: ['Simple Kurta', 'Embroidered Kurta', 'Wedding Kurta'] },
-              'trousers': { label: 'Trousers', styles: ['Formal Trousers', 'Casual Trousers', 'Chino'] },
-              'suits': { label: 'Suits & Blazers', styles: ['Formal Suit', 'Party Suit', 'Wedding Suit'] }
-            }
-          },
-          'footwear': {
-            label: '👞 Footwear',
-            sizes: ['6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)'],
-            subCategories: {
-              'formal-shoes': { label: 'Formal Shoes', styles: ['Oxford', 'Derby', 'Loafers', 'Monk Strap'] },
-              'casual-shoes': { label: 'Casual Shoes', styles: ['Sneakers', 'Slip-ons', 'Boat Shoes'] },
-              'sandals': { label: 'Sandals', styles: ['Leather Sandals', 'Casual Sandals', 'Formal Sandals'] },
-              'slippers': { label: 'Slippers', styles: ['House Slippers', 'Flip Flops'] }
-            }
-          },
-          'bags': {
-            label: '💼 Bags',
-            sizes: ['One Size'],
-            subCategories: {
-              'backpacks': { label: 'Backpacks', styles: ['Casual Backpack', 'Office Backpack', 'Travel Backpack'] },
-              'messenger-bags': { label: 'Messenger Bags', styles: ['Leather Messenger', 'Canvas Messenger'] },
-              'briefcases': { label: 'Briefcases', styles: ['Leather Briefcase', 'Fabric Briefcase'] },
-              'wallets': { label: 'Wallets', styles: ['Leather Wallet', 'Slim Wallet', 'Card Holder'] }
-            }
-          },
-          'accessories': {
-            label: '⌚ Accessories',
-            sizes: ['One Size'],
-            subCategories: {
-              'watches': { label: 'Watches', styles: ['Analog', 'Digital', 'Smart', 'Fashion'] },
-              'sunglasses': { label: 'Sunglasses', styles: ['Aviator', 'Wayfarer', 'Round'] },
-              'belts': { label: 'Belts', styles: ['Leather Belt', 'Fabric Belt', 'Formal Belt'] },
-              'ties': { label: 'Ties', styles: ['Silk Tie', 'Knit Tie', 'Pattern Tie'] }
-            }
-          }
+          'bread': { label: 'Bread' },
+          'buns-rolls': { label: 'Buns & Rolls' },
+          'croissants': { label: 'Croissants' },
+          'donuts': { label: 'Donuts' },
+          'cookies-biscuits': { label: 'Cookies & Biscuits' },
+          'brownies': { label: 'Brownies' },
+          'muffins': { label: 'Muffins' },
+          'pastries': { label: 'Pastries' }
+        },
+        styles: {
+          'bread': ['White', 'Brown', 'Whole Wheat', 'Sourdough', 'Garlic', 'Multigrain'],
+          'buns-rolls': ['White', 'Brown', 'Sesame', 'Brioche', 'Cinnamon'],
+          'croissants': ['Classic', 'Chocolate', 'Almond', 'Butter', 'Ham & Cheese'],
+          'donuts': ['Glazed', 'Chocolate', 'Strawberry', 'Sprinkles', 'Caramel', 'Custard'],
+          'cookies-biscuits': ['Chocolate Chip', 'Oatmeal', 'Butter', 'Sugar', 'Peanut Butter'],
+          'brownies': ['Classic', 'Walnut', 'Chocolate Chip', 'Fudge', 'Caramel'],
+          'muffins': ['Blueberry', 'Chocolate', 'Banana', 'Strawberry', 'Carrot'],
+          'pastries': ['Cream', 'Fruit', 'Chocolate', 'Almond', 'Custard']
         }
       },
-      'kids': {
-        label: 'Kids',
-        icon: '🧒',
+      'savory-snacks': {
+        label: 'Savory & Snacks',
+        icon: '🍕',
         productTypes: {
-          'boys': {
-            label: '👦 Boys',
-            sizes: ['XS(4-5)', 'S(6-7)', 'M(8-10)', 'L(12-14)', 'XL(16)'],
-            subCategories: {
-              'shirts': { label: 'Shirts', styles: ['Formal', 'Casual', 'Party'] },
-              't-shirts': { label: 'T-Shirts', styles: ['Casual', 'Graphic', 'Polo'] },
-              'jeans': { label: 'Jeans', styles: ['Slim', 'Regular'] },
-              'kurta': { label: 'Kurta', styles: ['Simple', 'Embroidered'] },
-              'trousers': { label: 'Trousers', styles: ['Formal', 'Casual'] }
-            }
-          },
-          'girls': {
-            label: '👧 Girls',
-            sizes: ['XS(4-5)', 'S(6-7)', 'M(8-10)', 'L(12-14)', 'XL(16)'],
-            subCategories: {
-              'dresses': { label: 'Dresses', styles: ['Party Dress', 'Casual Dress', 'Wedding Dress'] },
-              'frocks': { label: 'Frocks', styles: ['Casual Frocks', 'Party Frocks', 'Wedding Frocks'] },
-              'kurti': { label: 'Kurti', styles: ['Casual Kurti', 'Party Kurti'] },
-              'lawn': { label: 'Lawn', styles: ['Casual Lawn', 'Party Lawn'] }
-            }
-          },
-          'baby': {
-            label: '👶 Baby',
-            sizes: ['0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M'],
-            subCategories: {
-              'onesies': { label: 'Onesies', styles: ['Cotton Onesies', 'Organic Onesies'] },
-              'sleepwear': { label: 'Sleepwear', styles: ['Cotton Sleepwear', 'Warm Sleepwear'] },
-              'sets': { label: 'Sets', styles: ['Casual Sets', 'Party Sets'] }
-            }
-          },
-          'footwear': {
-            label: '👟 Footwear',
-            sizes: ['10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)', '12.5(US)', '13(US)', '13.5(US)', '1(US)', '1.5(US)', '2(US)', '2.5(US)', '3(US)'],
-            subCategories: {
-              'shoes': { label: 'Shoes', styles: ['Casual Shoes', 'School Shoes', 'Sports Shoes'] },
-              'sandals': { label: 'Sandals', styles: ['Casual Sandals', 'Party Sandals'] },
-              'slippers': { label: 'Slippers', styles: ['House Slippers', 'Casual Slippers'] }
-            }
-          },
-          'accessories': {
-            label: '🎀 Accessories',
-            sizes: ['One Size'],
-            subCategories: {
-              'bags': { label: 'Bags', styles: ['Backpack', 'Tote', 'Crossbody'] },
-              'hats': { label: 'Hats', styles: ['Summer Hat', 'Winter Hat'] },
-              'hair-accessories': { label: 'Hair Accessories', styles: ['Clips', 'Bands', 'Ties'] }
-            }
-          }
+          'pizza': { label: 'Pizza' },
+          'patties': { label: 'Patties' },
+          'sandwiches': { label: 'Sandwiches' },
+          'burgers': { label: 'Burgers' },
+          'rolls': { label: 'Rolls' },
+          'samosas': { label: 'Samosas' }
+        },
+        styles: {
+          'pizza': ['Chicken', 'Beef', 'Veggie', 'Pepperoni', 'Margherita', 'BBQ Chicken'],
+          'patties': ['Chicken', 'Beef', 'Veggie', 'Fish', 'Cheese'],
+          'sandwiches': ['Chicken', 'Beef', 'Veggie', 'Club', 'Grilled Cheese'],
+          'burgers': ['Chicken', 'Beef', 'Veggie', 'Cheese', 'Mushroom'],
+          'rolls': ['Chicken', 'Beef', 'Veggie', 'Spring Roll', 'Egg Roll'],
+          'samosas': ['Chicken', 'Beef', 'Veggie', 'Cheese']
         }
       },
-      'unisex': {
-        label: 'Unisex',
-        icon: '👤',
+      'specials': {
+        label: 'Special & Seasonal',
+        icon: '🎁',
         productTypes: {
-          'accessories': {
-            label: '🎒 Accessories',
-            sizes: ['One Size'],
-            subCategories: {
-              'bags': { label: 'Bags', styles: ['Backpacks', 'Totes', 'Crossbody', 'Duffel'] },
-              'watches': { label: 'Watches', styles: ['Analog', 'Digital', 'Smart'] },
-              'sunglasses': { label: 'Sunglasses', styles: ['Aviator', 'Wayfarer', 'Round', 'Square'] },
-              'hats': { label: 'Hats', styles: ['Caps', 'Beanies', 'Bucket Hats'] }
-            }
-          }
+          'gift-boxes': { label: 'Gift Boxes' },
+          'ramadan-specials': { label: 'Ramadan Specials' },
+          'eid-specials': { label: 'Eid Specials' },
+          'valentine-specials': { label: "Valentine's Specials" }
+        },
+        styles: {
+          'gift-boxes': ['Premium Box', 'Standard Box', 'Mini Box', 'Custom Box'],
+          'ramadan-specials': ['Dates Box', 'Dry Fruits Box', 'Sweets Box', 'Combo Pack'],
+          'eid-specials': ['Eid Gift Box', 'Eid Sweets', 'Eid Combo', 'Eid Bakery'],
+          'valentine-specials': ['Heart Cake', 'Valentine Box', 'Love Combo', 'Chocolate Box']
         }
       }
     }
   }
 };
 
-// ✅ Colour Options
-const colourOptions = [
-  'Black', 'White', 'Red', 'Blue', 'Green', 'Yellow', 'Pink',
-  'Purple', 'Orange', 'Brown', 'Grey', 'Navy', 'Teal', 'Maroon',
-  'Olive', 'Cream', 'Beige', 'Gold', 'Silver', 'Rose Gold',
-  'Turquoise', 'Lavender', 'Mint', 'Coral', 'Peach', 'Tan',
-  'Charcoal', 'Burgundy', 'Mustard', 'Emerald', 'Ruby'
+// ✅ Size Options
+const sizeOptions = ['Small', 'Medium', 'Large', 'Extra Large', 'One Size', 'Free Size'];
+
+// ✅ Cake Shapes
+const cakeShapes = ['Round', 'Square', 'Heart', 'Oval', 'Rectangle', 'Custom'];
+
+// ✅ Order Types
+const orderTypes = [
+  { value: 'ready-stock', label: 'Ready Stock' },
+  { value: 'made-to-order', label: 'Made to Order' },
+  { value: 'pre-order', label: 'Pre-Order' }
 ];
 
-// ✅ Size Options - Complete with US Sizes
-const sizeOptions = [
-  // 👕 Clothing Sizes
-  'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'One Size', 'Free Size',
-  // 👟 Women Footwear Sizes (US)
-  '5(US)', '5.5(US)', '6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)',
-  // 👞 Men Footwear Sizes (US)
-  '6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)',
-  // 👶 Kids Sizes
-  'XS(4-5)', 'S(6-7)', 'M(8-10)', 'L(12-14)', 'XL(16)',
-  '0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M',
-  '10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)', '12.5(US)', '13(US)', '13.5(US)', '1(US)', '1.5(US)', '2(US)', '2.5(US)', '3(US)',
-  // 📦 Other
-  'One Size', 'Free Size'
+// ✅ Flavor Options (Common)
+const flavorOptions = [
+  'Chocolate', 'Vanilla', 'Strawberry', 'Red Velvet', 'Blueberry',
+  'Caramel', 'Pistachio', 'Mango', 'Lemon', 'Orange', 'Coffee',
+  'Matcha', 'Oreo', 'Cream', 'Fruit'
 ];
 
-// ✅ Main Categories
-const mainCategories = Object.keys(categoryData);
-
-const AdminProductForm: React.FC = () => {
+const AdminCakesProductForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
@@ -369,9 +213,8 @@ const AdminProductForm: React.FC = () => {
     brand: '',
     sku: '',
     category: '',
-    gender: '',
+    department: '',
     productType: '',
-    subCategory: '',
     style: '',
     price: 0,
     oldPrice: 0,
@@ -379,15 +222,33 @@ const AdminProductForm: React.FC = () => {
     costPrice: 0,
     stock: 0,
     lowStockAlert: 5,
+    orderType: 'ready-stock',
     image: '',
     images: [],
-    colorImages: {},
     sizes: [],
     colors: [],
+    cakeDetails: {
+      flavor: '',
+      weight: '',
+      shape: '',
+      servings: '',
+      eggless: false,
+      customizationAvailable: false,
+      advanceOrderRequired: false,
+      preparationTime: '',
+      customMessage: ''
+    },
+    foodDetails: {
+      weight: '',
+      quantity: 1,
+      ingredients: [],
+      expiryDate: '',
+      storageInstructions: ''
+    },
     shortDescription: '',
     description: '',
-    material: '',
-    careInstructions: '',
+    ingredients: [],
+    nutritionalInfo: '',
     isNew: false,
     isFeatured: false,
     isBestSeller: false,
@@ -403,62 +264,38 @@ const AdminProductForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
-  
-  const [selectedColor, setSelectedColor] = useState('');
-  const [newColorImages, setNewColorImages] = useState<string[]>([]);
-  const [newColorUrlInput, setNewColorUrlInput] = useState('');
-  const [showColorUrlInput, setShowColorUrlInput] = useState(false);
-  
   const [newSize, setNewSize] = useState('');
+  const [newIngredient, setNewIngredient] = useState('');
   const [usedProductIds, setUsedProductIds] = useState<string[]>([]);
 
-  // ✅ Get current category data with proper typing
+  // ✅ Get current category data
   const currentCategory = formData.category ? categoryData[formData.category] : null;
   const categoryPrefix = currentCategory?.prefix || '';
 
-  // ✅ Get current gender data with proper typing
-  const currentGender = formData.gender && currentCategory 
-    ? currentCategory.genders[formData.gender] 
+  // ✅ Get current department data
+  const currentDepartment = formData.department && currentCategory
+    ? currentCategory.departments[formData.department]
     : null;
 
-  // ✅ Get current product type data with proper typing
-  const currentProductType = formData.productType && currentGender
-    ? currentGender.productTypes[formData.productType]
-    : null;
+  // ✅ Get current product type data
 
-  // ✅ Get current subcategory data with proper typing
-  const currentSubCategory = formData.subCategory && currentProductType
-    ? currentProductType.subCategories[formData.subCategory]
-    : null;
-
-  // ✅ Get genders for selected category
-  const getGenders = () => {
-    if (!formData.category || !currentCategory) return {};
-    return currentCategory.genders;
-  };
-
-  // ✅ Get product types for selected gender
-  const getProductTypes = () => {
-    if (!formData.category || !formData.gender || !currentGender) return {};
-    return currentGender.productTypes;
-  };
-
-  // ✅ Get subcategories for selected product type
-  const getSubCategories = () => {
-    if (!formData.category || !formData.gender || !formData.productType || !currentProductType) return {};
-    return currentProductType.subCategories;
-  };
-
-  // ✅ Get styles for selected subcategory
+  // ✅ Get styles for current product type
   const getStyles = (): string[] => {
-    if (!formData.category || !formData.gender || !formData.productType || !formData.subCategory || !currentSubCategory) return [];
-    return currentSubCategory.styles || [];
+    if (!formData.department || !formData.productType) return [];
+    const styles = currentDepartment?.styles || {};
+    return styles[formData.productType] || [];
   };
 
-  // ✅ Get sizes for selected product type
-  const getSizes = (): string[] => {
-    if (!formData.category || !formData.gender || !formData.productType || !currentProductType) return [];
-    return currentProductType.sizes || sizeOptions;
+  // ✅ Get departments
+  const getDepartments = () => {
+    if (!formData.category || !currentCategory) return {};
+    return currentCategory.departments || {};
+  };
+
+  // ✅ Get product types
+  const getProductTypes = () => {
+    if (!formData.department || !currentDepartment) return {};
+    return currentDepartment.productTypes || {};
   };
 
   // ✅ Generate Product IDs
@@ -518,9 +355,8 @@ const AdminProductForm: React.FC = () => {
           brand: data.brand || '',
           sku: data.sku || '',
           category: data.category || '',
-          gender: data.gender || '',
+          department: data.department || '',
           productType: data.productType || '',
-          subCategory: data.subCategory || '',
           style: data.style || '',
           price: data.price || 0,
           oldPrice: data.oldPrice || 0,
@@ -528,15 +364,33 @@ const AdminProductForm: React.FC = () => {
           costPrice: data.costPrice || 0,
           stock: data.stock || 0,
           lowStockAlert: data.lowStockAlert || 5,
+          orderType: data.orderType || 'ready-stock',
           image: data.image || '',
           images: data.images || [],
-          colorImages: data.colorImages || {},
           sizes: data.sizes || [],
           colors: data.colors || [],
+          cakeDetails: data.cakeDetails || {
+            flavor: '',
+            weight: '',
+            shape: '',
+            servings: '',
+            eggless: false,
+            customizationAvailable: false,
+            advanceOrderRequired: false,
+            preparationTime: '',
+            customMessage: ''
+          },
+          foodDetails: data.foodDetails || {
+            weight: '',
+            quantity: 1,
+            ingredients: [],
+            expiryDate: '',
+            storageInstructions: ''
+          },
           shortDescription: data.shortDescription || '',
           description: data.description || '',
-          material: data.material || '',
-          careInstructions: data.careInstructions || '',
+          ingredients: data.ingredients || [],
+          nutritionalInfo: data.nutritionalInfo || '',
           isNew: data.isNew || false,
           isFeatured: data.isFeatured || false,
           isBestSeller: data.isBestSeller || false,
@@ -623,75 +477,6 @@ const AdminProductForm: React.FC = () => {
     setShowUrlInput(false);
   };
 
-  const handleColorImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || !selectedColor) {
-      alert('Please select a colour first');
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const urls: string[] = [];
-      for (const file of Array.from(files)) {
-        const url = await uploadImage(file);
-        urls.push(url);
-      }
-      setNewColorImages(prev => [...prev, ...urls]);
-    } catch (error) {
-      console.error('Error uploading colour images:', error);
-      alert('Failed to upload colour images');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleColorImageUrl = () => {
-    if (!newColorUrlInput.trim()) {
-      alert('Please enter a valid image URL');
-      return;
-    }
-    if (!selectedColor) {
-      alert('Please select a colour first');
-      return;
-    }
-    setNewColorImages(prev => [...prev, newColorUrlInput]);
-    setNewColorUrlInput('');
-    setShowColorUrlInput(false);
-  };
-
-  const addColor = () => {
-    if (!selectedColor) {
-      alert('Please select a colour');
-      return;
-    }
-    if (formData.colors.includes(selectedColor)) {
-      alert('This colour already exists');
-      return;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      colors: [...prev.colors, selectedColor],
-      colorImages: { ...prev.colorImages, [selectedColor]: newColorImages }
-    }));
-    setSelectedColor('');
-    setNewColorImages([]);
-    setNewColorUrlInput('');
-  };
-
-  const removeColor = (color: string) => {
-    if (!confirm(`Remove colour "${color}"?`)) return;
-    const newColors = formData.colors.filter(c => c !== color);
-    const newColorImages = { ...formData.colorImages };
-    delete newColorImages[color];
-    setFormData(prev => ({
-      ...prev,
-      colors: newColors,
-      colorImages: newColorImages
-    }));
-  };
-
   const addSize = () => {
     if (!newSize.trim()) {
       alert('Please select a size');
@@ -722,10 +507,58 @@ const AdminProductForm: React.FC = () => {
     }));
   };
 
+  const addIngredient = () => {
+    if (!newIngredient.trim()) {
+      alert('Please enter an ingredient');
+      return;
+    }
+    if (formData.ingredients.includes(newIngredient)) {
+      alert('This ingredient already exists');
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      ingredients: [...prev.ingredients, newIngredient]
+    }));
+    setNewIngredient('');
+  };
+
+  const removeIngredient = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      ingredients: prev.ingredients.filter((_, i) => i !== index)
+    }));
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
+
+    // Handle nested cakeDetails
+    if (name.startsWith('cakeDetails.')) {
+      const field = name.replace('cakeDetails.', '');
+      setFormData(prev => ({
+        ...prev,
+        cakeDetails: {
+          ...prev.cakeDetails,
+          [field]: type === 'checkbox' ? checked : value
+        }
+      }));
+      return;
+    }
+
+    // Handle nested foodDetails
+    if (name.startsWith('foodDetails.')) {
+      const field = name.replace('foodDetails.', '');
+      setFormData(prev => ({
+        ...prev,
+        foodDetails: {
+          ...prev.foodDetails,
+          [field]: type === 'checkbox' ? checked : value
+        }
+      }));
+      return;
+    }
 
     setFormData(prev => ({
       ...prev,
@@ -740,22 +573,20 @@ const AdminProductForm: React.FC = () => {
     setFormData(prev => ({
       ...prev,
       category: value,
-      gender: '',
+      department: '',
       productType: '',
-      subCategory: '',
       style: '',
       sku: ''
     }));
   };
 
-  // ✅ Handle Gender Change
-  const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  // ✅ Handle Department Change
+  const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({
       ...prev,
-      gender: value,
+      department: value,
       productType: '',
-      subCategory: '',
       style: ''
     }));
   };
@@ -766,17 +597,6 @@ const AdminProductForm: React.FC = () => {
     setFormData(prev => ({
       ...prev,
       productType: value,
-      subCategory: '',
-      style: ''
-    }));
-  };
-
-  // ✅ Handle Subcategory Change
-  const handleSubCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      subCategory: value,
       style: ''
     }));
   };
@@ -811,45 +631,67 @@ const AdminProductForm: React.FC = () => {
     if (!formData.name) { alert('Please enter product name'); return; }
     if (!formData.price) { alert('Please enter price'); return; }
     if (!formData.category) { alert('Please select category'); return; }
-    if (!formData.gender) { alert('Please select gender'); return; }
+    if (!formData.department) { alert('Please select department'); return; }
     if (!formData.productType) { alert('Please select product type'); return; }
     if (!formData.image) { alert('Please upload or add main image URL'); return; }
-    if (formData.colors.length === 0) { alert('Please add at least one colour'); return; }
-    if (formData.sizes.length === 0) { alert('Please add at least one size'); return; }
 
     setSaving(true);
     setError(null);
 
     try {
       const productData = {
+        // Basic
         name: formData.name,
         brand: formData.brand || '',
         sku: formData.sku || '',
+        
+        // Category
         category: formData.category,
-        gender: formData.gender,
+        department: formData.department,
         productType: formData.productType,
-        subCategory: formData.subCategory || '',
         style: formData.style || '',
+        
+        // Pricing
         price: formData.price,
         oldPrice: formData.oldPrice || 0,
         discount: formData.discount || 0,
         costPrice: formData.costPrice || 0,
+        
+        // Inventory
         stock: formData.stock || 0,
         lowStockAlert: formData.lowStockAlert || 5,
+        orderType: formData.orderType || 'ready-stock',
+        
+        // Images
         image: formData.image,
         images: formData.images || [],
-        colorImages: formData.colorImages || {},
+        
+        // Variants
         sizes: formData.sizes || [],
         colors: formData.colors || [],
+        
+        // Cake Details
+        cakeDetails: formData.cakeDetails,
+        
+        // Food Details
+        foodDetails: formData.foodDetails,
+        
+        // Details
         shortDescription: formData.shortDescription || '',
         description: formData.description || '',
-        material: formData.material || '',
-        careInstructions: formData.careInstructions || '',
+        ingredients: formData.ingredients || [],
+        nutritionalInfo: formData.nutritionalInfo || '',
+        
+        // Labels
         isNew: formData.isNew || false,
         isFeatured: formData.isFeatured || false,
         isBestSeller: formData.isBestSeller || false,
         isOnSale: formData.isOnSale || false,
+        
+        // Status
         status: formData.status || 'active',
+        
+        // System
         rating: formData.rating || 0,
         reviewCount: formData.reviewCount || 0,
         createdAt: new Date(),
@@ -885,12 +727,16 @@ const AdminProductForm: React.FC = () => {
     );
   }
 
-  // ✅ Get all select options with proper typing
-  const genders = getGenders();
+  // ✅ Get all select options
+  const departments = getDepartments();
   const productTypes = getProductTypes();
-  const subCategories = getSubCategories();
   const styles = getStyles();
-  const availableSizes = getSizes();
+
+  // ✅ Show cake details only when department is 'cakes'
+  const showCakeDetails = formData.department === 'cakes';
+  
+  // ✅ Show food details only when department is 'bakery' or 'savory-snacks'
+  const showFoodDetails = formData.department === 'bakery' || formData.department === 'savory-snacks';
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -908,7 +754,7 @@ const AdminProductForm: React.FC = () => {
               {isEditMode ? '✏️ Edit Product' : '➕ Add New Product'}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              {isEditMode ? 'Update product details' : 'Create a new product'}
+              {isEditMode ? 'Update product details' : 'Create a new cake or bakery product'}
             </p>
           </div>
         </div>
@@ -940,7 +786,7 @@ const AdminProductForm: React.FC = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="e.g., MARIA B Exclusive Heavy Embroidered Saree"
+                placeholder="e.g., Premium Chocolate Birthday Cake"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
                 required
               />
@@ -952,7 +798,7 @@ const AdminProductForm: React.FC = () => {
                 name="brand"
                 value={formData.brand}
                 onChange={handleInputChange}
-                placeholder="e.g., MARIA B"
+                placeholder="e.g., Maha One Bakery"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
             </div>
@@ -1003,6 +849,7 @@ const AdminProductForm: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">🏷️ 2. Category</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Main Category */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Main Category *</label>
               <select
@@ -1012,112 +859,83 @@ const AdminProductForm: React.FC = () => {
                 required
               >
                 <option value="">Select Category</option>
-                {mainCategories.map((cat) => {
-                  const catData = categoryData[cat];
-                  return (
-                    <option key={cat} value={cat}>
-                      {catData?.icon || '📦'} {catData?.label || cat}
-                    </option>
-                  );
-                })}
+                <option value="cakes-bakery">🎂 Cakes & Bakery</option>
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">For *</label>
-              <select
-                value={formData.gender}
-                onChange={handleGenderChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
-                required
-              >
-                <option value="">Select</option>
-                {Object.keys(genders).map((key) => {
-                  const gender = genders[key];
-                  return (
+            {/* Department */}
+            {formData.category && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
+                <select
+                  value={formData.department}
+                  onChange={handleDepartmentChange}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                  required
+                >
+                  <option value="">Select Department</option>
+                  {Object.keys(departments).map((key) => (
                     <option key={key} value={key}>
-                      {gender?.icon || ''} {gender?.label || key}
+                      {departments[key]?.icon || '📦'} {departments[key]?.label || key}
                     </option>
-                  );
-                })}
-              </select>
-            </div>
+                  ))}
+                </select>
+              </div>
+            )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product Type *</label>
-              <select
-                value={formData.productType}
-                onChange={handleProductTypeChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
-                required
-              >
-                <option value="">Select Product Type</option>
-                {Object.keys(productTypes).map((key) => {
-                  const pt = productTypes[key];
-                  return (
+            {/* Product Type */}
+            {formData.department && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Type *</label>
+                <select
+                  value={formData.productType}
+                  onChange={handleProductTypeChange}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                  required
+                >
+                  <option value="">Select Product Type</option>
+                  {Object.keys(productTypes).map((key) => (
                     <option key={key} value={key}>
-                      {pt?.label || key}
+                      {productTypes[key]?.label || key}
                     </option>
-                  );
-                })}
-              </select>
-            </div>
+                  ))}
+                </select>
+              </div>
+            )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
-              <select
-                value={formData.subCategory}
-                onChange={handleSubCategoryChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
-              >
-                <option value="">Select Subcategory</option>
-                {Object.keys(subCategories).map((key) => {
-                  const sc = subCategories[key];
-                  return (
-                    <option key={key} value={key}>
-                      {sc?.label || key}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Style</label>
-              <select
-                value={formData.style}
-                onChange={(e) => setFormData(prev => ({ ...prev, style: e.target.value }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
-              >
-                <option value="">Select Style</option>
-                {styles.map((style: string) => (
-                  <option key={style} value={style}>{style}</option>
-                ))}
-              </select>
-            </div>
+            {/* Style */}
+            {formData.productType && styles.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Style/Variant</label>
+                <select
+                  value={formData.style}
+                  onChange={(e) => setFormData(prev => ({ ...prev, style: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                >
+                  <option value="">Select Style</option>
+                  {styles.map((style) => (
+                    <option key={style} value={style}>{style}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Category Path Display */}
             {formData.category && (
               <div className="md:col-span-2">
                 <div className="bg-[#F8FAFC] p-3 rounded-lg border border-gray-200 flex items-center gap-2 text-sm text-gray-600 flex-wrap">
-                  <span className="text-xl">{categoryData[formData.category]?.icon || '📦'}</span>
-                  <span className="font-medium">{categoryData[formData.category]?.label || formData.category}</span>
-                  {formData.gender && (
+                  <span className="text-xl">🎂</span>
+                  <span className="font-medium">Cakes & Bakery</span>
+                  {formData.department && (
                     <>
                       <FaChevronRight className="text-gray-400 text-xs" />
-                      <span>{genders[formData.gender]?.icon || ''} {genders[formData.gender]?.label || formData.gender}</span>
+                      <span>{departments[formData.department]?.icon || ''} {departments[formData.department]?.label || formData.department}</span>
                     </>
                   )}
                   {formData.productType && (
                     <>
                       <FaChevronRight className="text-gray-400 text-xs" />
                       <span>{productTypes[formData.productType]?.label || formData.productType}</span>
-                    </>
-                  )}
-                  {formData.subCategory && (
-                    <>
-                      <FaChevronRight className="text-gray-400 text-xs" />
-                      <span>{subCategories[formData.subCategory]?.label || formData.subCategory}</span>
                     </>
                   )}
                   {formData.style && (
@@ -1141,10 +959,45 @@ const AdminProductForm: React.FC = () => {
         </div>
 
         {/* ============================================================
-        3. PRICING
+        3. ORDER TYPE
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">💰 3. Pricing</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📦 3. Order Type</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Order Type *</label>
+              <select
+                name="orderType"
+                value={formData.orderType}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+              >
+                {orderTypes.map((type) => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+            {formData.orderType === 'made-to-order' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Preparation Time</label>
+                <input
+                  type="text"
+                  name="cakeDetails.preparationTime"
+                  value={formData.cakeDetails.preparationTime}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 24 Hours"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ============================================================
+        4. PRICING
+        ============================================================ */}
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">💰 4. Pricing</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.) *</label>
@@ -1153,7 +1006,7 @@ const AdminProductForm: React.FC = () => {
                 name="price"
                 value={formData.price}
                 onChange={handleInputChange}
-                placeholder="6250"
+                placeholder="2500"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
                 required
               />
@@ -1165,7 +1018,7 @@ const AdminProductForm: React.FC = () => {
                 name="oldPrice"
                 value={formData.oldPrice}
                 onChange={handleInputChange}
-                placeholder="7500"
+                placeholder="2800"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
             </div>
@@ -1182,7 +1035,7 @@ const AdminProductForm: React.FC = () => {
                 name="costPrice"
                 value={formData.costPrice}
                 onChange={handleInputChange}
-                placeholder="5000"
+                placeholder="2000"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
             </div>
@@ -1190,21 +1043,20 @@ const AdminProductForm: React.FC = () => {
         </div>
 
         {/* ============================================================
-        4. INVENTORY
+        5. INVENTORY
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">📦 4. Inventory</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📦 5. Inventory</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
               <input
                 type="number"
                 name="stock"
                 value={formData.stock}
                 onChange={handleInputChange}
-                placeholder="15"
+                placeholder="10"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
-                required
               />
             </div>
             <div>
@@ -1222,10 +1074,174 @@ const AdminProductForm: React.FC = () => {
         </div>
 
         {/* ============================================================
-        5. IMAGES
+        6. CAKE DETAILS (Conditional)
+        ============================================================ */}
+        {showCakeDetails && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FaBirthdayCake className="text-[#D4AF37]" /> 6. Cake Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Flavor</label>
+                <select
+                  name="cakeDetails.flavor"
+                  value={formData.cakeDetails.flavor}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                >
+                  <option value="">Select Flavor</option>
+                  {flavorOptions.map((flavor) => (
+                    <option key={flavor} value={flavor}>{flavor}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Weight / Size</label>
+                <input
+                  type="text"
+                  name="cakeDetails.weight"
+                  value={formData.cakeDetails.weight}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 2 Pound, 1kg"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Shape</label>
+                <select
+                  name="cakeDetails.shape"
+                  value={formData.cakeDetails.shape}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                >
+                  <option value="">Select Shape</option>
+                  {cakeShapes.map((shape) => (
+                    <option key={shape} value={shape}>{shape}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Servings</label>
+                <input
+                  type="text"
+                  name="cakeDetails.servings"
+                  value={formData.cakeDetails.servings}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 8-10 People"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                />
+              </div>
+              <div className="flex items-center gap-6 pt-2">
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="cakeDetails.eggless"
+                    checked={formData.cakeDetails.eggless}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-[#0F766E] rounded focus:ring-[#0F766E]"
+                  />
+                  <FaEgg className="text-gray-400" /> Eggless
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="cakeDetails.customizationAvailable"
+                    checked={formData.cakeDetails.customizationAvailable}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-[#0F766E] rounded focus:ring-[#0F766E]"
+                  />
+                  🎨 Customization Available
+                </label>
+              </div>
+              <div className="flex items-center gap-6 pt-2">
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="cakeDetails.advanceOrderRequired"
+                    checked={formData.cakeDetails.advanceOrderRequired}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-[#0F766E] rounded focus:ring-[#0F766E]"
+                  />
+                  <FaClock className="text-gray-400" /> Advance Order Required
+                </label>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Custom Message</label>
+                <input
+                  type="text"
+                  name="cakeDetails.customMessage"
+                  value={formData.cakeDetails.customMessage}
+                  onChange={handleInputChange}
+                  placeholder="e.g., Happy Birthday! 🎂"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================
+        7. FOOD DETAILS (Conditional)
+        ============================================================ */}
+        {showFoodDetails && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FaUtensils className="text-[#D4AF37]" /> 7. Food Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Weight</label>
+                <input
+                  type="text"
+                  name="foodDetails.weight"
+                  value={formData.foodDetails.weight}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 500g, 1kg"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity per Pack</label>
+                <input
+                  type="number"
+                  name="foodDetails.quantity"
+                  value={formData.foodDetails.quantity}
+                  onChange={handleInputChange}
+                  placeholder="1"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                <input
+                  type="date"
+                  name="foodDetails.expiryDate"
+                  value={formData.foodDetails.expiryDate}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Storage Instructions</label>
+                <input
+                  type="text"
+                  name="foodDetails.storageInstructions"
+                  value={formData.foodDetails.storageInstructions}
+                  onChange={handleInputChange}
+                  placeholder="e.g., Store in a cool, dry place"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================
+        8. IMAGES
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🖼️ 5. Images</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🖼️ 8. Images</h3>
           
           {/* Main Image */}
           <div className="mb-4">
@@ -1295,7 +1311,7 @@ const AdminProductForm: React.FC = () => {
 
           {/* Additional Images */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Additional Product Images</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Additional Images</label>
             <div className="flex items-center gap-4 mb-2">
               <input
                 type="file"
@@ -1364,162 +1380,99 @@ const AdminProductForm: React.FC = () => {
         </div>
 
         {/* ============================================================
-        6. VARIANTS
+        9. SIZES
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🎨 6. Variants</h3>
-          
-          {/* Colors */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Colors</label>
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <select
-                  value={selectedColor}
-                  onChange={(e) => setSelectedColor(e.target.value)}
-                  className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-                >
-                  <option value="">Select Colour</option>
-                  {colourOptions.map((color) => (
-                    <option key={color} value={color}>{color}</option>
-                  ))}
-                </select>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleColorImagesUpload}
-                    className="hidden"
-                    id="colorImagesUpload"
-                    disabled={uploading}
-                  />
-                  <label
-                    htmlFor="colorImagesUpload"
-                    className="bg-[#0F766E] text-white px-3 py-2 rounded-lg hover:bg-[#065F46] transition cursor-pointer text-sm flex items-center gap-2"
-                  >
-                    {uploading ? <FaSpinner className="animate-spin" /> : <FaCloudUploadAlt />}
-                    {uploading ? 'Uploading...' : 'Upload Images'}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowColorUrlInput(!showColorUrlInput)}
-                    className="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
-                  >
-                    <FaLink /> Add URL
-                  </button>
-                </div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📏 9. Sizes</h3>
+          <div className="flex flex-wrap gap-3">
+            <select
+              value={newSize}
+              onChange={(e) => setNewSize(e.target.value)}
+              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
+            >
+              <option value="">Select Size</option>
+              {sizeOptions.map((s: string) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={addSize}
+              className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
+            >
+              <FaPlus className="inline mr-1" /> Add Size
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {formData.sizes.map((size: string) => (
+              <span
+                key={size}
+                className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+              >
+                {size}
                 <button
                   type="button"
-                  onClick={addColor}
-                  className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
+                  onClick={() => removeSize(size)}
+                  className="text-red-500 hover:text-red-700"
                 >
-                  <FaPlus className="inline mr-1" /> Add Colour
+                  ×
                 </button>
-              </div>
-              {showColorUrlInput && (
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="text"
-                    placeholder="https://example.com/colour-image.jpg"
-                    value={newColorUrlInput}
-                    onChange={(e) => setNewColorUrlInput(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleColorImageUrl}
-                    className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
-                  >
-                    Add URL
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setShowColorUrlInput(false); setNewColorUrlInput(''); }}
-                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-              {newColorImages.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {newColorImages.map((img: string, i: number) => (
-                    <img key={i} src={img} className="w-12 h-12 object-cover rounded border" />
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {formData.colors.map((color: string) => (
-                <div key={color} className="border rounded-lg p-2 bg-white shadow-sm flex items-center gap-2">
-                  <span className="font-medium text-gray-800">{color}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeColor(color)}
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              {formData.colors.length === 0 && (
-                <span className="text-sm text-gray-400">No colors added yet</span>
-              )}
-            </div>
-          </div>
-
-          {/* Sizes - ✅ Dynamic Sizes based on Product Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Sizes</label>
-            <div className="flex flex-wrap gap-3">
-              <select
-                value={newSize}
-                onChange={(e) => setNewSize(e.target.value)}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-              >
-                <option value="">Select Size</option>
-                {/* ✅ Category-specific sizes */}
-                {availableSizes.map((s: string) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={addSize}
-                className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
-              >
-                <FaPlus className="inline mr-1" /> Add Size
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {formData.sizes.map((size: string) => (
-                <span
-                  key={size}
-                  className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                >
-                  {size}
-                  <button
-                    type="button"
-                    onClick={() => removeSize(size)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-              {formData.sizes.length === 0 && (
-                <span className="text-sm text-gray-400">No sizes added yet</span>
-              )}
-            </div>
+              </span>
+            ))}
+            {formData.sizes.length === 0 && (
+              <span className="text-sm text-gray-400">No sizes added yet</span>
+            )}
           </div>
         </div>
 
         {/* ============================================================
-        7. DETAILS
+        10. INGREDIENTS
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">📝 7. Product Details</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🧾 10. Ingredients</h3>
+          <div className="flex flex-wrap gap-3">
+            <input
+              type="text"
+              placeholder="Enter ingredient"
+              value={newIngredient}
+              onChange={(e) => setNewIngredient(e.target.value)}
+              className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
+            />
+            <button
+              type="button"
+              onClick={addIngredient}
+              className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
+            >
+              <FaPlus className="inline mr-1" /> Add
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {formData.ingredients.map((ingredient: string, index: number) => (
+              <span
+                key={index}
+                className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+              >
+                {ingredient}
+                <button
+                  type="button"
+                  onClick={() => removeIngredient(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {formData.ingredients.length === 0 && (
+              <span className="text-sm text-gray-400">No ingredients added yet</span>
+            )}
+          </div>
+        </div>
+
+        {/* ============================================================
+        11. DETAILS
+        ============================================================ */}
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📝 11. Product Details</h3>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
@@ -1544,24 +1497,13 @@ const AdminProductForm: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Material</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nutritional Info</label>
               <input
                 type="text"
-                name="material"
-                value={formData.material}
+                name="nutritionalInfo"
+                value={formData.nutritionalInfo}
                 onChange={handleInputChange}
-                placeholder="e.g., Shamoz Silk, Net Fabric"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Care Instructions</label>
-              <input
-                type="text"
-                name="careInstructions"
-                value={formData.careInstructions}
-                onChange={handleInputChange}
-                placeholder="e.g., Dry clean recommended"
+                placeholder="e.g., Calories: 250 kcal per serving"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
             </div>
@@ -1569,10 +1511,10 @@ const AdminProductForm: React.FC = () => {
         </div>
 
         {/* ============================================================
-        8. LABELS
+        12. LABELS
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🏷️ 8. Product Labels</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🏷️ 12. Product Labels</h3>
           <div className="flex flex-wrap items-center gap-6">
             <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
               <input
@@ -1618,7 +1560,7 @@ const AdminProductForm: React.FC = () => {
         </div>
 
         {/* ============================================================
-        9. SUBMIT
+        13. SUBMIT
         ============================================================ */}
         <div className="flex justify-end gap-3">
           <button
@@ -1643,4 +1585,4 @@ const AdminProductForm: React.FC = () => {
   );
 };
 
-export default AdminProductForm;
+export default AdminCakesProductForm;

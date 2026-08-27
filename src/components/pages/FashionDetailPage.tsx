@@ -749,11 +749,11 @@ const FashionDetailPage = () => {
                   alert('✅ Added to Cart!');
                 }}
                 disabled={!isInStock()}
-                className={`flex-1 px-3 py-2 sm:px-5 sm:py-2.5 md:px-7 md:py-3 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 ${
+                className={`flex-1 px-3 py-2 sm:px-5 sm:py-2.5 md:px-7 md:py-3 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 ${(
                   isInStock()
                     ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
                     : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                }`}
+                )}`}
               >
                 <FaShoppingCart className="text-xs sm:text-sm" />
                 <span>{isInStock() ? 'Add to Cart' : 'Out of Stock'}</span>
@@ -775,35 +775,52 @@ const FashionDetailPage = () => {
                   window.location.href = '/checkout';
                 }}
                 disabled={!isInStock()}
-                className={`px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 ${
+                className={`px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 ${(
                   isInStock() 
                     ? 'bg-[#D4AF37] text-white hover:bg-[#b8941f] cursor-pointer' 
                     : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50'
-                }`}
+                )}`}
               >
                 Buy Now
               </button>
             </div>
 
-            {/* Share & WhatsApp */}
+            {/* ✅ Share & WhatsApp - Clickable */}
             <div className="flex gap-2">
+              {/* ✅ Share Button - Clickable with Fallback */}
               <button
                 onClick={() => {
+                  const shareData = {
+                    title: product.name,
+                    text: `Check out ${product.name} at Maha One Hypermart!`,
+                    url: window.location.href
+                  };
+
+                  // Try native share first (mobile)
                   if (navigator.share) {
-                    navigator.share({
-                      title: product.name,
-                      text: `Check out ${product.name} at Maha One Hypermart!`,
-                      url: window.location.href
-                    });
+                    navigator.share(shareData).catch(() => {});
+                    return;
                   }
+
+                  // Fallback: Copy to clipboard
+                  const fullText = `${shareData.text}\n${shareData.url}`;
+                  navigator.clipboard.writeText(fullText).then(() => {
+                    alert('✅ Link copied to clipboard! Share it anywhere.');
+                  }).catch(() => {
+                    // Final fallback: Open email
+                    window.location.href = `mailto:?subject=${encodeURIComponent(shareData.title)}&body=${encodeURIComponent(fullText)}`;
+                  });
                 }}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-2 rounded-full text-[10px] sm:text-xs font-medium transition flex items-center justify-center gap-1"
               >
                 <FaShare /> Share
               </button>
+
+              {/* ✅ WhatsApp Button */}
               <button
                 onClick={() => {
-                  window.open(`https://wa.me/?text=Check out ${product.name} at Maha One Hypermart! ${window.location.href}`, '_blank');
+                  const message = `Check out ${product.name} at Maha One Hypermart! ${window.location.href}`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
                 }}
                 className="flex-1 bg-[#25D366] hover:bg-[#1DA851] text-white px-3 py-2 rounded-full text-[10px] sm:text-xs font-medium transition flex items-center justify-center gap-1"
               >
@@ -815,7 +832,7 @@ const FashionDetailPage = () => {
             <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-1">
               <div className="bg-white/80 dark:bg-[#1F2937]/80 backdrop-blur p-1.5 sm:p-2 md:p-2.5 rounded-xl border border-[#E5E7EB] dark:border-gray-700 text-center">
                 <FaTruck className="text-[#D4AF37] text-sm sm:text-base md:text-lg mx-auto" />
-                <p className="text-[8px] sm:text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-0.5">Free Delivery</p>
+                <p className="text-[8px] sm:text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-0.5">Delivery Across the Pakistan</p>
               </div>
               <div className="bg-white/80 dark:bg-[#1F2937]/80 backdrop-blur p-1.5 sm:p-2 md:p-2.5 rounded-xl border border-[#E5E7EB] dark:border-gray-700 text-center">
                 <FaShieldAlt className="text-[#D4AF37] text-sm sm:text-base md:text-lg mx-auto" />
@@ -985,11 +1002,11 @@ const ProductSlider: React.FC<ProductSliderProps> = ({
                   }
                 }}
                 disabled={product.stock === 0}
-                className={`w-full mt-1 px-2 py-1 rounded-full text-[8px] sm:text-[10px] font-medium transition flex items-center justify-center gap-1 ${
+                className={`w-full mt-1 px-2 py-1 rounded-full text-[8px] sm:text-[10px] font-medium transition flex items-center justify-center gap-1 ${(
                   product.stock > 0
                     ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                )}`}
               >
                 <FaShoppingCart className="text-[8px] sm:text-[10px]" />
                 {product.stock > 0 ? 'Add' : 'Sold'}
