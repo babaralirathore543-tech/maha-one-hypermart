@@ -96,7 +96,7 @@ const categoryData: CategoryData = {
         productTypes: {
           'clothing': {
             label: '👗 Clothing',
-            sizes: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+            sizes: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'One Size', 'Free Size'],
             subCategories: {
               'unstitched': { 
                 label: 'Unstitched', 
@@ -214,7 +214,7 @@ const categoryData: CategoryData = {
         productTypes: {
           'clothing': {
             label: '👔 Clothing',
-            sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+            sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'One Size', 'Free Size'],
             subCategories: {
               'unstitched': { label: 'Unstitched', styles: ['Shalwar Kameez', 'Kurta Fabric', 'Waistcoat', 'Sherwani', 'Embroidered Fabric'] },
               'shirts': { label: 'Shirts', styles: ['Formal Shirt', 'Casual Shirt', 'Party Shirt'] },
@@ -340,10 +340,11 @@ const colourOptions = [
   'Charcoal', 'Burgundy', 'Mustard', 'Emerald', 'Ruby'
 ];
 
-// ✅ Size Options - Complete with US Sizes
+// ✅ Size Options - Complete with US Sizes (No Duplicates)
 const sizeOptions = [
   // 👕 Clothing Sizes
-  'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'One Size', 'Free Size',
+  'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL',
+  'One Size', 'Free Size',
   // 👟 Women Footwear Sizes (US)
   '5(US)', '5.5(US)', '6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)',
   // 👞 Men Footwear Sizes (US)
@@ -351,9 +352,7 @@ const sizeOptions = [
   // 👶 Kids Sizes
   'XS(4-5)', 'S(6-7)', 'M(8-10)', 'L(12-14)', 'XL(16)',
   '0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M',
-  '10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)', '12.5(US)', '13(US)', '13.5(US)', '1(US)', '1.5(US)', '2(US)', '2.5(US)', '3(US)',
-  // 📦 Other
-  'One Size', 'Free Size'
+  '10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)', '12.5(US)', '13(US)', '13.5(US)', '1(US)', '1.5(US)', '2(US)', '2.5(US)', '3(US)'
 ];
 
 // ✅ Main Categories
@@ -722,6 +721,15 @@ const AdminProductForm: React.FC = () => {
     }));
   };
 
+  const removeColorImage = (color: string, index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      colorImages: {
+        ...prev.colorImages,
+        [color]: prev.colorImages[color].filter((_, i) => i !== index)
+      }
+    }));
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -1453,7 +1461,25 @@ const AdminProductForm: React.FC = () => {
             <div className="flex flex-wrap gap-2 mt-2">
               {formData.colors.map((color: string) => (
                 <div key={color} className="border rounded-lg p-2 bg-white shadow-sm flex items-center gap-2">
-                  <span className="font-medium text-gray-800">{color}</span>
+                  <div>
+                    <span className="font-medium text-gray-800">{color}</span>
+                    {formData.colorImages[color]?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {formData.colorImages[color].map((img: string, index: number) => (
+                          <div key={index} className="relative">
+                            <img src={img} alt={`${color} ${index + 1}`} className="w-12 h-12 object-cover rounded border" />
+                            <button
+                              type="button"
+                              onClick={() => removeColorImage(color, index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => removeColor(color)}
@@ -1479,7 +1505,6 @@ const AdminProductForm: React.FC = () => {
                 className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
               >
                 <option value="">Select Size</option>
-                {/* ✅ Category-specific sizes */}
                 {availableSizes.map((s: string) => (
                   <option key={s} value={s}>{s}</option>
                 ))}

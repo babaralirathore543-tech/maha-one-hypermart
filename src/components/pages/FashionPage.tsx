@@ -93,8 +93,7 @@ const categoryIcons: Record<string, string> = {
   'lawn': '🌿',
   'onesies': '👶',
   'sleepwear': '🌙',
-  'hats': '🧢',
-  // ✅ Fixed: Removed duplicate 'bags' entry (line 97)
+  'hats': '🧢'
 };
 
 // ✅ Gender Icons
@@ -181,7 +180,6 @@ const FashionPage = () => {
   }, []);
 
   // ✅ Get unique genders, categories, sizes & colors
-  // ✅ Removed: allGenders (not used)
   const allCategories = [...new Set(products.map(p => p.productType).filter(Boolean))];
   const allSizes = [...new Set(products.flatMap(p => p.sizes || []))];
   const allColors = [...new Set(products.flatMap(p => p.colors || []))];
@@ -467,12 +465,12 @@ const FashionPage = () => {
                 <Link to={`/fashion/${product.id}`} key={product.id} className="group">
                   <div className="bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-1 h-full flex flex-col">
                     
-                    {/* ✅ Image Container - Fixed Aspect Ratio */}
-                    <div className="relative overflow-hidden aspect-[3/4] sm:aspect-[4/5] bg-[#F8FAFC]">
+                    {/* ✅ Image Container - Purple Border + Rounded Corners */}
+                    <div className="relative overflow-hidden aspect-[3/4] sm:aspect-[4/5] bg-[#F8FAFC] rounded-2xl m-2 sm:m-3 border-4 border-purple-500 shadow-md shadow-purple-500/20">
                       <img
                         src={hasError ? `https://via.placeholder.com/400x500/D4AF37/FFFFFF?text=${product.name}` : product.image}
                         alt={product.name}
-                        className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105`}
+                        className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 rounded-xl`}
                         onError={() => handleImageError(product.id)}
                         loading="lazy"
                       />
@@ -480,17 +478,17 @@ const FashionPage = () => {
                       {/* Badges Row - Image par */}
                       <div className="absolute top-2 left-2 flex flex-wrap gap-1">
                         {discountPercent > 0 && (
-                          <span className="bg-red-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg">
+                          <span className="bg-red-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg border-2 border-white/50">
                             -{discountPercent}%
                           </span>
                         )}
                         {product.isNew && (
-                          <span className="bg-green-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg">
+                          <span className="bg-green-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg border-2 border-white/50">
                             NEW
                           </span>
                         )}
                         {product.isBestSeller && (
-                          <span className="bg-[#D4AF37] text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg">
+                          <span className="bg-[#D4AF37] text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg border-2 border-white/50">
                             ★ BEST
                           </span>
                         )}
@@ -502,7 +500,7 @@ const FashionPage = () => {
                           e.preventDefault();
                           alert('❤️ Added to Wishlist!');
                         }}
-                        className="absolute top-2 right-2 bg-white/90 backdrop-blur rounded-full p-1.5 sm:p-2 hover:bg-[#D4AF37] transition shadow-md"
+                        className="absolute top-2 right-2 bg-white/90 backdrop-blur rounded-full p-1.5 sm:p-2 hover:bg-[#D4AF37] transition shadow-md border-2 border-purple-300"
                       >
                         <FaHeart className="text-xs sm:text-sm text-gray-600 group-hover:text-white transition" />
                       </button>
@@ -510,7 +508,7 @@ const FashionPage = () => {
                       {/* Category Badge on Image */}
                       {product.productType && (
                         <div className="absolute bottom-2 right-2">
-                          <span className="text-[8px] sm:text-[10px] bg-black/60 backdrop-blur text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full capitalize">
+                          <span className="text-[8px] sm:text-[10px] bg-black/60 backdrop-blur text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full capitalize border border-purple-300/30">
                             {categoryIcons[product.productType] || '📦'} {product.productType?.replace(/-/g, ' ')}
                           </span>
                         </div>
@@ -533,7 +531,6 @@ const FashionPage = () => {
                         {product.name}
                       </h3>
 
-                    
                       {/* Product ID */}
                       {product.productId && (
                         <p className="text-[8px] sm:text-[10px] text-gray-400 font-mono mt-0.5">{product.productId}</p>
@@ -546,7 +543,7 @@ const FashionPage = () => {
                         </span>
                       )}
 
-                      {/* ✅ STOCK INDICATOR - Blinking Green Dot + Text */}
+                      {/* ✅ STOCK INDICATOR - Blinking Green Dot */}
                       <div className="flex items-center gap-1.5 mt-1">
                         <span className={`w-2 h-2 rounded-full ${isInStock ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}></span>
                         <span className={`text-[10px] sm:text-xs font-medium ${isInStock ? 'text-green-600' : 'text-red-500'}`}>
