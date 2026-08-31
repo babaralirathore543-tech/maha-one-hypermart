@@ -17,6 +17,8 @@ import Popup from './components/common/Popup';
 import AdminPanel from './components/admin/AdminPanel';
 import AdminProductForm from './components/pages/AdminProductForm';
 import AdminCakesProductForm from './components/pages/AdminCakesProductForm';
+import AdminDryFruitsForm from './components/pages/AdminDryFruitsForm';
+import AdminSweetsForm from './components/pages/AdminSweetsForm'; // ✅ NEW: Sweets Form
 
 import EidMiladPage from './components/pages/EidMiladPage';
 import MaintenancePage from './components/pages/MaintenancePage';
@@ -190,7 +192,7 @@ function App() {
   // true = maintenance page
   // false = normal website
 
-  const MAINTENANCE_MODE = false;
+  const MAINTENANCE_MODE = true;
 
 
   // ==========================================================
@@ -484,7 +486,47 @@ function App() {
                       }
                     />
 
-                    {/* ✅ NEW: CAKES & BAKERY PRODUCT ADD/EDIT */}
+                    {/* ✅ DRY FRUITS PRODUCT ADD/EDIT */}
+
+                    <Route
+                      path="/admin/dryfruits/add"
+                      element={
+                        <AdminRoute>
+                          <AdminDryFruitsForm />
+                        </AdminRoute>
+                      }
+                    />
+
+                    <Route
+                      path="/admin/dryfruits/edit/:id"
+                      element={
+                        <AdminRoute>
+                          <AdminDryFruitsForm />
+                        </AdminRoute>
+                      }
+                    />
+
+                    {/* ✅ SWEETS PRODUCT ADD/EDIT */}
+
+                    <Route
+                      path="/admin/sweets/add"
+                      element={
+                        <AdminRoute>
+                          <AdminSweetsForm />
+                        </AdminRoute>
+                      }
+                    />
+
+                    <Route
+                      path="/admin/sweets/edit/:id"
+                      element={
+                        <AdminRoute>
+                          <AdminSweetsForm />
+                        </AdminRoute>
+                      }
+                    />
+
+                    {/* ✅ CAKES & BAKERY PRODUCT ADD/EDIT */}
 
                     <Route
                       path="/admin/cakes/add"

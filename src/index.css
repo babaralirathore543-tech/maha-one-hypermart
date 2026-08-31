@@ -44,41 +44,33 @@
 }
 
 /* ============================================================
-   ✅ FLOATING BOX ANIMATION
+   CARD BOX - COMPLETELY FLAT (NO SHADOW, NO ANIMATION)
    ============================================================ */
-@keyframes floatBox {
-  0% {
-    transform: translateY(0px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-  }
-  50% {
-    transform: translateY(-8px);
-    box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.25);
-  }
-  100% {
-    transform: translateY(0px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-  }
-}
-
 .animate-float-box {
-  animation: floatBox 6s ease-in-out infinite;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: none !important;
 }
 
-/* ✅ Dark Mode Floating Box */
+.animate-float-box:hover {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
 .dark .animate-float-box {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 .dark .animate-float-box:hover {
-  box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.7);
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 /* ============================================================
-   ✅ MAINTENANCE PAGE STYLES
+   MAINTENANCE PAGE STYLES
    ============================================================ */
 
-/* ✅ Slow Spin Animation */
 @keyframes spin-slow {
   from {
     transform: rotate(0deg);
@@ -92,12 +84,10 @@
   animation: spin-slow 3s linear infinite;
 }
 
-/* ✅ Maintenance Page Background Glow */
 .maintenance-glow {
   background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
 }
 
-/* ✅ Maintenance Glass Card */
 .maintenance-glass {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
@@ -106,7 +96,6 @@
   border-radius: 32px;
 }
 
-/* ✅ Maintenance Timer Box */
 .maintenance-timer-box {
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
@@ -121,7 +110,6 @@
   transform: translateY(-2px);
 }
 
-/* ✅ Maintenance Social Icons */
 .maintenance-social-icon {
   display: inline-flex;
   align-items: center;
@@ -140,7 +128,6 @@
   transform: translateY(-3px);
 }
 
-/* ✅ Maintenance Contact Button */
 .maintenance-contact-btn {
   display: inline-flex;
   align-items: center;
@@ -161,7 +148,6 @@
   border-color: rgba(212, 175, 55, 0.3);
 }
 
-/* ✅ Maintenance Responsive */
 @media (max-width: 640px) {
   .maintenance-timer-box {
     padding: 16px 12px;
@@ -173,7 +159,7 @@
 }
 
 /* ============================================================
-   ✅ DARK MODE - COMPLETE
+   DARK MODE - COMPLETE
    ============================================================ */
 
 .dark,
@@ -184,7 +170,6 @@
   color: #F9FAFB !important;
 }
 
-/* ✅ ALL TEXT WHITE */
 .dark p,
 .dark span,
 .dark h1,
@@ -231,21 +216,18 @@
   color: #F9FAFB !important;
 }
 
-/* ✅ Gold Color */
 .dark .text-\[#D4AF37\],
 .dark .text-gold,
-.dark .text-\[\#D4AF37\] {
+.dark .text-\[#D4AF37\] {
   color: #D4AF37 !important;
 }
 
-/* ✅ Green Color */
 .dark .text-\[#0F766E\],
 .dark .text-emerald,
-.dark .text-\[\#0F766E\] {
+.dark .text-\[#0F766E\] {
   color: #14b8a6 !important;
 }
 
-/* ✅ ALL BACKGROUNDS DARK */
 .dark .bg-white,
 .dark .bg-\[#FFFFFF\],
 .dark .bg-\[#FFFDF7\],
@@ -265,7 +247,6 @@
   background-color: #1F2937 !important;
 }
 
-/* ✅ Borders */
 .dark .border,
 .dark .border-white,
 .dark .border-gray-100,
@@ -278,7 +259,6 @@
   border-color: #374151 !important;
 }
 
-/* ✅ Inputs */
 .dark input,
 .dark textarea,
 .dark select {
@@ -292,7 +272,6 @@
   color: #6B7280 !important;
 }
 
-/* ✅ Icons */
 .dark svg:not(.text-\[#D4AF37\]):not(.text-\[#0F766E\]) {
   color: #D1D5DB !important;
 }
@@ -305,7 +284,6 @@
   color: #14b8a6 !important;
 }
 
-/* ✅ Scrollbar */
 .dark ::-webkit-scrollbar-track {
   background: #1F2937 !important;
 }
@@ -320,7 +298,7 @@
 }
 
 /* ============================================================
-   ✅ COMPONENT CLASSES
+   COMPONENT CLASSES
    ============================================================ */
 
 @layer components {
@@ -336,7 +314,6 @@
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 24px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
   }
 
   .btn-primary {
@@ -349,12 +326,10 @@
     border: none;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    box-shadow: 0 10px 30px -10px rgba(212, 175, 55, 0.4);
   }
 
   .btn-primary:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 20px 40px -10px rgba(212, 175, 55, 0.6);
   }
 
   .card-premium {
@@ -362,13 +337,11 @@
     border-radius: 24px;
     overflow: hidden;
     transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     border: 1px solid rgba(0, 0, 0, 0.04);
   }
 
   .card-premium:hover {
     transform: translateY(-8px);
-    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.15);
     border-color: rgba(212, 175, 55, 0.2);
   }
 }

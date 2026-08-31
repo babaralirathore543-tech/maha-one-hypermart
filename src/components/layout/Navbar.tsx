@@ -1,8 +1,9 @@
+// src/components/common/Navbar.tsx
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { 
   FaSearch, FaHeart, FaUser, FaShoppingBag, FaBars, FaTimes, 
-  FaCrown, FaCog
+  FaCrown, FaCog, FaHome, FaTags, FaUserCircle
 } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { getWishlistCount } from '../../services/wishlistService';
@@ -184,25 +185,34 @@ const Navbar = () => {
     { name: 'Contact', path: '/contact' },
   ];
 
+  // ✅ Hide bottom nav on these pages
+  const hideBottomNav = ['/login', '/checkout', '/admin'];
+  const shouldShowBottomNav = !hideBottomNav.includes(location.pathname);
+
   return (
     <>
       {/* ✅ FIXED SPACER */}
       <div className="h-[56px] sm:h-[64px] md:h-[80px]"></div>
 
+      {/* ✅ ANNOUNCEMENT BAR */}
+      <div className="fixed top-0 left-0 w-full z-[45] bg-gradient-to-r from-[#0F766E] to-[#D4AF37] text-white text-center text-[10px] sm:text-xs py-1.5 px-2 font-medium tracking-wide">
+        🚚 Free Delivery on Orders Above Rs. 2,000
+      </div>
+
       {/* ✅ NAVBAR - FIXED */}
-      <nav className="fixed top-0 left-0 w-full z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl shadow-2xl border-b border-[#D4AF37]/20">
+      <nav className="fixed top-[32px] sm:top-[36px] left-0 w-full z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl shadow-2xl border-b border-[#D4AF37]/20">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           
           {/* ✅ TOP ROW - FIXED HEIGHT */}
-          <div className="flex items-center justify-between h-[56px] sm:h-[64px] md:h-[80px]">
+          <div className="flex items-center justify-between h-[48px] sm:h-[56px] md:h-[80px]">
             
-            {/* Logo */}
+            {/* Logo - LEFT */}
             <Link to="/" className="flex items-center gap-2 sm:gap-3 group flex-shrink-0">
               <div className="relative">
                 <img 
                   src={logo} 
                   alt="MAHA ONE" 
-                  className="h-7 sm:h-9 md:h-11 w-auto object-contain"
+                  className="h-6 sm:h-9 md:h-11 w-auto object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
@@ -210,15 +220,72 @@ const Navbar = () => {
                 <FaCrown className="absolute -top-1 -right-2 text-[#D4AF37] text-[8px] sm:text-xs animate-pulse" />
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="text-sm sm:text-lg md:text-2xl font-extrabold tracking-tight">
+                <span className="text-xs sm:text-lg md:text-2xl font-extrabold tracking-tight">
                   <span className="text-[#0F766E]">MAHA</span>
                   <span className="text-[#D4AF37]"> ONE</span>
                 </span>
-                <span className="text-[7px] sm:text-[8px] md:text-[9px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-gray-400 font-medium hidden xs:block">
+                <span className="hidden sm:block text-[7px] sm:text-[8px] md:text-[9px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-gray-400 font-medium">
                   HYPERMART
                 </span>
               </div>
             </Link>
+
+            {/* ✅ MOBILE SEARCH BAR - Logo ke RIGHT side me */}
+            <div className="flex-1 lg:hidden px-2">
+              <form onSubmit={handleSearch} className="relative">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder={isSearchFocused ? 'Search...' : displayText}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => {
+                    setTimeout(() => {
+                      setIsSearchFocused(false);
+                    }, 200);
+                  }}
+                  className={`w-full pl-8 pr-8 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-[#F8FAFC] dark:bg-gray-800 ${
+                    isSearchFocused || searchTerm.length > 0
+                      ? 'border-2 border-[#D4AF37] focus:border-[#D4AF37]'
+                      : 'border-2 border-[#0F766E]'
+                  }`}
+                />
+                <button type="submit" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#D4AF37] transition-colors">
+                  <FaSearch className="text-[10px] sm:text-xs" />
+                </button>
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors text-[10px] sm:text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </form>
+
+              {/* Search Suggestions - Mobile */}
+              {searchSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 mx-3">
+                  {searchSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/20 transition flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                    >
+                      <FaSearch className="text-[#D4AF37] text-xs" />
+                      <span dangerouslySetInnerHTML={{
+                        __html: suggestion.replace(
+                          new RegExp(searchTerm, 'gi'),
+                          (match) => `<strong class="text-[#D4AF37]">${match}</strong>`
+                        )
+                      }} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Desktop Menu */}
             <div className="hidden lg:flex items-center gap-1">
@@ -242,7 +309,7 @@ const Navbar = () => {
             <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
               
               {/* Desktop Search */}
-              <form onSubmit={handleSearch} className="relative hidden md:block">
+              <form onSubmit={handleSearch} className="relative hidden lg:block">
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -255,7 +322,7 @@ const Navbar = () => {
                       setIsSearchFocused(false);
                     }, 200);
                   }}
-                  className={`w-32 lg:w-56 pl-8 pr-3 py-1.5 rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-[#F8FAFC] dark:bg-gray-800 ${
+                  className={`w-32 xl:w-56 pl-8 pr-3 py-1.5 rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-[#F8FAFC] dark:bg-gray-800 ${
                     isSearchFocused || searchTerm.length > 0
                       ? 'border-2 border-[#D4AF37] focus:border-[#D4AF37]'
                       : 'border-2 border-[#0F766E]'
@@ -266,8 +333,29 @@ const Navbar = () => {
                 </button>
               </form>
 
+              {/* Desktop Search Suggestions */}
+              {searchSuggestions.length > 0 && (
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 w-72">
+                  {searchSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/20 transition flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                    >
+                      <FaSearch className="text-[#D4AF37] text-xs" />
+                      <span dangerouslySetInnerHTML={{
+                        __html: suggestion.replace(
+                          new RegExp(searchTerm, 'gi'),
+                          (match) => `<strong class="text-[#D4AF37]">${match}</strong>`
+                        )
+                      }} />
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Wishlist */}
-              <Link to="/wishlist" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group">
+              <Link to="/wishlist" className="hidden sm:flex p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group">
                 <FaHeart className="text-base sm:text-lg text-gray-600 dark:text-gray-400 group-hover:text-[#D4AF37] transition-colors" />
                 {wishlistCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-red-500 to-red-600 text-white text-[8px] sm:text-[10px] font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-md">
@@ -278,7 +366,7 @@ const Navbar = () => {
 
               <ThemeToggle />
 
-              <Link to="/dashboard" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300">
+              <Link to="/dashboard" className="hidden sm:flex p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300">
                 <FaUser className="text-base sm:text-lg text-gray-600 dark:text-gray-400 hover:text-[#D4AF37] transition-colors" />
               </Link>
               
@@ -292,7 +380,7 @@ const Navbar = () => {
               {isAdmin && (
                 <Link 
                   to="/admin" 
-                  className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group"
+                  className="hidden sm:flex p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group"
                   title="Admin Panel"
                 >
                   <FaCog className="text-base sm:text-lg text-[#D4AF37] group-hover:text-[#0F766E] transition-colors" />
@@ -306,62 +394,6 @@ const Navbar = () => {
                 {isMenuOpen ? <FaTimes className="text-lg sm:text-xl text-[#0F766E]" /> : <FaBars className="text-lg sm:text-xl text-gray-600 dark:text-gray-400" />}
               </button>
             </div>
-          </div>
-
-          {/* ✅ MOBILE SEARCH BAR */}
-          <div className="pb-3 lg:hidden">
-            <form onSubmit={handleSearch} className="relative">
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder={isSearchFocused ? 'Search products...' : displayText}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => {
-                  setTimeout(() => {
-                    setIsSearchFocused(false);
-                  }, 200);
-                }}
-                className={`w-full pl-10 pr-10 py-2.5 rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-[#F8FAFC] dark:bg-gray-800 ${
-                  isSearchFocused || searchTerm.length > 0
-                    ? 'border-2 border-[#D4AF37] focus:border-[#D4AF37]'
-                    : 'border-2 border-[#0F766E]'
-                }`}
-              />
-              <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#D4AF37] transition-colors">
-                <FaSearch className="text-sm" />
-              </button>
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={clearSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors text-sm"
-                >
-                  ✕
-                </button>
-              )}
-            </form>
-
-            {searchSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 mx-3">
-                {searchSuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/20 transition flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
-                  >
-                    <FaSearch className="text-[#D4AF37] text-xs" />
-                    <span dangerouslySetInnerHTML={{
-                      __html: suggestion.replace(
-                        new RegExp(searchTerm, 'gi'),
-                        (match) => `<strong class="text-[#D4AF37]">${match}</strong>`
-                      )
-                    }} />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* ✅ Mobile Menu */}
@@ -439,6 +471,100 @@ const Navbar = () => {
           )}
         </div>
       </nav>
+
+      {/* ✅ MOBILE BOTTOM NAVIGATION - FIXED AT BOTTOM */}
+      {shouldShowBottomNav && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border-t border-[#D4AF37]/20 shadow-2xl">
+          <div className="flex items-center justify-around max-w-md mx-auto px-2 py-1">
+            {/* Home */}
+            <Link 
+              to="/" 
+              className={`flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 relative ${
+                location.pathname === '/' 
+                  ? 'text-[#D4AF37]' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-[#D4AF37]'
+              }`}
+            >
+              <FaHome className={`text-xl sm:text-2xl ${location.pathname === '/' ? 'scale-110' : ''}`} />
+              <span className={`text-[9px] sm:text-[10px] font-medium ${location.pathname === '/' ? 'text-[#D4AF37]' : ''}`}>
+                Home
+              </span>
+              {location.pathname === '/' && (
+                <span className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-[#D4AF37] to-[#0F766E] rounded-full"></span>
+              )}
+            </Link>
+
+            {/* Categories */}
+            <Link 
+              to="/categories" 
+              className={`flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 relative ${
+                location.pathname === '/categories' 
+                  ? 'text-[#D4AF37]' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-[#D4AF37]'
+              }`}
+            >
+              <FaTags className={`text-xl sm:text-2xl ${location.pathname === '/categories' ? 'scale-110' : ''}`} />
+              <span className={`text-[9px] sm:text-[10px] font-medium ${location.pathname === '/categories' ? 'text-[#D4AF37]' : ''}`}>
+                Categories
+              </span>
+              {location.pathname === '/categories' && (
+                <span className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-[#D4AF37] to-[#0F766E] rounded-full"></span>
+              )}
+            </Link>
+
+            {/* Cart */}
+            <Link 
+              to="/cart" 
+              className={`flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 relative ${
+                location.pathname === '/cart' 
+                  ? 'text-[#D4AF37]' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-[#D4AF37]'
+              }`}
+            >
+              <div className="relative">
+                <FaShoppingBag className={`text-xl sm:text-2xl ${location.pathname === '/cart' ? 'scale-110' : ''}`} />
+                {getCartCount() > 0 && (
+                  <span className="absolute -top-1.5 -right-2 bg-[#0F766E] text-white text-[8px] sm:text-[10px] font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-md">
+                    {getCartCount()}
+                  </span>
+                )}
+              </div>
+              <span className={`text-[9px] sm:text-[10px] font-medium ${location.pathname === '/cart' ? 'text-[#D4AF37]' : ''}`}>
+                Cart
+              </span>
+              {location.pathname === '/cart' && (
+                <span className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-[#D4AF37] to-[#0F766E] rounded-full"></span>
+              )}
+            </Link>
+
+            {/* Account */}
+            <Link 
+              to={isLoggedIn ? "/dashboard" : "/login"} 
+              className={`flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 relative ${
+                location.pathname === '/dashboard' || location.pathname === '/login'
+                  ? 'text-[#D4AF37]' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-[#D4AF37]'
+              }`}
+            >
+              <FaUserCircle className={`text-xl sm:text-2xl ${location.pathname === '/dashboard' || location.pathname === '/login' ? 'scale-110' : ''}`} />
+              <span className={`text-[9px] sm:text-[10px] font-medium ${location.pathname === '/dashboard' || location.pathname === '/login' ? 'text-[#D4AF37]' : ''}`}>
+                Account
+              </span>
+              {isLoggedIn && (
+                <span className="absolute -top-0.5 -right-0.5 bg-green-500 w-2 h-2 rounded-full border-2 border-white dark:border-gray-900"></span>
+              )}
+              {(location.pathname === '/dashboard' || location.pathname === '/login') && (
+                <span className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-[#D4AF37] to-[#0F766E] rounded-full"></span>
+              )}
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ SPACER FOR MOBILE BOTTOM NAV */}
+      {shouldShowBottomNav && (
+        <div className="lg:hidden h-[60px] sm:h-[68px]"></div>
+      )}
     </>
   );
 };

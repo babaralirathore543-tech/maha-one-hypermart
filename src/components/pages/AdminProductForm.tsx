@@ -337,7 +337,7 @@ const colourOptions = [
   'Purple', 'Orange', 'Brown', 'Grey', 'Navy', 'Teal', 'Maroon',
   'Olive', 'Cream', 'Beige', 'Gold', 'Silver', 'Rose Gold',
   'Turquoise', 'Lavender', 'Mint', 'Coral', 'Peach', 'Tan',
-  'Charcoal', 'Burgundy', 'Mustard', 'Emerald', 'Ruby'
+  'Charcoal', 'Burgundy', 'Mustard', 'Emerald', 'Ruby', 'Sapphire', 'Cobalt', 'Indigo', 'Magenta', 'Fuchsia', 'Lime',
 ];
 
 // ✅ Size Options - Complete with US Sizes (No Duplicates)
@@ -802,15 +802,10 @@ const AdminProductForm: React.FC = () => {
     return 'bg-green-100 text-green-700 border-green-300';
   };
 
-  // ✅ Calculate discount automatically
-  useEffect(() => {
-    if (formData.oldPrice > formData.price) {
-      const discount = Math.round(((formData.oldPrice - formData.price) / formData.oldPrice) * 100);
-      setFormData(prev => ({ ...prev, discount }));
-    } else {
-      setFormData(prev => ({ ...prev, discount: 0 }));
-    }
-  }, [formData.price, formData.oldPrice]);
+  // ✅ FIXED: REMOVED auto-discount calculation
+  // The discount should be manually set by the admin
+  // Previously this useEffect was auto-calculating discount from oldPrice - price
+  // Now removed to prevent unwanted discount application
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -840,7 +835,7 @@ const AdminProductForm: React.FC = () => {
         style: formData.style || '',
         price: formData.price,
         oldPrice: formData.oldPrice || 0,
-        discount: formData.discount || 0,
+        discount: formData.discount || 0, // ✅ Use manual discount only
         costPrice: formData.costPrice || 0,
         stock: formData.stock || 0,
         lowStockAlert: formData.lowStockAlert || 5,
@@ -1149,7 +1144,7 @@ const AdminProductForm: React.FC = () => {
         </div>
 
         {/* ============================================================
-        3. PRICING
+        3. PRICING - FIXED: Manual Discount Field Added
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">💰 3. Pricing</h3>
@@ -1176,12 +1171,19 @@ const AdminProductForm: React.FC = () => {
                 placeholder="7500"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
+              <p className="text-xs text-gray-400 mt-1">Optional - for comparison</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Discount (Auto)</label>
-              <div className="px-4 py-2 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-semibold">
-                {formData.discount || 0}%
-              </div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Discount % (Manual)</label>
+              <input
+                type="number"
+                name="discount"
+                value={formData.discount}
+                onChange={handleInputChange}
+                placeholder="0"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
+              />
+              <p className="text-xs text-gray-400 mt-1">Set 0 for no discount</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (Admin)</label>

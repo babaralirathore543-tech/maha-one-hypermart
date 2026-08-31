@@ -1,28 +1,65 @@
+// src/components/pages/SweetsDetailPage.tsx
 import { useParams, Link } from 'react-router-dom';
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
-  FaStar, FaHeart, FaShoppingCart, FaArrowLeft, 
+  FaStar, FaShoppingCart, FaArrowLeft, 
   FaTruck, FaShieldAlt, FaLeaf, FaChevronLeft, FaChevronRight,
-  FaCircle
+  FaCircle, FaSpinner, FaShare, FaWhatsapp, FaCalendarAlt, FaQuoteLeft
 } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
+import { db, doc, getDoc, collection, getDocs } from '../../config/firebase';
 
-interface Product {
-  id: number;
+// ✅ Product Interface
+interface SweetsProduct {
+  id: string;
   name: string;
   price: number;
-  oldPrice: number;
-  discount: number;
+  oldPrice?: number;
+  discount?: number;
+  discountPrice?: number;
   rating: number;
   category: string;
+  subCategory: string;
+  productType?: string;
   image: string;
+  images: string[];
+  stock: number;
   description: string;
+  shortDescription?: string;
   benefits: string[];
-  stock?: number;
+  flavor?: string;
+  ingredients?: string;
+  origin?: string;
+  packaging?: string;
+  shelfLife?: string;
+  nutritionalInfo?: string;
+  dietaryInfo?: string[];
+  isNew: boolean;
+  isFeatured: boolean;
+  isBestSeller?: boolean;
+  isOnSale?: boolean;
+  isOrganic?: boolean;
+  isGlutenFree?: boolean;
+  isVegan?: boolean;
+  isSugarFree?: boolean;
+  status?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+// ✅ Review Interface
+interface Review {
+  id: string;
+  name: string;
+  rating: number;
+  comment: string;
+  date: string;
+  avatar?: string;
 }
 
 // ✅ Helper function to convert description to bullet points
 const formatDescription = (text: string) => {
+  if (!text) return [];
   const lines = text.split('\n').filter(line => line.trim());
   return lines.map((line) => {
     if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
@@ -41,184 +78,274 @@ const formatDescription = (text: string) => {
 const SweetsDetailPage = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
+  const [product, setProduct] = useState<SweetsProduct | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState('');
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [suggestedProducts, setSuggestedProducts] = useState<SweetsProduct[]>([]);
   const sliderRef = useRef<HTMLDivElement>(null);
+  
+  // ✅ Reviews State
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
 
-  // ✅ All Sweets Products
-  const sweetProducts: Product[] = [
-    { 
-      id: 101, 
-      name: 'Caramel Dream Choco Bar', 
-      price: 1290, 
-      oldPrice: 1500, 
-      discount: 14, 
-      rating: 4.9, 
-      category: 'Sweets',
-      image: '/images/sweets/caramel dream choco bar.jpg',
-      description: `🍫 Caramel Dream Choco Bar
+  // ✅ Fetch Product from Firebase
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) {
+        setError('No product ID provided');
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const docRef = doc(db, 'products', id);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          
+          if (data.category === 'sweets') {
+            const productData: SweetsProduct = {
+              id: docSnap.id,
+              name: data.name || '',
+              price: data.price || 0,
+              oldPrice: data.oldPrice || 0,
+              discount: data.discount || 0,
+              discountPrice: data.discountPrice || 0,
+              rating: data.rating || 0,
+              category: data.category || 'sweets',
+              subCategory: data.subCategory || '',
+              productType: data.productType || '',
+              image: data.image || '',
+              images: data.images || [],
+              stock: data.stock || 0,
+              description: data.description || '',
+              shortDescription: data.shortDescription || '',
+              benefits: data.benefits || [],
+              flavor: data.flavor || '',
+              ingredients: data.ingredients || '',
+              origin: data.origin || '',
+              packaging: data.packaging || '',
+              shelfLife: data.shelfLife || '',
+              nutritionalInfo: data.nutritionalInfo || '',
+              dietaryInfo: data.dietaryInfo || [],
+              isNew: data.isNew || false,
+              isFeatured: data.isFeatured || false,
+              isBestSeller: data.isBestSeller || false,
+              isOnSale: data.isOnSale || false,
+              isOrganic: data.isOrganic || false,
+              isGlutenFree: data.isGlutenFree || false,
+              isVegan: data.isVegan || false,
+              isSugarFree: data.isSugarFree || false,
+              status: data.status || 'active',
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt
+            };
+            
+            setProduct(productData);
+            
+            const images = data.images || [];
+            if (images.length > 0) {
+              setMainImage(images[0]);
+            } else if (data.image) {
+              setMainImage(data.image);
+            }
 
-⭐ Premium Quality
+            // ✅ Fetch suggested products
+            await fetchSuggestedProducts(docSnap.id);
+            // ✅ Fetch reviews
+            await fetchReviews(docSnap.id);
+          } else {
+            setError('Product not found in sweets category');
+          }
+        } else {
+          setError('Product not found');
+        }
+      } catch (error: any) {
+        console.error('Error fetching sweets product:', error);
+        setError(error.message || 'Failed to load product');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-🌟 FEATURES:
-• Premium Chocolate Coating
-• Rich Caramel Center
-• Crunchy Texture
-• Luxury Taste Experience
+    const fetchSuggestedProducts = async (currentId: string) => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'products'));
+        const sweetsProducts: SweetsProduct[] = [];
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (doc.id !== currentId && data.category === 'sweets') {
+            sweetsProducts.push({
+              id: doc.id,
+              name: data.name || '',
+              price: data.price || 0,
+              oldPrice: data.oldPrice || 0,
+              discount: data.discount || 0,
+              discountPrice: data.discountPrice || 0,
+              rating: data.rating || 0,
+              category: data.category || 'sweets',
+              subCategory: data.subCategory || '',
+              productType: data.productType || '',
+              image: data.image || '',
+              images: data.images || [],
+              stock: data.stock || 0,
+              description: data.description || '',
+              shortDescription: data.shortDescription || '',
+              benefits: data.benefits || [],
+              flavor: data.flavor || '',
+              ingredients: data.ingredients || '',
+              origin: data.origin || '',
+              packaging: data.packaging || '',
+              shelfLife: data.shelfLife || '',
+              nutritionalInfo: data.nutritionalInfo || '',
+              dietaryInfo: data.dietaryInfo || [],
+              isNew: data.isNew || false,
+              isFeatured: data.isFeatured || false,
+              isBestSeller: data.isBestSeller || false,
+              isOnSale: data.isOnSale || false,
+              isOrganic: data.isOrganic || false,
+              isGlutenFree: data.isGlutenFree || false,
+              isVegan: data.isVegan || false,
+              isSugarFree: data.isSugarFree || false,
+              status: data.status || 'active',
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt
+            });
+          }
+        });
 
-✨ A heavenly combination of rich caramel and smooth chocolate.`,
-      benefits: ['Premium Chocolate', 'Rich Caramel', 'Crunchy Texture', 'Luxury Taste'],
-      stock: 50
-    },
-    { 
-      id: 102, 
-      name: 'HISS Crispy Wafer Choco Bar', 
-      price: 1280, 
-      oldPrice: 1550, 
-      discount: 20, 
-      rating: 4.8, 
-      category: 'Sweets',
-      image: '/images/sweets/hiss crispy wafer.jpg',
-      description: `🍫 HISS Crispy Wafer Choco Bar
+        // Shuffle and get 8 products
+        const shuffled = [...sweetsProducts].sort(() => 0.5 - Math.random());
+        setSuggestedProducts(shuffled.slice(0, 8));
+      } catch (error) {
+        console.error('Error fetching suggested products:', error);
+      }
+    };
 
-⭐ Premium Quality
+    // ✅ Fetch Reviews from Firebase
+    const fetchReviews = async (productId: string) => {
+      try {
+        setReviewLoading(true);
+        const reviewsRef = collection(db, 'products', productId, 'reviews');
+        const reviewsSnap = await getDocs(reviewsRef);
+        const reviewsData: Review[] = reviewsSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Review));
+        setReviews(reviewsData);
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+      } finally {
+        setReviewLoading(false);
+      }
+    };
 
-🌟 FEATURES:
-• Crispy Wafer Layers
-• Smooth Chocolate Coating
-• Perfect Crunch in Every Bite
-• Premium Quality Ingredients
+    fetchProduct();
+  }, [id]);
 
-✨ Crispy wafer layers coated with smooth chocolate.`,
-      benefits: ['Crispy Wafer', 'Smooth Chocolate', 'Perfect Crunch', 'Premium Quality'],
-      stock: 40
-    },
-    { 
-      id: 103, 
-      name: 'Nani Caramel Choco Bar', 
-      price: 1300, 
-      oldPrice: 1500, 
-      discount: 18, 
-      rating: 4.7, 
-      category: 'Sweets',
-      image: '/images/sweets/nani caramel choco bar.jpg',
-      description: `🍫 Nani Caramel Choco Bar
+  // ✅ Get price with discount - Only if explicitly set
+  const getDiscountedPrice = () => {
+    if (!product) return 0;
+    
+    const hasDiscount = (product.discount && product.discount > 0) || 
+                        (product.discountPrice && product.discountPrice > 0 && product.discountPrice < product.price);
+    
+    if (!hasDiscount) {
+      return product.price;
+    }
+    
+    if (product.discountPrice && product.discountPrice > 0 && product.discountPrice < product.price) {
+      return product.discountPrice;
+    }
+    
+    if (product.discount && product.discount > 0) {
+      return product.price - (product.price * product.discount / 100);
+    }
+    
+    return product.price;
+  };
 
-⭐ Premium Quality
+  const getDiscountPercent = () => {
+    if (!product) return 0;
+    if (product.discount && product.discount > 0) {
+      return product.discount;
+    }
+    if (product.discountPrice && product.discountPrice > 0 && product.discountPrice < product.price) {
+      return Math.round(((product.price - product.discountPrice) / product.price) * 100);
+    }
+    return 0;
+  };
 
-🌟 FEATURES:
-• Soft & Chewy Caramel
-• Premium Chocolate Blend
-• Rich Buttery Taste
-• Melts in Your Mouth
+  const getAllImages = () => {
+    if (!product) return [];
+    const images = product.images || [];
+    return images.length > 0 ? images : (product.image ? [product.image] : []);
+  };
 
-✨ Soft and chewy caramel blended with premium chocolate.`,
-      benefits: ['Soft Caramel', 'Premium Chocolate', 'Buttery Taste', 'Melt in Mouth'],
-      stock: 35
-    },
-    { 
-      id: 104, 
-      name: 'Nani Coconut Bar', 
-      price: 1290, 
-      oldPrice: 1500, 
-      discount: 20, 
-      rating: 4.9, 
-      category: 'Sweets',
-      image: '/images/sweets/nani coconut bar.jpg',
-      description: `🥥 Nani Coconut Bar
+  const isInStock = () => {
+    if (!product) return false;
+    return product.stock > 0;
+  };
 
-⭐ Premium Quality
+  const nextImage = () => {
+    const images = getAllImages();
+    if (images.length <= 1) return;
+    const idx = images.indexOf(mainImage);
+    const next = (idx + 1) % images.length;
+    setMainImage(images[next]);
+    setImageLoaded(false);
+  };
 
-🌟 FEATURES:
-• Creamy Coconut
-• Tropical Flavor
-• Premium Quality
-• Rich Taste Experience
+  const prevImage = () => {
+    const images = getAllImages();
+    if (images.length <= 1) return;
+    const idx = images.indexOf(mainImage);
+    const prev = (idx - 1 + images.length) % images.length;
+    setMainImage(images[prev]);
+    setImageLoaded(false);
+  };
 
-✨ Creamy coconut infused with a touch of sweetness.`,
-      benefits: ['Creamy Coconut', 'Tropical Flavor', 'Premium Quality', 'Rich Taste'],
-      stock: 30
-    },
-    { 
-      id: 105, 
-      name: 'Rili Eclairs', 
-      price: 1100, 
-      oldPrice: 1450, 
-      discount: 20, 
-      rating: 4.6, 
-      category: 'Sweets',
-      image: '/images/sweets/rili eclairs.jpg',
-      description: `🍫 Rili Eclairs
+  const scrollLeft = (ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) {
+      ref.current.scrollBy({ left: -280, behavior: 'smooth' });
+    }
+  };
 
-⭐ Premium Quality
+  const scrollRight = (ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) {
+      ref.current.scrollBy({ left: 280, behavior: 'smooth' });
+    }
+  };
 
-🌟 FEATURES:
-• French Recipe
-• Creamy Filling
-• Elegant Design
-• Classic Taste
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] bg-[#FFFDF7] dark:bg-[#111827]">
+        <div className="text-center">
+          <FaSpinner className="animate-spin text-4xl text-[#D4AF37] mx-auto" />
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading product details...</p>
+        </div>
+      </div>
+    );
+  }
 
-✨ Classic French-inspired eclairs filled with creamy goodness.`,
-      benefits: ['French Recipe', 'Creamy Filling', 'Elegant Design', 'Classic Taste'],
-      stock: 45
-    },
-    { 
-      id: 106, 
-      name: 'Roro Caramel Eclair', 
-      price: 650, 
-      oldPrice: 700, 
-      discount: 22, 
-      rating: 4.8, 
-      category: 'Sweets',
-      image: '/images/sweets/roro caramel eclair.jpg',
-      description: `🍫 Roro Caramel Eclair
-
-⭐ Premium Quality
-
-🌟 FEATURES:
-• Caramel Filled
-• Soft Texture
-• Golden Pastry
-• Sweet Delight
-
-✨ Golden and caramel-filled eclairs with a soft texture.`,
-      benefits: ['Caramel Filled', 'Soft Texture', 'Golden Pastry', 'Sweet Delight'],
-      stock: 60
-    },
-    { 
-      id: 107, 
-      name: 'Spark Coconut Bar', 
-      price: 1290, 
-      oldPrice: 1500, 
-      discount: 18, 
-      rating: 4.7, 
-      category: 'Sweets',
-      image: '/images/sweets/spark coconut bar.jpg',
-      description: `🥥 Spark Coconut Bar
-
-⭐ Premium Quality
-
-🌟 FEATURES:
-• Coconut Fusion
-• Chocolate Blend
-• Unique Flavor
-• Premium Quality
-
-✨ A unique fusion of coconut and chocolate.`,
-      benefits: ['Coconut Fusion', 'Chocolate Blend', 'Unique Flavor', 'Premium Quality'],
-      stock: 25
-    },
-  ];
-
-  const product = sweetProducts.find(p => p.id === parseInt(id || '0'));
-
-  if (!product) {
+  if (error || !product) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center bg-[#FFFDF7] dark:bg-[#111827]">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="text-6xl mb-4">🍬</div>
           <h1 className="text-2xl font-bold text-[#111827] dark:text-white">Product Not Found</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">The sweet you are looking for does not exist.</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
+            {error || 'The product you are looking for does not exist.'}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Product ID: {id}</p>
           <Link to="/sweets" className="inline-block mt-4 bg-[#D4AF37] text-white px-6 py-2 rounded-full hover:bg-[#b8941f] transition">
             Back to Sweets
           </Link>
@@ -227,28 +354,23 @@ const SweetsDetailPage = () => {
     );
   }
 
-  const totalPrice = product.price * quantity;
-  const allImages = [product.image];
-  const mainImageUrl = mainImage || allImages[0] || product.image;
-
-  // ✅ Format description as bullet points
+  const currentPrice = getDiscountedPrice();
+  const totalPrice = currentPrice * quantity;
+  const images = getAllImages();
+  const discountPercent = getDiscountPercent();
   const descriptionLines = formatDescription(product.description);
 
-  // ✅ Get suggested products (all other products except current)
-  const suggestedProducts = sweetProducts.filter(p => p.id !== product.id);
-
-  // ✅ Scroll functions for slider
-  const scrollLeft = () => {
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({ left: -280, behavior: 'smooth' });
+  // ✅ Calculate review stats
+  const avgRating = reviews.length > 0 
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+    : 0;
+  
+  const ratingDistribution = [0, 0, 0, 0, 0];
+  reviews.forEach(r => {
+    if (r.rating >= 1 && r.rating <= 5) {
+      ratingDistribution[r.rating - 1]++;
     }
-  };
-
-  const scrollRight = () => {
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({ left: 280, behavior: 'smooth' });
-    }
-  };
+  });
 
   return (
     <div className="bg-[#FFFDF7] dark:bg-[#111827] min-h-screen">
@@ -261,22 +383,20 @@ const SweetsDetailPage = () => {
         <div className="grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-12">
           
           {/* ============================================================
-          ✅ PRODUCT IMAGES GALLERY - IMAGE FIT FIX
+          PRODUCT IMAGES GALLERY
           ============================================================ */}
           <div className="relative">
-            {/* Main Image */}
-            <div className="bg-[#F5F3FF] dark:bg-[#1F2937] rounded-xl sm:rounded-2xl overflow-hidden border border-[#E5E7EB] dark:border-gray-700 relative">
-              {/* ✅ Fixed aspect ratio with object-cover */}
-              <div className="w-full aspect-square sm:aspect-[4/5] md:aspect-[3/4] relative">
+            <div className="bg-[#F5F3FF] dark:bg-[#1F2937] rounded-3xl overflow-hidden border-4 border-purple-500 shadow-xl shadow-purple-500/20 relative">
+              <div className="w-full h-[300px] sm:h-[400px] md:h-[450px] lg:h-[500px] relative flex items-center justify-center bg-[#F5F3FF] dark:bg-[#1F2937]">
                 <img
-                  src={mainImageUrl}
+                  src={mainImage || product.image}
                   alt={product.name}
-                  className={`w-full h-full object-cover transition-all duration-500 ${
+                  className={`max-w-full max-h-full object-contain transition-all duration-500 p-2 ${
                     imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                   }`}
                   onLoad={() => setImageLoaded(true)}
                   onError={(e) => {
-                    e.currentTarget.src = `https://via.placeholder.com/600x600/D4AF37/FFFFFF?text=${product.name}`;
+                    e.currentTarget.src = `https://via.placeholder.com/600x800/D4AF37/FFFFFF?text=${encodeURIComponent(product.name)}`;
                     setImageLoaded(true);
                   }}
                 />
@@ -286,22 +406,44 @@ const SweetsDetailPage = () => {
                   </div>
                 )}
               </div>
+              
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 rounded-full p-2 sm:p-3 hover:bg-white dark:hover:bg-gray-700 transition shadow-lg z-10 border-2 border-purple-300"
+                  >
+                    <FaChevronLeft className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 rounded-full p-2 sm:p-3 hover:bg-white dark:hover:bg-gray-700 transition shadow-lg z-10 border-2 border-purple-300"
+                  >
+                    <FaChevronRight className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300" />
+                  </button>
+                </>
+              )}
             </div>
 
-            {/* ✅ Thumbnails - Single image with badge */}
-            <div className="mt-2 sm:mt-3 md:mt-4 overflow-x-auto pb-2 scrollbar-hide">
-              <div className="flex gap-1.5 sm:gap-2 min-w-max">
-                {allImages.map((img, i) => (
+            {images.length > 1 && (
+              <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-black/70 text-white text-[10px] sm:text-xs px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full z-10 border border-white/20">
+                {images.indexOf(mainImage) + 1} / {images.length}
+              </div>
+            )}
+
+            <div className="mt-3 sm:mt-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-2 sm:gap-2.5 min-w-max">
+                {images.map((img, i) => (
                   <button
                     key={i}
                     onClick={() => {
                       setMainImage(img);
                       setImageLoaded(false);
                     }}
-                    className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 transition ${
+                    className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition ${
                       mainImage === img || (mainImage === '' && i === 0)
-                        ? 'border-[#D4AF37] shadow-md'
-                        : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+                        ? 'border-purple-500 shadow-md shadow-purple-500/30'
+                        : 'border-transparent hover:border-purple-300'
                     }`}
                   >
                     <img
@@ -318,26 +460,52 @@ const SweetsDetailPage = () => {
             </div>
 
             {/* Badges */}
-            <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-lg z-10">
-              -{product.discount}%
-            </span>
-            <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-[#D4AF37] text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-lg z-10">
-              ✨ Premium
-            </div>
-            <button className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-white/90 rounded-full p-1.5 sm:p-2 hover:bg-[#D4AF37] transition shadow-md z-10">
-              <FaHeart className="text-gray-600 hover:text-white text-sm sm:text-base" />
-            </button>
+            {discountPercent > 0 && (
+              <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                -{discountPercent}%
+              </span>
+            )}
+            {product.isNew && (
+              <span className="absolute top-3 left-14 sm:top-4 sm:left-20 bg-green-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                NEW
+              </span>
+            )}
+            {product.isBestSeller && (
+              <span className="absolute top-3 left-28 sm:top-4 sm:left-36 bg-[#D4AF37] text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                ★ BEST
+              </span>
+            )}
+            {product.isOrganic && (
+              <span className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-green-700 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                🌿 Organic
+              </span>
+            )}
+            {product.isGlutenFree && (
+              <span className="absolute top-12 right-3 sm:top-14 sm:right-4 bg-yellow-600 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                🚫 GF
+              </span>
+            )}
+            {product.isVegan && (
+              <span className="absolute top-20 right-3 sm:top-24 sm:right-4 bg-emerald-600 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                🌱 Vegan
+              </span>
+            )}
           </div>
 
           {/* ============================================================
-          ✅ PRODUCT INFO
+          PRODUCT INFO
           ============================================================ */}
-          <div className="flex flex-col gap-3 sm:gap-4 md:gap-5">
+          <div className="flex flex-col gap-3 sm:gap-4 md:gap-5 overflow-visible">
             
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <span className="bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium capitalize">
-                {product.category}
+                🍬 {product.subCategory || 'Sweets'}
               </span>
+              {product.flavor && (
+                <span className="bg-pink-100 text-pink-600 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium">
+                  {product.flavor}
+                </span>
+              )}
               <div className="flex items-center gap-0.5">
                 {[...Array(5)].map((_, i) => (
                   <FaStar key={i} className={i < Math.floor(product.rating) ? 'text-[#D4AF37]' : 'text-gray-300'} />
@@ -352,76 +520,107 @@ const SweetsDetailPage = () => {
 
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xl sm:text-2xl md:text-3xl font-bold text-[#D4AF37]">
-                PKR {product.price.toLocaleString()}
+                Rs. {currentPrice.toLocaleString()}
               </span>
-              <span className="text-gray-400 dark:text-gray-500 line-through text-sm sm:text-base">
-                PKR {product.oldPrice.toLocaleString()}
-              </span>
-              <span className="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] sm:text-xs font-medium px-2 py-0.5 sm:px-3 sm:py-1 rounded-full">
-                Save {product.discount}%
+              {product.oldPrice && product.oldPrice > currentPrice && (
+                <span className="text-gray-400 dark:text-gray-500 line-through text-sm sm:text-base">
+                  Rs. {product.oldPrice.toLocaleString()}
+                </span>
+              )}
+              {discountPercent > 0 && (
+                <span className="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] sm:text-xs font-medium px-2 py-0.5 sm:px-3 sm:py-1 rounded-full">
+                  Save {discountPercent}%
+                </span>
+              )}
+              {product.isOnSale && (
+                <span className="bg-red-100 text-red-600 text-[10px] sm:text-xs font-medium px-2 py-0.5 sm:px-3 sm:py-1 rounded-full animate-pulse">
+                  🔥 On Sale!
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${isInStock() ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}></span>
+              <span className={`text-[10px] sm:text-xs md:text-sm font-medium ${isInStock() ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {isInStock() ? `In Stock (${product.stock} available)` : 'Out of Stock'}
               </span>
             </div>
 
-            <div className="bg-[#F8FAFC] dark:bg-[#1F2937] rounded-xl border border-[#E5E7EB] dark:border-gray-700 p-3 sm:p-4">
+            <div className="bg-[#F8FAFC] dark:bg-[#1F2937] rounded-xl border border-[#E5E7EB] dark:border-gray-700 p-3 sm:p-4 max-h-[200px] overflow-y-auto">
               <div className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm leading-relaxed space-y-1">
-                {descriptionLines.map((line, idx) => {
-                  if (line.includes('🍫') || line.includes('🥥') || 
-                      (line.length < 30 && line === line.toUpperCase() && line.trim().length > 0)) {
+                {descriptionLines.length > 0 ? (
+                  descriptionLines.map((line, idx) => {
+                    if (line.includes('🍫') || line.includes('🍬') || line.includes('🍭') || 
+                        line.includes('✨') || line.includes('⭐') || line.includes('🌟') ||
+                        (line.length < 40 && line === line.toUpperCase() && line.trim().length > 0)) {
+                      return (
+                        <div key={idx} className="font-semibold text-[#111827] dark:text-white text-xs sm:text-sm mt-2 first:mt-0">
+                          {line}
+                        </div>
+                      );
+                    }
+                    if (line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
+                      return (
+                        <div key={idx} className="flex items-start gap-1.5 sm:gap-2 py-0.5">
+                          <FaCircle className="text-[#D4AF37] text-[4px] sm:text-[6px] mt-1.5 flex-shrink-0" />
+                          <span className="text-gray-600 dark:text-gray-300 text-[10px] sm:text-xs">
+                            {line.replace(/^[•\-*]\s*/, '')}
+                          </span>
+                        </div>
+                      );
+                    }
                     return (
-                      <div key={idx} className="font-semibold text-[#111827] dark:text-white text-xs sm:text-sm mt-2 first:mt-0">
+                      <div key={idx} className="text-gray-600 dark:text-gray-300 text-[10px] sm:text-xs py-0.5">
                         {line}
                       </div>
                     );
-                  }
-                  if (line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
-                    return (
-                      <div key={idx} className="flex items-start gap-1.5 sm:gap-2 py-0.5">
-                        <FaCircle className="text-[#D4AF37] text-[4px] sm:text-[6px] mt-1.5 flex-shrink-0" />
-                        <span className="text-gray-600 dark:text-gray-300 text-[10px] sm:text-xs">
-                          {line.replace(/^[•\-*]\s*/, '')}
-                        </span>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div key={idx} className="text-gray-600 dark:text-gray-300 text-[10px] sm:text-xs py-0.5">
-                      {line}
-                    </div>
-                  );
-                })}
+                  })
+                ) : (
+                  <p className="text-gray-500 text-sm">No description available.</p>
+                )}
               </div>
             </div>
 
             {/* Benefits */}
-            <div className="p-2.5 sm:p-3 md:p-4 bg-[#F8FAFC] dark:bg-[#1F2937] rounded-xl border border-[#E5E7EB] dark:border-gray-700">
-              <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-[#111827] dark:text-white mb-1">✨ Key Benefits:</p>
+            {product.benefits && product.benefits.length > 0 && (
+              <div className="p-2.5 sm:p-3 md:p-4 bg-[#F8FAFC] dark:bg-[#1F2937] rounded-xl border border-[#E5E7EB] dark:border-gray-700">
+                <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-[#111827] dark:text-white mb-1">✨ Key Benefits:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {product.benefits.map((benefit, i) => (
+                    <span key={i} className="bg-white dark:bg-[#1F2937] border border-[#E5E7EB] dark:border-gray-700 px-2 py-0.5 rounded-full text-[10px] sm:text-xs text-gray-600 dark:text-gray-300">
+                      {benefit}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Dietary Info */}
+            {product.dietaryInfo && product.dietaryInfo.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
-                {product.benefits.map((benefit, i) => (
+                {product.dietaryInfo.map((dietary, i) => (
                   <span key={i} className="bg-[#F8FAFC] dark:bg-[#1F2937] border border-[#E5E7EB] dark:border-gray-700 px-2 py-0.5 rounded-full text-[10px] sm:text-xs text-gray-600 dark:text-gray-300">
-                    {benefit}
+                    {dietary}
                   </span>
                 ))}
               </div>
-            </div>
+            )}
 
-            {/* Stock Status */}
-            <div>
-              {product.stock && product.stock > 0 ? (
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  <span className="text-[10px] sm:text-xs md:text-sm text-green-600 dark:text-green-400 font-medium">
-                    In Stock ({product.stock} available)
-                  </span>
+            <div className="grid grid-cols-2 gap-2">
+              {product.origin && (
+                <div className="p-2.5 sm:p-3 bg-gradient-to-br from-[#0F766E]/5 to-[#0F766E]/10 rounded-xl border border-[#0F766E]/20">
+                  <p className="text-[8px] sm:text-[10px] text-[#0F766E] font-semibold uppercase tracking-wider">Origin</p>
+                  <p className="text-[10px] sm:text-xs md:text-sm text-gray-700 dark:text-gray-300 font-medium">{product.origin}</p>
                 </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full"></span>
-                  <span className="text-[10px] sm:text-xs md:text-sm text-red-600 dark:text-red-400 font-medium">Out of Stock</span>
+              )}
+              {product.shelfLife && (
+                <div className="p-2.5 sm:p-3 bg-gradient-to-br from-[#D4AF37]/5 to-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20">
+                  <p className="text-[8px] sm:text-[10px] text-[#D4AF37] font-semibold uppercase tracking-wider">Shelf Life</p>
+                  <p className="text-[10px] sm:text-xs md:text-sm text-gray-700 dark:text-gray-300 font-medium">{product.shelfLife}</p>
                 </div>
               )}
             </div>
 
-            {/* Quantity */}
             <div className="flex items-center gap-2 sm:gap-3">
               <label className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">Qty</label>
               <div className="flex items-center gap-1 sm:gap-1.5">
@@ -441,46 +640,45 @@ const SweetsDetailPage = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex flex-col xs:flex-row gap-2 sm:gap-2.5 md:gap-3 mt-1">
               <button
                 onClick={() => {
-                  addToCart({ 
-                    ...product, 
-                    price: product.price,
+                  addToCart({
+                    ...product,
+                    price: currentPrice,
                     quantity: quantity,
                     totalPrice: totalPrice
                   });
-                  alert(`✅ ${product.name} added to cart!`);
+                  alert('✅ Added to Cart!');
                 }}
-                disabled={product.stock === 0}
+                disabled={!isInStock()}
                 className={`flex-1 px-3 py-2 sm:px-5 sm:py-2.5 md:px-7 md:py-3 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 ${
-                  product.stock && product.stock > 0
+                  isInStock()
                     ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
                     : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                 }`}
               >
                 <FaShoppingCart className="text-xs sm:text-sm" />
-                <span>{product.stock && product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}</span>
+                <span>{isInStock() ? 'Add to Cart' : 'Out of Stock'}</span>
               </button>
               <button
                 onClick={() => {
-                  if (product.stock === 0) {
+                  if (!isInStock()) {
                     alert('❌ This product is out of stock!');
                     return;
                   }
-                  addToCart({ 
-                    ...product, 
-                    price: product.price,
+                  addToCart({
+                    ...product,
+                    price: currentPrice,
                     quantity: quantity,
                     totalPrice: totalPrice
                   });
                   window.location.href = '/checkout';
                 }}
-                disabled={product.stock === 0}
+                disabled={!isInStock()}
                 className={`px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 ${
-                  product.stock && product.stock > 0
-                    ? 'bg-[#D4AF37] text-white hover:bg-[#b8941f] cursor-pointer'
+                  isInStock() 
+                    ? 'bg-[#D4AF37] text-white hover:bg-[#b8941f] cursor-pointer' 
                     : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50'
                 }`}
               >
@@ -488,11 +686,47 @@ const SweetsDetailPage = () => {
               </button>
             </div>
 
-            {/* Delivery Info */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const shareData = {
+                    title: product.name,
+                    text: `Check out ${product.name} at Maha One Hypermart!`,
+                    url: window.location.href
+                  };
+
+                  if (navigator.share) {
+                    navigator.share(shareData).catch(() => {});
+                    return;
+                  }
+
+                  const fullText = `${shareData.text}\n${shareData.url}`;
+                  navigator.clipboard.writeText(fullText).then(() => {
+                    alert('✅ Link copied to clipboard! Share it anywhere.');
+                  }).catch(() => {
+                    window.location.href = `mailto:?subject=${encodeURIComponent(shareData.title)}&body=${encodeURIComponent(fullText)}`;
+                  });
+                }}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-2 rounded-full text-[10px] sm:text-xs font-medium transition flex items-center justify-center gap-1"
+              >
+                <FaShare /> Share
+              </button>
+
+              <button
+                onClick={() => {
+                  const message = `Check out ${product.name} at Maha One Hypermart! ${window.location.href}`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+                }}
+                className="flex-1 bg-[#25D366] hover:bg-[#1DA851] text-white px-3 py-2 rounded-full text-[10px] sm:text-xs font-medium transition flex items-center justify-center gap-1"
+              >
+                <FaWhatsapp /> WhatsApp
+              </button>
+            </div>
+
             <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-1">
               <div className="bg-white/80 dark:bg-[#1F2937]/80 backdrop-blur p-1.5 sm:p-2 md:p-2.5 rounded-xl border border-[#E5E7EB] dark:border-gray-700 text-center">
                 <FaTruck className="text-[#D4AF37] text-sm sm:text-base md:text-lg mx-auto" />
-                <p className="text-[8px] sm:text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-0.5">Free Delivery</p>
+                <p className="text-[8px] sm:text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-0.5">Delivery Across Pakistan</p>
               </div>
               <div className="bg-white/80 dark:bg-[#1F2937]/80 backdrop-blur p-1.5 sm:p-2 md:p-2.5 rounded-xl border border-[#E5E7EB] dark:border-gray-700 text-center">
                 <FaShieldAlt className="text-[#D4AF37] text-sm sm:text-base md:text-lg mx-auto" />
@@ -507,7 +741,7 @@ const SweetsDetailPage = () => {
         </div>
 
         {/* ============================================================
-        ✅ SUGGESTED PRODUCTS SLIDER
+        SUGGESTED PRODUCTS SLIDER
         ============================================================ */}
         {suggestedProducts.length > 0 && (
           <div className="mt-8 sm:mt-10 md:mt-12">
@@ -516,91 +750,220 @@ const SweetsDetailPage = () => {
                 <span className="text-[#D4AF37]">✨</span> You May Also Like
               </h2>
               <Link to="/sweets" className="text-[#D4AF37] hover:text-[#b8941f] transition text-xs sm:text-sm font-medium flex items-center gap-1">
-                View All <FaChevronRight className="text-xs" />
+                View All <span className="text-xs">→</span>
               </Link>
             </div>
-
-            <div className="relative">
-              {/* Slider Controls - Left */}
-              <button
-                onClick={scrollLeft}
-                className="absolute -left-2 sm:-left-4 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-[#1F2937] rounded-full p-1.5 sm:p-2 shadow-lg border border-[#E5E7EB] dark:border-gray-700 hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition"
-              >
-                <FaChevronLeft className="text-gray-600 dark:text-gray-400 text-sm sm:text-base" />
-              </button>
-
-              {/* Slider Container */}
-              <div
-                ref={sliderRef}
-                className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {suggestedProducts.map((suggested) => (
-                  <Link
-                    key={suggested.id}
-                    to={`/sweet-product/${suggested.id}`}
-                    className="flex-shrink-0 w-[140px] sm:w-[160px] md:w-[180px] lg:w-[200px] bg-white dark:bg-[#1F2937] rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-[#E5E7EB] dark:border-gray-700 hover:-translate-y-1 group"
-                  >
-                    {/* ✅ Suggested Product Image - Full fit */}
-                    <div className="relative aspect-square bg-[#F5F3FF] dark:bg-[#1F2937] overflow-hidden">
-                      <img
-                        src={suggested.image}
-                        alt={suggested.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => {
-                          e.currentTarget.src = `https://via.placeholder.com/300x300/D4AF37/FFFFFF?text=${suggested.name}`;
-                        }}
-                      />
-                      <span className="absolute top-1 left-1 bg-red-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                        -{suggested.discount}%
-                      </span>
-                    </div>
-                    <div className="p-2 sm:p-3">
-                      <h4 className="font-semibold text-[#111827] dark:text-white text-[10px] sm:text-xs line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
-                        {suggested.name}
-                      </h4>
-                      <div className="flex items-center gap-1 mt-0.5 sm:mt-1">
-                        <span className="text-[#D4AF37] font-bold text-xs sm:text-sm">
-                          PKR {suggested.price.toLocaleString()}
-                        </span>
-                        <span className="text-gray-400 line-through text-[8px] sm:text-[10px]">
-                          PKR {suggested.oldPrice.toLocaleString()}
-                        </span>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (suggested.stock && suggested.stock > 0) {
-                            addToCart({ ...suggested, quantity: 1 });
-                            alert(`✅ ${suggested.name} added to cart!`);
-                          }
-                        }}
-                        disabled={suggested.stock === 0}
-                        className={`w-full mt-1 px-2 py-1 rounded-full text-[8px] sm:text-[10px] font-medium transition flex items-center justify-center gap-1 ${
-                          suggested.stock && suggested.stock > 0
-                            ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
-                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        }`}
-                      >
-                        <FaShoppingCart className="text-[8px] sm:text-[10px]" />
-                        {suggested.stock && suggested.stock > 0 ? 'Add' : 'Sold'}
-                      </button>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-
-              {/* Slider Controls - Right */}
-              <button
-                onClick={scrollRight}
-                className="absolute -right-2 sm:-right-4 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-[#1F2937] rounded-full p-1.5 sm:p-2 shadow-lg border border-[#E5E7EB] dark:border-gray-700 hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition"
-              >
-                <FaChevronRight className="text-gray-600 dark:text-gray-400 text-sm sm:text-base" />
-              </button>
-            </div>
+            <ProductSlider 
+              products={suggestedProducts} 
+              sliderRef={sliderRef}
+              scrollLeft={() => scrollLeft(sliderRef)}
+              scrollRight={() => scrollRight(sliderRef)}
+              addToCart={addToCart}
+            />
           </div>
         )}
+
+        {/* ============================================================
+        CUSTOMER REVIEWS
+        ============================================================ */}
+        <div className="mt-10 sm:mt-12 md:mt-14">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#111827] dark:text-white flex items-center gap-2">
+              <span className="text-[#D4AF37]">⭐</span> Customer Reviews
+              <span className="text-sm font-normal text-gray-400">({reviews.length} reviews)</span>
+            </h2>
+          </div>
+
+          {reviewLoading ? (
+            <div className="text-center py-8">
+              <FaSpinner className="animate-spin text-2xl text-[#D4AF37] mx-auto" />
+              <p className="text-gray-500 mt-2">Loading reviews...</p>
+            </div>
+          ) : reviews.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              {reviews.map((review) => (
+                <div 
+                  key={review.id}
+                  className="bg-white dark:bg-[#1F2937] rounded-2xl p-5 sm:p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 hover:-translate-y-1"
+                >
+                  <div className="flex items-center gap-1 text-[#D4AF37] text-sm sm:text-base mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <FaStar key={i} className={i < (review.rating || 0) ? 'text-[#D4AF37]' : 'text-gray-300'} />
+                    ))}
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-3">
+                    <FaQuoteLeft className="text-[#D4AF37]/30 text-xs inline mr-1" />
+                    {review.comment}
+                  </p>
+                  <div className="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <img 
+                      src={review.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.name || 'User')}&background=0F766E&color=fff&size=60`} 
+                      alt={review.name || 'User'}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-[#D4AF37]/30"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=User&background=0F766E&color=fff&size=60`;
+                      }}
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{review.name || 'Anonymous'}</p>
+                      <div className="flex items-center gap-1 text-xs text-gray-400">
+                        <FaCalendarAlt className="text-[10px]" />
+                        {review.date ? new Date(review.date).toLocaleDateString('en-PK', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        }) : 'Recent'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 bg-white dark:bg-[#1F2937] rounded-2xl border border-gray-100 dark:border-gray-700">
+              <p className="text-gray-400">No reviews yet. Be the first to review this product! ⭐</p>
+            </div>
+          )}
+
+          {reviews.length > 0 && (
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-6 p-4 bg-white dark:bg-[#1F2937] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl font-bold text-[#D4AF37]">{avgRating.toFixed(1)}</div>
+                <div>
+                  <div className="flex gap-0.5 text-[#D4AF37] text-sm">
+                    {[...Array(5)].map((_, i) => (
+                      <FaStar key={i} className={i < Math.round(avgRating) ? 'text-[#D4AF37]' : 'text-gray-300'} />
+                    ))}
+                  </div>
+                  <span className="text-xs text-gray-400">Based on {reviews.length} reviews</span>
+                </div>
+              </div>
+              <div className="w-px h-10 bg-gray-200 dark:bg-gray-700"></div>
+              {[5, 4, 3].map((star) => {
+                const count = ratingDistribution[star - 1] || 0;
+                const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                return (
+                  <div key={star} className="text-center">
+                    <p className="text-sm text-gray-500">⭐ {star} star</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 sm:w-32 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${star >= 4 ? 'bg-green-500' : star >= 3 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${percentage}%` }}></div>
+                      </div>
+                      <span className="text-xs text-gray-400">{percentage.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
+    </div>
+  );
+};
+
+// ✅ Product Slider Component
+interface ProductSliderProps {
+  products: SweetsProduct[];
+  sliderRef: React.RefObject<HTMLDivElement>;
+  scrollLeft: () => void;
+  scrollRight: () => void;
+  addToCart: (product: any) => void;
+}
+
+const ProductSlider: React.FC<ProductSliderProps> = ({ 
+  products, 
+  sliderRef, 
+  scrollLeft, 
+  scrollRight,
+  addToCart 
+}) => {
+  return (
+    <div className="relative">
+      <button
+        onClick={scrollLeft}
+        className="absolute -left-2 sm:-left-4 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-[#1F2937] rounded-full p-1.5 sm:p-2 shadow-lg border border-[#E5E7EB] dark:border-gray-700 hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition"
+      >
+        <FaChevronLeft className="text-gray-600 dark:text-gray-400 text-sm sm:text-base" />
+      </button>
+
+      <div
+        ref={sliderRef}
+        className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {products.map((product) => (
+          <Link
+            key={product.id}
+            to={`/sweet-product/${product.id}`}
+            className="flex-shrink-0 w-[140px] sm:w-[160px] md:w-[180px] lg:w-[200px] bg-white dark:bg-[#1F2937] rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-[#E5E7EB] dark:border-gray-700 hover:-translate-y-1 group"
+          >
+            <div className="relative aspect-square bg-[#F5F3FF] dark:bg-[#1F2937] flex items-center justify-center">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 p-2"
+                onError={(e) => {
+                  e.currentTarget.src = `https://via.placeholder.com/300x300/D4AF37/FFFFFF?text=${encodeURIComponent(product.name)}`;
+                }}
+              />
+              {product.discount && product.discount > 0 && (
+                <span className="absolute top-1 left-1 bg-red-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  -{product.discount}%
+                </span>
+              )}
+              {product.isNew && (
+                <span className="absolute top-1 left-10 bg-green-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  NEW
+                </span>
+              )}
+              <div className="absolute bottom-1 right-1 flex items-center gap-1">
+                <span className={`w-1.5 h-1.5 rounded-full ${product.stock > 0 ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}></span>
+              </div>
+            </div>
+            <div className="p-2 sm:p-3">
+              <h4 className="font-semibold text-[#111827] dark:text-white text-[10px] sm:text-xs line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
+                {product.name}
+              </h4>
+              <div className="flex items-center gap-1 mt-0.5 sm:mt-1">
+                <span className="text-[#D4AF37] font-bold text-xs sm:text-sm">
+                  Rs. {product.price.toLocaleString()}
+                </span>
+                {product.oldPrice && product.oldPrice > product.price && (
+                  <span className="text-gray-400 line-through text-[8px] sm:text-[10px]">
+                    Rs. {product.oldPrice.toLocaleString()}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (product.stock > 0) {
+                    addToCart({ ...product, quantity: 1 });
+                    alert(`✅ ${product.name} added to cart!`);
+                  }
+                }}
+                disabled={product.stock === 0}
+                className={`w-full mt-1 px-2 py-1 rounded-full text-[8px] sm:text-[10px] font-medium transition flex items-center justify-center gap-1 ${
+                  product.stock > 0
+                    ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <FaShoppingCart className="text-[8px] sm:text-[10px]" />
+                {product.stock > 0 ? 'Add' : 'Sold'}
+              </button>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <button
+        onClick={scrollRight}
+        className="absolute -right-2 sm:-right-4 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-[#1F2937] rounded-full p-1.5 sm:p-2 shadow-lg border border-[#E5E7EB] dark:border-gray-700 hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition"
+      >
+        <FaChevronRight className="text-gray-600 dark:text-gray-400 text-sm sm:text-base" />
+      </button>
     </div>
   );
 };
