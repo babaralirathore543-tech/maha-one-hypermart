@@ -1,395 +1,372 @@
+// src/components/pages/DryFruitsPage.tsx
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaHeart, FaStar, FaShoppingCart } from 'react-icons/fa';
+import { FaHeart, FaStar, FaShoppingCart, FaSpinner } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
+import { db, collection, getDocs, query, where } from '../../config/firebase';
 
-// ✅ Product Type Interface
+// ✅ Product Type Interface - Matching AdminDryFruitsForm
 interface Product {
-  id: number;
+  id: string;
   name: string;
-  price: number;        // ✅ 1kg ki price (Base Price)
-  oldPrice: number;     // ✅ 1kg ki original price
+  price: number;
+  oldPrice: number;
   discount: number;
   rating: number;
   image: string;
   stock: number;
+  subCategory: string;
+  weightVariants: WeightVariant[];
+  weight: string;
+  weightUnit: string;
+  isNew: boolean;
+  isFeatured: boolean;
+  isBestSeller: boolean;
+  isOnSale: boolean;
+  status: string;
+  category: string;
+}
+
+// ✅ Weight Variant Interface
+interface WeightVariant {
+  id: string;
+  weight: string;
+  weightUnit: string;
+  price: number;
+  oldPrice: number;
+  discount: number;
+  stock: number;
+  sku: string;
 }
 
 const DryFruitsPage = () => {
   const { addToCart } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<{ [key: string]: boolean }>({});
 
-  // ✅ Price Calculation Function (Same as Detail Page)
-  const calculateWeightPrice = (basePrice: number, weight: string): number => {
-    switch(weight) {
-      case '250g': {
-        const price500g = (basePrice / 2) + 50;
-        return (price500g / 2) + 50;
+  // ✅ Fetch dry fruits from Firebase
+  useEffect(() => {
+    const fetchDryFruits = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔵 Fetching dry fruits from Firebase...');
+        
+        const q = query(
+          collection(db, 'products'),
+          where('category', 'in', ['dryfruits', 'dry-fruits']),
+          where('status', '==', 'active')
+        );
+        
+        const snapshot = await getDocs(q);
+        console.log('🔵 Documents found:', snapshot.size);
+        
+        if (snapshot.empty) {
+          console.log('⚠️ No dry fruits found in database');
+          setProducts([]);
+        } else {
+          const productsData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              name: data.name || '',
+              price: data.price || 0,
+              oldPrice: data.oldPrice || 0,
+              discount: data.discount || 0,
+              rating: data.rating || 4.5,
+              image: data.image || '',
+              stock: data.stock || 0,
+              subCategory: data.subCategory || '',
+              weightVariants: data.weightVariants || [],
+              weight: data.weight || '',
+              weightUnit: data.weightUnit || 'g',
+              isNew: data.isNew || false,
+              isFeatured: data.isFeatured || false,
+              isBestSeller: data.isBestSeller || false,
+              isOnSale: data.isOnSale || false,
+              status: data.status || 'active',
+              category: data.category || 'dryfruits'
+            };
+          });
+          
+          console.log('✅ Products loaded:', productsData.length);
+          setProducts(productsData);
+        }
+      } catch (error: any) {
+        console.error('❌ Error fetching dry fruits:', error);
+        setError(error.message || 'Failed to load products');
+      } finally {
+        setLoading(false);
       }
-      case '500g': {
-        return (basePrice / 2) + 50;
-      }
-      case '1kg': {
-        return basePrice;
-      }
-      case '2kg': {
-        return (basePrice * 2) - 150;
-      }
-      default:
-        return basePrice;
-    }
+    };
+    
+    fetchDryFruits();
+  }, []);
+
+  // ✅ Handle image error
+  const handleImageError = (productId: string) => {
+    setImageError(prev => ({ ...prev, [productId]: true }));
   };
 
-  // ✅ All Products with 1kg Reference Price
-  const products: Product[] = [
-    { 
-      id: 1, 
-      name: 'American Almonds Premium', 
-      price: 4100,        // ✅ 1kg price
-      oldPrice: 4500,     // ✅ 1kg original price
-      discount: 9, 
-      rating: 4.8, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png',
-      stock: 50
-    },
-    { 
-      id: 2, 
-      name: 'American Almonds Medium', 
-      price: 3500,
-      oldPrice: 3900,
-      discount: 10, 
-      rating: 4.9, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128400/almonds_small_dtsgkf.png',
-      stock: 30
-    },
-    { 
-      id: 3, 
-      name: 'Soft Shell Salted Pistachios', 
-      price: 4800,
-      oldPrice: 5300,
-      discount: 9, 
-      rating: 4.7, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128413/pista_shell_bdm59v.png',
-      stock: 40
-    },
-    { 
-      id: 4, 
-      name: 'Roasted Pistachios', 
-      price: 7500,
-      oldPrice: 8200,
-      discount: 9, 
-      rating: 4.6, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128419/pista_without_shell_ymunmc.png',
-      stock: 25
-    },
-    { 
-      id: 5, 
-      name: 'Roasted Brown Cashews', 
-      price: 4000,
-      oldPrice: 4400,
-      discount: 9, 
-      rating: 4.8, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128406/brown_kaju_cu5gvs.png',
-      stock: 35
-    },
-    { 
-      id: 6, 
-      name: 'Salted White Cashews', 
-      price: 3400,
-      oldPrice: 3800,
-      discount: 11, 
-      rating: 4.9, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128463/white_kaju_ssdd1b.png',
-      stock: 20
-    },
-    { 
-      id: 7, 
-      name: 'Soft Shell Almonds', 
-      price: 2400,
-      oldPrice: 2700,
-      discount: 11, 
-      rating: 4.8, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128454/soft_shell_almonds_wfd5pr.png',
-      stock: 60
-    },
-    { 
-      id: 8, 
-      name: 'Soft Shell Walnuts', 
-      price: 1800,
-      oldPrice: 2000,
-      discount: 10, 
-      rating: 4.7, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128425/shell_walnut_djggub.png',
-      stock: 45
-    },
-    { 
-      id: 9, 
-      name: 'Kernel Walnuts (without shell)', 
-      price: 3000,
-      oldPrice: 3300,
-      discount: 9, 
-      rating: 4.8, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128464/without_shell_walnut_dlgsm1.png',
-      stock: 30
-    },
-    { 
-      id: 10, 
-      name: 'Sundar Khani Raisins', 
-      price: 1800,
-      oldPrice: 2000,
-      discount: 10, 
-      rating: 4.8, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128446/sundar_khani_raisins_e1ykp8.png',
-      stock: 80
-    },
-    { 
-      id: 11, 
-      name: 'Kandhari Raisins', 
-      price: 1500,
-      oldPrice: 1700,
-      discount: 12, 
-      rating: 4.7, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128421/kandhari_raisins_ncjmwl.png',
-      stock: 70
-    },
-    { 
-      id: 12, 
-      name: 'Black Raisins', 
-      price: 1600,
-      oldPrice: 1800,
-      discount: 11, 
-      rating: 4.6, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128398/black_raisins_tyw6al.png',
-      stock: 55
-    },
-    { 
-      id: 13, 
-      name: 'Munakka Raisins', 
-      price: 1700,
-      oldPrice: 1900,
-      discount: 11, 
-      rating: 4.8, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128430/munakka_raisins_dohfbj.png',
-      stock: 40
-    },
-    { 
-      id: 14, 
-      name: 'Roasted Chickpeas (without Skin)', 
-      price: 1100,
-      oldPrice: 1300,
-      discount: 15, 
-      rating: 4.5, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128461/yellow_channa_gmufqp.png',
-      stock: 100
-    },
-    { 
-      id: 15, 
-      name: 'Roasted Brown Chickpeas', 
-      price: 950,
-      oldPrice: 1150,
-      discount: 17, 
-      rating: 4.4, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128403/brown_channa_diqzhp.png',
-      stock: 10
-    },
-    { 
-      id: 16, 
-      name: 'Chia Seeds', 
-      price: 2500,
-      oldPrice: 2800,
-      discount: 11, 
-      rating: 4.8, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128408/chia_seeds_qko4xt.png',
-      stock: 50
-    },
-    { 
-      id: 17, 
-      name: 'Pumpkin Seeds (Kaddu Beej)', 
-      price: 1900,
-      oldPrice: 2100,
-      discount: 10, 
-      rating: 4.7, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128437/pumpkin_seeds_cnft3u.png',
-      stock: 65
-    },
-    { 
-      id: 18, 
-      name: 'Sunflower Seeds', 
-      price: 1700,
-      oldPrice: 1900,
-      discount: 11, 
-      rating: 4.6, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128454/sunflower_seeds_kts2w9.png',
-      stock: 75
-    },
-    { 
-      id: 19, 
-      name: 'Flax (Alsi) Seeds', 
-      price: 1300,
-      oldPrice: 1500,
-      discount: 13, 
-      rating: 4.7, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128398/alsi_seeds_yaxvaz.png',
-      stock: 40
-    },
-    { 
-      id: 20, 
-      name: 'Basil Seeds (Tukh Malanga)', 
-      price: 1350,
-      oldPrice: 1550,
-      discount: 13, 
-      rating: 4.6, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128397/basil_seeds_khs4ym.png',
-      stock: 30
-    },
-    { 
-      id: 21, 
-      name: 'Four Seeds (Char Maghaz)', 
-      price: 2200,
-      oldPrice: 2500,
-      discount: 12, 
-      rating: 4.7, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128408/char_magaz_vabk39.png',
-      stock: 35
-    },
-    { 
-      id: 22, 
-      name: 'Isphagol Husk', 
-      price: 4200,
-      oldPrice: 4600,
-      discount: 9, 
-      rating: 4.5, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128427/isphagol_djucq5.png',
-      stock: 60
-    },
-    { 
-      id: 23, 
-      name: 'Dry Coconut (Khopra)', 
-      price: 1350,
-      oldPrice: 1550,
-      discount: 13, 
-      rating: 4.4, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128407/dry_coconut_bweitq.png',
-      stock: 50
-    },
-    { 
-      id: 24, 
-      name: 'Coconut Powder', 
-      price: 1300,
-      oldPrice: 1500,
-      discount: 13, 
-      rating: 4.5, 
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128407/coconut_powder_nvs65m.png',
-      stock: 40
+  // ✅ Get best display variant (usually 500g or first variant)
+  const getDisplayVariant = (product: Product): WeightVariant | null => {
+    if (!product.weightVariants || product.weightVariants.length === 0) {
+      return null;
     }
-  ];
+    
+    const fiveHundred = product.weightVariants.find(v => v.weight === '500');
+    if (fiveHundred) return fiveHundred;
+    
+    const any500 = product.weightVariants.find(v => v.weight.includes('500'));
+    if (any500) return any500;
+    
+    return product.weightVariants[0];
+  };
+
+  // ✅ Get display discount percentage
+  const getDisplayDiscount = (product: Product) => {
+    const variant = getDisplayVariant(product);
+    if (variant && variant.discount > 0) return variant.discount;
+    if (product.discount > 0) return product.discount;
+    
+    const displayPrice = variant?.price || product.price;
+    const displayOldPrice = variant?.oldPrice || product.oldPrice;
+    if (displayOldPrice > displayPrice) {
+      return Math.round(((displayOldPrice - displayPrice) / displayOldPrice) * 100);
+    }
+    return 0;
+  };
+
+  // ✅ Get display price
+  const getDisplayPrice = (product: Product) => {
+    const variant = getDisplayVariant(product);
+    return variant?.price || product.price;
+  };
+
+  // ✅ Get display old price
+  const getDisplayOldPrice = (product: Product) => {
+    const variant = getDisplayVariant(product);
+    return variant?.oldPrice || product.oldPrice;
+  };
+
+  // ✅ Get display weight label
+  const getDisplayWeightLabel = (product: Product) => {
+    const variant = getDisplayVariant(product);
+    if (variant) {
+      return `${variant.weight}${variant.weightUnit}`;
+    }
+    if (product.weight) {
+      return `${product.weight}${product.weightUnit || 'g'}`;
+    }
+    return '';
+  };
+
+  // ✅ Get variant stock
+  const getVariantStock = (product: Product) => {
+    const variant = getDisplayVariant(product);
+    return variant?.stock || product.stock || 0;
+  };
+
+  // Show error if any
+  if (error) {
+    return (
+      <div className="bg-[#FFFDF7] dark:bg-[#111827] py-6 sm:py-8 md:py-12 min-h-screen">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h3 className="text-xl font-semibold text-red-600 dark:text-red-400">Error loading products</h3>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 bg-[#0F766E] text-white px-6 py-2 rounded-full hover:bg-[#065F46] transition"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-[#FFFDF7] py-6 sm:py-8 md:py-12 min-h-screen">
+    <div className="bg-[#FFFDF7] dark:bg-[#111827] py-6 sm:py-8 md:py-12 min-h-screen">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#111827] text-center mb-4 sm:mb-6 md:mb-8">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#111827] dark:text-white text-center mb-4 sm:mb-6 md:mb-8">
           🥜 Premium <span className="text-[#D4AF37]">Dry Fruits</span>
         </h1>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-          {products.map((p) => {
-            const isInStock = p.stock > 0;
-            
-            // ✅ Calculate 500gm price (display on product card)
-            const displayPrice = Math.round(calculateWeightPrice(p.price, '500g'));
-            const displayOldPrice = Math.round(calculateWeightPrice(p.oldPrice, '500g'));
-            const displayDiscount = Math.round(((displayOldPrice - displayPrice) / displayOldPrice) * 100);
-            
-            return (
-              <Link to={`/dry-product/${p.id}`} key={p.id} className="block min-w-0">
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-[#E5E7EB] hover:-translate-y-1 cursor-pointer group h-full">
-                  <div className="relative">
-                    <img 
-                      src={p.image} 
-                      alt={p.name} 
-                      className="w-full h-32 sm:h-40 md:h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => {
-                        e.currentTarget.src = `https://via.placeholder.com/400x300/D4AF37/FFFFFF?text=${p.name}`;
-                      }}
-                    />
-                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1.5 rounded-full">
-                      -{displayDiscount}%
-                    </span>
-                    <button 
-                      className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-white/90 rounded-full p-1.5 sm:p-2 hover:bg-[#D4AF37] transition"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        alert('❤️ Added to Wishlist!');
-                      }}
-                    >
-                      <FaHeart className="text-sm sm:text-base text-gray-600 hover:text-white" />
-                    </button>
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <FaSpinner className="animate-spin text-4xl text-[#D4AF37] mx-auto" />
+            <p className="mt-4 text-gray-500 dark:text-gray-400">Loading dry fruits...</p>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">🥜</div>
+            <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">No dry fruits found</h3>
+            <p className="text-gray-400 mt-2">Check back later for premium dry fruits</p>
+            <Link to="/admin/dryfruits/add" className="inline-block mt-4 bg-[#D4AF37] text-white px-6 py-2 rounded-full hover:bg-[#b8941f] transition">
+              Add Products
+            </Link>
+          </div>
+        ) : (
+          /* ✅ Products Grid - Fashion Page Style */
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+            {products.map((p) => {
+              const isInStock = getVariantStock(p) > 0;
+              const displayPrice = getDisplayPrice(p);
+              const displayOldPrice = getDisplayOldPrice(p);
+              const displayDiscount = getDisplayDiscount(p);
+              const displayWeight = getDisplayWeightLabel(p);
+              const hasError = imageError[p.id];
+              
+              return (
+                <Link to={`/dry-product/${p.id}`} key={p.id} className="group">
+                  <div className="bg-white dark:bg-[#1F2937] rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700 hover:-translate-y-1 h-full flex flex-col">
+                    
+                    {/* ✅ Image Container - Like Fashion Page (Purple Border + Rounded Corners) */}
+                    <div className="relative overflow-hidden aspect-square bg-[#F8FAFC] dark:bg-[#1F2937] rounded-2xl m-2 sm:m-3 border-4 border-purple-500 shadow-md shadow-purple-500/20">
+                      <img
+                        src={hasError ? `https://via.placeholder.com/400x400/D4AF37/FFFFFF?text=${p.name}` : p.image}
+                        alt={p.name}
+                        className={`w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 rounded-xl p-2`}
+                        onError={() => handleImageError(p.id)}
+                        loading="lazy"
+                      />
+                      
+                      {/* Badges Row - Image par */}
+                      <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                        {displayDiscount > 0 && (
+                          <span className="bg-red-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg border-2 border-white/50">
+                            -{displayDiscount}%
+                          </span>
+                        )}
+                        {p.isNew && (
+                          <span className="bg-green-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg border-2 border-white/50">
+                            NEW
+                          </span>
+                        )}
+                        {p.isBestSeller && (
+                          <span className="bg-[#D4AF37] text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg border-2 border-white/50">
+                            ★ BEST
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Wishlist Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          alert('❤️ Added to Wishlist!');
+                        }}
+                        className="absolute top-2 right-2 bg-white/90 backdrop-blur rounded-full p-1.5 sm:p-2 hover:bg-[#D4AF37] transition shadow-md border-2 border-purple-300"
+                      >
+                        <FaHeart className="text-xs sm:text-sm text-gray-600 group-hover:text-white transition" />
+                      </button>
+                      
+                      {/* Category Badge on Image */}
+                      {p.subCategory && (
+                        <div className="absolute bottom-2 right-2">
+                          <span className="text-[8px] sm:text-[10px] bg-black/60 backdrop-blur text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full capitalize border border-purple-300/30">
+                            🥜 {p.subCategory}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ✅ Product Info - Card Style */}
+                    <div className="p-2.5 sm:p-3 md:p-4 flex-1 flex flex-col">
+                      
+                      {/* Rating */}
+                      <div className="flex items-center gap-0.5 text-[#D4AF37] text-[8px] sm:text-[10px]">
+                        {[...Array(5)].map((_, i) => (
+                          <FaStar key={i} className={i < Math.floor(p.rating || 0) ? 'text-[#D4AF37]' : 'text-gray-300 dark:text-gray-600'} />
+                        ))}
+                        <span className="text-gray-400 dark:text-gray-500 ml-0.5 text-[8px] sm:text-[10px]">({p.rating || 0})</span>
+                      </div>
+
+                      {/* Name */}
+                      <h3 className="font-semibold text-[#111827] dark:text-white text-xs sm:text-sm md:text-base mt-0.5 line-clamp-2 group-hover:text-[#D4AF37] transition">
+                        {p.name}
+                      </h3>
+
+                      {/* SubCategory */}
+                      <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        {p.subCategory || 'Dry Fruits'}
+                      </p>
+
+                      {/* ✅ STOCK INDICATOR - Blinking Green Dot */}
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className={`w-2 h-2 rounded-full ${isInStock ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}></span>
+                        <span className={`text-[10px] sm:text-xs font-medium ${isInStock ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                          {isInStock ? `In Stock (${getVariantStock(p)})` : 'Out of Stock'}
+                        </span>
+                      </div>
+
+                      {/* Price */}
+                      <div className="flex items-center gap-1 sm:gap-2 mt-1 flex-wrap">
+                        <span className="text-[#D4AF37] font-bold text-sm sm:text-base md:text-lg">
+                          Rs. {displayPrice.toLocaleString()}
+                        </span>
+                        {displayOldPrice > displayPrice && (
+                          <span className="text-gray-400 dark:text-gray-500 line-through text-[10px] sm:text-xs">
+                            Rs. {displayOldPrice.toLocaleString()}
+                          </span>
+                        )}
+                        {displayWeight && (
+                          <span className="text-[8px] sm:text-[10px] text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">
+                            {displayWeight}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Add to Cart Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (isInStock) {
+                            const variant = getDisplayVariant(p);
+                            addToCart({
+                              ...p,
+                              price: displayPrice,
+                              weight: displayWeight,
+                              variantId: variant?.id,
+                              quantity: 1
+                            });
+                            alert(`✅ ${p.name} added to cart!`);
+                          } else {
+                            alert('❌ This product is out of stock!');
+                          }
+                        }}
+                        disabled={!isInStock}
+                        className={`w-full mt-2 sm:mt-3 px-2 py-1.5 sm:py-2 rounded-full text-[8px] sm:text-[10px] md:text-xs font-medium transition flex items-center justify-center gap-1 sm:gap-2 ${
+                          isInStock
+                            ? 'bg-[#0F766E] text-white hover:bg-[#065F46] active:scale-95'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        <FaShoppingCart className="text-[8px] sm:text-[10px] md:text-xs" />
+                        <span>{isInStock ? 'Add to Cart' : 'Out of Stock'}</span>
+                      </button>
+
+                      {/* On Sale Badge */}
+                      {p.isOnSale && (
+                        <div className="mt-1 text-[8px] sm:text-[10px] text-red-500 font-medium text-center animate-pulse">
+                          🔥 On Sale!
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div className="p-2 sm:p-3 md:p-4">
-                    <div className="flex text-[#D4AF37] text-[10px] sm:text-sm">
-                      {[...Array(5)].map((_, i) => (
-                        <FaStar key={i} className={i < Math.floor(p.rating) ? 'text-[#D4AF37]' : 'text-gray-300'} />
-                      ))}
-                      <span className="text-gray-400 text-[8px] sm:text-xs ml-1">({p.rating})</span>
-                    </div>
-                    <h3 className="font-semibold text-[#111827] text-xs sm:text-sm md:text-base lg:text-lg line-clamp-2 mt-0.5 sm:mt-1">
-                      {p.name}
-                    </h3>
-                    
-                    {/* ✅ Display 500gm Price with "500g" label */}
-                    <div className="flex items-center gap-1 sm:gap-2 mt-1 sm:mt-2">
-                      <span className="text-[#D4AF37] font-bold text-sm sm:text-base md:text-lg lg:text-xl">
-                        PKR {displayPrice.toLocaleString()}
-                      </span>
-                      <span className="text-gray-400 line-through text-[10px] sm:text-sm">
-                        PKR {displayOldPrice.toLocaleString()}
-                      </span>
-                      <span className="text-[8px] sm:text-[10px] text-gray-500 bg-gray-100 px-1 sm:px-1.5 py-0.5 rounded">
-                        500g
-                      </span>
-                    </div>
-                    
-                    {/* Stock Status */}
-                    <div className="mt-1 sm:mt-2 flex items-center gap-1 sm:gap-1.5">
-                      <span 
-                        className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isInStock ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}
-                      ></span>
-                      <span className={`text-[8px] sm:text-xs font-medium ${isInStock ? 'text-green-600' : 'text-red-500'}`}>
-                        {isInStock ? 'In Stock' : 'Out of Stock'}
-                      </span>
-                    </div>
-                    
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (isInStock) {
-                          // ✅ Add 500gm product to cart
-                          addToCart({
-                            ...p,
-                            price: displayPrice,
-                            weight: '500g'
-                          });
-                        } else {
-                          alert('❌ This product is out of stock!');
-                        }
-                      }}
-                      disabled={!isInStock}
-                      className={`w-full mt-2 sm:mt-3 md:mt-4 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-medium transition flex items-center justify-center gap-1 sm:gap-2 ${
-                        isInStock
-                          ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      <FaShoppingCart className="text-[10px] sm:text-xs" />
-                      <span className="whitespace-nowrap">{isInStock ? 'Add to Cart' : 'Out of Stock'}</span>
-                    </button>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

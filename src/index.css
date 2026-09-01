@@ -409,3 +409,106 @@
     transform: scale(1);
   }
 }
+
+/* ============================================================
+   ✅ FIX: STICKY HEADER + CATEGORIES SLIDER SCROLL MARGIN
+   ============================================================ */
+
+/* Global scroll padding for all pages */
+html {
+  scroll-padding-top: 140px;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  html {
+    scroll-padding-top: 120px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 1024px) {
+  html {
+    scroll-padding-top: 130px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1025px) {
+  html {
+    scroll-padding-top: 140px;
+  }
+}
+
+/* ✅ Ensure all sections have proper scroll margin */
+section,
+[id$="-section"] {
+  scroll-margin-top: 140px;
+}
+
+@media (max-width: 640px) {
+  section,
+  [id$="-section"] {
+    scroll-margin-top: 120px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  section,
+  [id$="-section"] {
+    scroll-margin-top: 130px;
+  }
+}
+
+/* ✅ Extra padding for pages to prevent content hiding behind sticky header */
+.page-container {
+  padding-top: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .page-container {
+    padding-top: 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .page-container {
+    padding-top: 1.5rem;
+  }
+}
+
+/* ✅ Fix for bottom navigation overlap */
+@media (max-width: 1024px) {
+  .page-container {
+    padding-bottom: 80px;
+  }
+}
+
+/* ✅ Fix for categories slider sticky position */
+.categories-slider {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: white;
+}
+
+.dark .categories-slider {
+  background: #1F2937;
+}
+
+/* ✅ Ensure content doesn't hide behind sticky elements */
+.sticky-header-offset {
+  scroll-margin-top: 140px;
+}
+
+@media (max-width: 640px) {
+  .sticky-header-offset {
+    scroll-margin-top: 120px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .sticky-header-offset {
+    scroll-margin-top: 130px;
+  }
+}

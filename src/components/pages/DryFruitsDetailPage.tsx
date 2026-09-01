@@ -1,386 +1,373 @@
+// src/components/pages/DryFruitsDetailPage.tsx
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
-  FaStar, FaHeart, FaShoppingCart, FaArrowLeft, 
-  FaTruck, FaShieldAlt, FaLeaf, 
-} from 'react-icons/fa';
+  FaStar, FaShoppingCart, FaArrowLeft, 
+  FaTruck, FaShieldAlt, FaLeaf, FaChevronLeft, FaChevronRight,
+  FaCircle, FaSpinner, FaShare, FaWhatsapp, FaCalendarAlt, FaQuoteLeft} from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
+import { db, doc, getDoc, collection, getDocs, query, where } from '../../config/firebase';
 
-// ✅ Product Type
-interface Product {
-  id: number;
+// ✅ Product Interface - Matching AdminDryFruitsForm
+interface DryFruitsProduct {
+  id: string;
   name: string;
+  price: number;
+  oldPrice?: number;
+  discount?: number;
+  discountPrice?: number;
+  rating: number;
+  category: string;
+  subCategory: string;
+  productType?: string;
+  image: string;
+  images: string[];
+  stock: number;
+  description: string;
+  shortDescription?: string;
+  benefits: string[];
+  weightVariants: WeightVariant[];
+  weight: string;
+  weightUnit: string;
+  origin?: string;
+  packaging?: string;
+  shelfLife?: string;
+  nutritionalInfo?: string;
+  storageInstructions?: string;
+  isNew: boolean;
+  isFeatured: boolean;
+  isBestSeller?: boolean;
+  isOnSale?: boolean;
+  isOrganic?: boolean;
+  isPremium?: boolean;
+  status?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+// ✅ Weight Variant Interface
+interface WeightVariant {
+  id: string;
+  weight: string;
+  weightUnit: string;
   price: number;
   oldPrice: number;
   discount: number;
-  rating: number;
-  category: string;
-  image: string;
-  description: string;
-  benefits: string[];
   stock: number;
-  weightPrices?: {
-    '250g'?: number;
-    '500g'?: number;
-    '1kg'?: number;
-    '2kg'?: number;
-  };
+  sku: string;
 }
+
+// ✅ Review Interface
+interface Review {
+  id: string;
+  name: string;
+  rating: number;
+  comment: string;
+  date: string;
+  avatar?: string;
+}
+
+// ✅ Helper function to convert description to bullet points
+const formatDescription = (text: string) => {
+  if (!text) return [];
+  const lines = text.split('\n').filter(line => line.trim());
+  return lines.map((line) => {
+    if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
+      return line.trim();
+    }
+    if (line.includes(':')) {
+      return `• ${line.trim()}`;
+    }
+    if (line.trim().length < 30 && line.trim() === line.trim().toUpperCase()) {
+      return line.trim();
+    }
+    return `• ${line.trim()}`;
+  });
+};
 
 const DryFruitsDetailPage = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
+  const [product, setProduct] = useState<DryFruitsProduct | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [selectedWeight, setSelectedWeight] = useState('500g');
+  const [selectedWeight, setSelectedWeight] = useState<string>('');
+  const [selectedVariant, setSelectedVariant] = useState<WeightVariant | null>(null);
+  const [mainImage, setMainImage] = useState('');
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [suggestedProducts, setSuggestedProducts] = useState<DryFruitsProduct[]>([]);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  
+  // ✅ Reviews State
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
 
-  // ✅ All Products Data
-  const dryProducts: Product[] = [
-    { 
-      id: 1, 
-      name: 'American Almonds Premium 500gm', 
-      price: 2200, 
-      oldPrice: 2450, 
-      discount: 13, 
-      rating: 4.8, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128223/almonds_large_oq4jyx.png',
-      description: 'Premium quality American almonds, large size. Rich in vitamin E, magnesium, and healthy fats. Perfect for snacking and cooking.',
-      benefits: ['Heart Healthy', 'Rich in Protein', 'Vitamin E', 'Brain Food'],
-      stock: 50,
-      weightPrices: { '250g': 1200, '500g': 2200, '1kg': 4100, '2kg': 8000 }
-    },
-    { 
-      id: 2, 
-      name: 'American Almonds Medium 500gm', 
-      price: 1750, 
-      oldPrice: 2150, 
-      discount: 14, 
-      rating: 4.9, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128400/almonds_small_dtsgkf.png',
-      description: 'Medium-sized American almonds with a rich, buttery flavor. Packed with nutrients and perfect for everyday snacking.',
-      benefits: ['Heart Healthy', 'Rich in Protein', 'Vitamin E', 'Energy Boost'],
-      stock: 30,
-      weightPrices: { '250g': 1000, '500g': 1750, '1kg': 3500, '2kg': 6800 }
-    },
-    { 
-      id: 3, 
-      name: 'Soft Shell Salted Pistachios 500gm', 
-      price: 1300, 
-      oldPrice: 1600, 
-      discount: 16, 
-      rating: 4.7, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128413/pista_shell_bdm59v.png',
-      description: 'Premium soft shell pistachios with a light salt coating. Easy to open and packed with a rich, nutty flavor.',
-      benefits: ['Rich Flavor', 'Antioxidants', 'Heart Healthy', 'Premium Quality'],
-      stock: 40,
-      weightPrices: { '250g': 750, '500g': 1300, '1kg': 4800, '2kg': 4700 }
-    },
-    { 
-      id: 4, 
-      name: 'Roasted Pistachios 500gm', 
-      price: 3900, 
-      oldPrice: 4500, 
-      discount: 13, 
-      rating: 4.6, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128419/pista_without_shell_ymunmc.png',
-      description: 'Roasted pistachios without shell. Perfectly roasted to bring out the natural nutty flavor. Ready to eat and enjoy.',
-      benefits: ['Roasted Flavor', 'No Shell', 'Premium Quality', 'Ready to Eat'],
-      stock: 25,
-      weightPrices: { '250g': 2100, '500g': 3900, '1kg': 7500, '2kg': 14000 }
-    },
-    { 
-      id: 5, 
-      name: 'Roasted Brown Cashews 500gm', 
-      price: 2000, 
-      oldPrice: 2400, 
-      discount: 17, 
-      rating: 4.8, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128406/brown_kaju_cu5gvs.png',
-      description: 'Rich and creamy roasted brown cashews. Perfectly roasted to enhance their natural buttery flavor. A healthy and delicious snack.',
-      benefits: ['Creamy Texture', 'Roasted Flavor', 'Energy Boost', 'Heart Healthy'],
-      stock: 35,
-      weightPrices: { '250g': 1100, '500g': 2000, '1kg': 4000, '2kg': 7200 }
-    },
-    { 
-      id: 6, 
-      name: 'Salted White Cashews 500gm', 
-      price: 1800, 
-      oldPrice: 2100, 
-      discount: 14, 
-      rating: 4.9, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128463/white_kaju_ssdd1b.png',
-      description: 'Premium white cashews with a light salt coating. Creamy, rich, and perfectly salted for the ultimate snacking experience.',
-      benefits: ['Creamy Texture', 'Salted Flavor', 'Rich in Minerals', 'Premium Quality'],
-      stock: 20,
-      weightPrices: { '250g': 1000, '500g': 1800, '1kg': 3400, '2kg': 6500 }
-    },
-    { 
-      id: 7, 
-      name: 'Soft Shell Almonds 500gm', 
-      price: 1250, 
-      oldPrice: 1500, 
-      discount: 17, 
-      rating: 4.8, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128454/soft_shell_almonds_wfd5pr.png',
-      description: 'Soft shell almonds that are easy to crack open. Packed with nutrients and a delicious, natural flavor.',
-      benefits: ['Easy to Open', 'Rich in Vitamin E', 'Heart Healthy', 'Natural Flavor'],
-      stock: 60,
-      weightPrices: { '250g': 700, '500g': 1250, '1kg': 2400, '2kg': 4500 }
-    },
-    { 
-      id: 8, 
-      name: 'Soft Shell Walnuts 500gm', 
-      price: 950, 
-      oldPrice: 1200, 
-      discount: 21, 
-      rating: 4.7, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128425/shell_walnut_djggub.png',
-      description: 'Soft shell walnuts that are easy to crack. Rich in omega-3 fatty acids and antioxidants. A brain-healthy snack.',
-      benefits: ['Brain Food', 'Omega-3', 'Antioxidants', 'Heart Healthy'],
-      stock: 45,
-      weightPrices: { '250g': 550, '500g': 950, '1kg': 1800, '2kg': 3400 }
-    },
-    { 
-      id: 9, 
-      name: 'Kernel Walnuts (without shell) 500gm', 
-      price: 1550, 
-      oldPrice: 1800, 
-      discount: 14, 
-      rating: 4.8, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128464/without_shell_walnut_dlgsm1.png',
-      description: 'Premium walnut kernels without shell. Ready to eat and packed with nutrients. Perfect for baking and snacking.',
-      benefits: ['Ready to Eat', 'Omega-3 Rich', 'Brain Food', 'Antioxidants'],
-      stock: 30,
-      weightPrices: { '250g': 850, '500g': 1550, '1kg': 3000, '2kg': 5500 }
-    },
-    { 
-      id: 10, 
-      name: 'Sundar Khani Raisins 500gm', 
-      price: 950, 
-      oldPrice: 1200, 
-      discount: 21, 
-      rating: 4.8, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128446/sundar_khani_raisins_e1ykp8.png',
-      description: 'Premium Sundar Khani raisins. Sweet, juicy, and naturally sun-dried. Perfect for snacking and baking.',
-      benefits: ['Natural Sweetness', 'Iron Rich', 'Energy Boost', 'Healthy Snack'],
-      stock: 80,
-      weightPrices: { '250g': 550, '500g': 950, '1kg': 1800, '2kg': 3400 }
-    },
-    { 
-      id: 11, 
-      name: 'Kandhari Raisins 500gm', 
-      price: 800, 
-      oldPrice: 1000, 
-      discount: 20, 
-      rating: 4.7, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128421/kandhari_raisins_ncjmwl.png',
-      description: 'Sweet and juicy Kandhari raisins. Perfect for snacking, baking, and adding to your favorite dishes.',
-      benefits: ['Sweet Flavor', 'Iron Rich', 'Energy Boost', 'Healthy Snack'],
-      stock: 70,
-      weightPrices: { '250g': 450, '500g': 800, '1kg': 1500, '2kg': 2800 }
-    },
-    { 
-      id: 12, 
-      name: 'Black Raisins 500gm', 
-      price: 850, 
-      oldPrice: 1100, 
-      discount: 23, 
-      rating: 4.6, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128398/black_raisins_tyw6al.png',
-      description: 'Premium black raisins with a rich, sweet flavor. Naturally sun-dried and packed with nutrients.',
-      benefits: ['Rich Flavor', 'Iron Rich', 'Antioxidants', 'Healthy Snack'],
-      stock: 55,
-      weightPrices: { '250g': 480, '500g': 850, '1kg': 1600, '2kg': 3000 }
-    },
-    { 
-      id: 13, 
-      name: 'Munakka Raisins 500gm', 
-      price: 1100, 
-      oldPrice: 1400, 
-      discount: 21, 
-      rating: 4.8, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128430/munakka_raisins_dohfbj.png',
-      description: 'Premium Munakka raisins. Large, sweet, and juicy. Perfect for snacking and traditional recipes.',
-      benefits: ['Large Size', 'Sweet Flavor', 'Iron Rich', 'Energy Boost'],
-      stock: 40,
-      weightPrices: { '250g': 600, '500g': 1100, '1kg': 1700, '2kg': 4000 }
-    },
-    { 
-      id: 14, 
-      name: 'Roasted Chickpeas (without Skin) 500gm', 
-      price: 600, 
-      oldPrice: 800, 
-      discount: 25, 
-      rating: 4.5, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128461/yellow_channa_gmufqp.png',
-      description: 'Roasted chickpeas without skin. A healthy and crunchy snack packed with protein and fiber.',
-      benefits: ['High Protein', 'High Fiber', 'Crunchy Texture', 'Healthy Snack'],
-      stock: 100,
-      weightPrices: { '250g': 350, '500g': 600, '1kg': 1100, '2kg': 2100 }
-    },
-    { 
-      id: 15, 
-      name: 'Roasted Brown Chickpeas 500gm', 
-      price: 500, 
-      oldPrice: 700, 
-      discount: 29, 
-      rating: 4.4, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128403/brown_channa_diqzhp.png',
-      description: 'Roasted brown chickpeas. A nutritious and crunchy snack with a rich, earthy flavor.',
-      benefits: ['High Protein', 'Crunchy Texture', 'Healthy Snack', 'Rich Flavor'],
-      stock: 10,
-      weightPrices: { '250g': 300, '500g': 500, '1kg': 950, '2kg': 1800 }
-    },
-    { 
-      id: 16, 
-      name: 'Chia Seeds 500gm', 
-      price: 1300, 
-      oldPrice: 1600, 
-      discount: 19, 
-      rating: 4.8, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128408/chia_seeds_qko4xt.png',
-      description: 'Premium chia seeds. Packed with omega-3 fatty acids, fiber, and protein. Perfect for healthy smoothies and puddings.',
-      benefits: ['Omega-3 Rich', 'High Fiber', 'High Protein', 'Superfood'],
-      stock: 50,
-      weightPrices: { '250g': 700, '500g': 1300, '1kg': 2500, '2kg': 4800 }
-    },
-    { 
-      id: 17, 
-      name: 'Pumpkin Seeds (Kaddu Beej) 500gm', 
-      price: 1000, 
-      oldPrice: 1300, 
-      discount: 23, 
-      rating: 4.7, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128437/pumpkin_seeds_cnft3u.png',
-      description: 'Premium pumpkin seeds. Rich in zinc, magnesium, and healthy fats. A nutritious snack for all ages.',
-      benefits: ['Rich in Zinc', 'Magnesium Rich', 'Heart Healthy', 'Energy Boost'],
-      stock: 65,
-      weightPrices: { '250g': 550, '500g': 1000, '1kg': 1900, '2kg': 3600 }
-    },
-    { 
-      id: 18, 
-      name: 'Sunflower Seeds 500gm', 
-      price: 900, 
-      oldPrice: 1100, 
-      discount: 18, 
-      rating: 4.6, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128454/sunflower_seeds_kts2w9.png',
-      description: 'Premium sunflower seeds. Packed with vitamin E, selenium, and healthy fats. Perfect for snacking.',
-      benefits: ['Vitamin E Rich', 'Selenium Rich', 'Heart Healthy', 'Healthy Snack'],
-      stock: 75,
-      weightPrices: { '250g': 500, '500g': 900, '1kg': 1700, '2kg': 3200 }
-    },
-    { 
-      id: 19, 
-      name: 'Flax (Alsi) Seeds 500gm', 
-      price: 800, 
-      oldPrice: 1000, 
-      discount: 20, 
-      rating: 4.7, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128398/alsi_seeds_yaxvaz.png',
-      description: 'Premium flax seeds. Rich in omega-3 fatty acids, fiber, and lignans. A superfood for overall health.',
-      benefits: ['Omega-3 Rich', 'High Fiber', 'Superfood', 'Heart Healthy'],
-      stock: 40,
-      weightPrices: { '250g': 450, '500g': 800, '1kg': 1300, '2kg': 2800 }
-    },
-    { 
-      id: 20, 
-      name: 'Basil Seeds (Tukh Malanga) 500gm', 
-      price: 1200, 
-      oldPrice: 1500, 
-      discount: 20, 
-      rating: 4.6, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128397/basil_seeds_khs4ym.png',
-      description: 'Premium basil seeds. Known for their cooling properties and digestive benefits. Perfect for refreshing drinks.',
-      benefits: ['Cooling Properties', 'Digestive Health', 'Nutrient Rich', 'Natural Energy'],
-      stock: 30,
-      weightPrices: { '250g': 650, '500g': 1200, '1kg': 1350, '2kg': 4400 }
-    },
-    { 
-      id: 21, 
-      name: 'Four Seeds (Char Maghaz) 500gm', 
-      price: 1500, 
-      oldPrice: 1800, 
-      discount: 17, 
-      rating: 4.7, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128408/char_magaz_vabk39.png',
-      description: 'Premium four seeds mix (Char Maghaz). A blend of healthy seeds for overall wellness and nutrition.',
-      benefits: ['Nutrient Rich', 'Energy Boost', 'Heart Healthy', 'Premium Blend'],
-      stock: 35,
-      weightPrices: { '250g': 800, '500g': 1500, '1kg': 2200, '2kg': 5500 }
-    },
-    { 
-      id: 22, 
-      name: 'Isphagol Husk 500gm', 
-      price: 700, 
-      oldPrice: 900, 
-      discount: 22, 
-      rating: 4.5, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128427/isphagol_djucq5.png',
-      description: 'Premium Isphagol husk. Known for its digestive benefits and high fiber content. A natural health supplement.',
-      benefits: ['High Fiber', 'Digestive Health', 'Natural Supplement', 'Gentle Cleanse'],
-      stock: 60,
-      weightPrices: { '250g': 400, '500g': 700, '1kg': 4200, '2kg': 2500 }
-    },
-    { 
-      id: 23, 
-      name: 'Dry Coconut (Khopra) 500gm', 
-      price: 600, 
-      oldPrice: 800, 
-      discount: 25, 
-      rating: 4.4, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128407/dry_coconut_bweitq.png',
-      description: 'Premium dry coconut (Khopra). Perfect for cooking, baking, and traditional recipes. Rich in healthy fats.',
-      benefits: ['Healthy Fats', 'Cooking Essential', 'Traditional Use', 'Rich Flavor'],
-      stock: 50,
-      weightPrices: { '250g': 350, '500g': 600, '1kg': 1350, '2kg': 2100 }
-    },
-    { 
-      id: 24, 
-      name: 'Coconut Powder 500gm', 
-      price: 700, 
-      oldPrice: 900, 
-      discount: 22, 
-      rating: 4.5, 
-      category: 'Dry Fruits',
-      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1786128407/coconut_powder_nvs65m.png',
-      description: 'Premium coconut powder. Perfect for cooking, baking, and making delicious coconut-based dishes.',
-      benefits: ['Versatile Use', 'Rich Flavor', 'Cooking Essential', 'Healthy Alternative'],
-      stock: 40,
-      weightPrices: { '250g': 400, '500g': 700, '1kg': 1300, '2kg': 2500 }
-    },
-  ];
+  // ✅ Fetch Product from Firebase
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) {
+        setError('No product ID provided');
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔵 Fetching product with ID:', id);
+        
+        const docRef = doc(db, 'products', id);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          console.log('🔵 Product data found:', data.name);
+          
+          // Check if product is dry fruits
+          if (data.category === 'dryfruits' || data.category === 'dry-fruits') {
+            const productData: DryFruitsProduct = {
+              id: docSnap.id,
+              name: data.name || '',
+              price: data.price || 0,
+              oldPrice: data.oldPrice || 0,
+              discount: data.discount || 0,
+              discountPrice: data.discountPrice || 0,
+              rating: data.rating || 4.5,
+              category: data.category || 'dryfruits',
+              subCategory: data.subCategory || '',
+              productType: data.productType || '',
+              image: data.image || '',
+              images: data.images || [],
+              stock: data.stock || 0,
+              description: data.description || '',
+              shortDescription: data.shortDescription || '',
+              benefits: data.benefits || [],
+              weightVariants: data.weightVariants || [],
+              weight: data.weight || '',
+              weightUnit: data.weightUnit || 'g',
+              origin: data.origin || '',
+              packaging: data.packaging || '',
+              shelfLife: data.shelfLife || '',
+              nutritionalInfo: data.nutritionalInfo || '',
+              storageInstructions: data.storageInstructions || '',
+              isNew: data.isNew || false,
+              isFeatured: data.isFeatured || false,
+              isBestSeller: data.isBestSeller || false,
+              isOnSale: data.isOnSale || false,
+              isOrganic: data.isOrganic || false,
+              isPremium: data.isPremium || false,
+              status: data.status || 'active',
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt
+            };
+            
+            setProduct(productData);
+            
+            // Set default selected weight variant
+            if (data.weightVariants && data.weightVariants.length > 0) {
+              setSelectedVariant(data.weightVariants[0]);
+              setSelectedWeight(data.weightVariants[0].weight);
+            }
+            
+            const images = data.images || [];
+            if (images.length > 0) {
+              setMainImage(images[0]);
+            } else if (data.image) {
+              setMainImage(data.image);
+            }
 
-  const product = dryProducts.find(p => p.id === parseInt(id || '0'));
+            // ✅ Fetch suggested products
+            await fetchSuggestedProducts(docSnap.id);
+            // ✅ Fetch reviews
+            await fetchReviews(docSnap.id);
+          } else {
+            setError(`Product is not in dry fruits category (found: ${data.category})`);
+          }
+        } else {
+          setError('Product not found');
+        }
+      } catch (error: any) {
+        console.error('❌ Error fetching dry fruits product:', error);
+        setError(error.message || 'Failed to load product');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (!product) {
+    const fetchSuggestedProducts = async (currentId: string) => {
+      try {
+        console.log('🔵 Fetching suggested products...');
+        const q = query(
+          collection(db, 'products'),
+          where('category', 'in', ['dryfruits', 'dry-fruits']),
+          where('status', '==', 'active')
+        );
+        const querySnapshot = await getDocs(q);
+        const dryFruitsProducts: DryFruitsProduct[] = [];
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (doc.id !== currentId) {
+            dryFruitsProducts.push({
+              id: doc.id,
+              name: data.name || '',
+              price: data.price || 0,
+              oldPrice: data.oldPrice || 0,
+              discount: data.discount || 0,
+              discountPrice: data.discountPrice || 0,
+              rating: data.rating || 4.5,
+              category: data.category || 'dryfruits',
+              subCategory: data.subCategory || '',
+              productType: data.productType || '',
+              image: data.image || '',
+              images: data.images || [],
+              stock: data.stock || 0,
+              description: data.description || '',
+              shortDescription: data.shortDescription || '',
+              benefits: data.benefits || [],
+              weightVariants: data.weightVariants || [],
+              weight: data.weight || '',
+              weightUnit: data.weightUnit || 'g',
+              origin: data.origin || '',
+              packaging: data.packaging || '',
+              shelfLife: data.shelfLife || '',
+              nutritionalInfo: data.nutritionalInfo || '',
+              storageInstructions: data.storageInstructions || '',
+              isNew: data.isNew || false,
+              isFeatured: data.isFeatured || false,
+              isBestSeller: data.isBestSeller || false,
+              isOnSale: data.isOnSale || false,
+              isOrganic: data.isOrganic || false,
+              isPremium: data.isPremium || false,
+              status: data.status || 'active',
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt
+            });
+          }
+        });
+
+        const shuffled = [...dryFruitsProducts].sort(() => 0.5 - Math.random());
+        setSuggestedProducts(shuffled.slice(0, 8));
+        console.log('✅ Suggested products loaded:', shuffled.slice(0, 8).length);
+      } catch (error) {
+        console.error('Error fetching suggested products:', error);
+      }
+    };
+
+    // ✅ Fetch Reviews from Firebase
+    const fetchReviews = async (productId: string) => {
+      try {
+        setReviewLoading(true);
+        const reviewsRef = collection(db, 'products', productId, 'reviews');
+        const reviewsSnap = await getDocs(reviewsRef);
+        const reviewsData: Review[] = reviewsSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Review));
+        setReviews(reviewsData);
+        console.log('✅ Reviews loaded:', reviewsData.length);
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+      } finally {
+        setReviewLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  // ✅ Get current variant price
+  const getCurrentVariant = () => {
+    if (selectedVariant) {
+      return selectedVariant;
+    }
+    if (product?.weightVariants && product.weightVariants.length > 0) {
+      return product.weightVariants[0];
+    }
+    return null;
+  };
+
+  const currentVariant = getCurrentVariant();
+  const currentPrice = currentVariant?.price || product?.price || 0;
+  const currentOldPrice = currentVariant?.oldPrice || product?.oldPrice || 0;
+  const currentDiscount = currentVariant?.discount || product?.discount || 0;
+  const currentStock = currentVariant?.stock || product?.stock || 0;
+  const totalPrice = currentPrice * quantity;
+
+  const getDiscountPercent = () => {
+    if (currentDiscount > 0) return currentDiscount;
+    if (currentOldPrice > currentPrice) {
+      return Math.round(((currentOldPrice - currentPrice) / currentOldPrice) * 100);
+    }
+    return 0;
+  };
+
+  const discountPercent = getDiscountPercent();
+
+  // ✅ Get all images
+  const getAllImages = () => {
+    if (!product) return [];
+    const images = product.images || [];
+    return images.length > 0 ? images : (product.image ? [product.image] : []);
+  };
+
+  const images = getAllImages();
+
+  const isInStock = () => {
+    return currentStock > 0;
+  };
+
+  const nextImage = () => {
+    if (images.length <= 1) return;
+    const idx = images.indexOf(mainImage);
+    const next = (idx + 1) % images.length;
+    setMainImage(images[next]);
+    setImageLoaded(false);
+  };
+
+  const prevImage = () => {
+    if (images.length <= 1) return;
+    const idx = images.indexOf(mainImage);
+    const prev = (idx - 1 + images.length) % images.length;
+    setMainImage(images[prev]);
+    setImageLoaded(false);
+  };
+
+  const scrollLeft = (ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) {
+      ref.current.scrollBy({ left: -280, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = (ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) {
+      ref.current.scrollBy({ left: 280, behavior: 'smooth' });
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center bg-[#FFFDF7]">
+      <div className="flex items-center justify-center min-h-[60vh] bg-[#FFFDF7] dark:bg-[#111827]">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-[#111827]">Product Not Found</h1>
-          <p className="text-gray-500 mt-2">The product you are looking for does not exist.</p>
+          <FaSpinner className="animate-spin text-4xl text-[#D4AF37] mx-auto" />
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading product details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center bg-[#FFFDF7] dark:bg-[#111827]">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="text-6xl mb-4">🥜</div>
+          <h1 className="text-2xl font-bold text-[#111827] dark:text-white">Product Not Found</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
+            {error || 'The product you are looking for does not exist.'}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Product ID: {id}</p>
           <Link to="/shop" className="inline-block mt-4 bg-[#D4AF37] text-white px-6 py-2 rounded-full hover:bg-[#b8941f] transition">
             Back to Shop
           </Link>
@@ -389,189 +376,635 @@ const DryFruitsDetailPage = () => {
     );
   }
 
-  const weights = ['250g', '500g', '1kg', '2kg'];
+  const descriptionLines = formatDescription(product.description);
 
-  const getCurrentPrice = (): number => {
-    if (product.weightPrices && selectedWeight in product.weightPrices) {
-      return product.weightPrices[selectedWeight as keyof typeof product.weightPrices] || product.price;
+  // ✅ Calculate review stats
+  const avgRating = reviews.length > 0 
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+    : 0;
+  
+  const ratingDistribution = [0, 0, 0, 0, 0];
+  reviews.forEach(r => {
+    if (r.rating >= 1 && r.rating <= 5) {
+      ratingDistribution[r.rating - 1]++;
     }
-    return product.price;
-  };
-
-  const currentPrice = getCurrentPrice();
-  const totalPrice = currentPrice * quantity;
+  });
 
   return (
-    <div className="bg-[#FFFDF7] py-12 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="bg-[#FFFDF7] dark:bg-[#111827] min-h-screen">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-16 sm:pt-6 md:pt-8 lg:pt-12 pb-4 sm:pb-6 md:pb-8 lg:pb-12">
         
-        <Link to="/shop" className="inline-flex items-center gap-2 text-[#0F766E] hover:text-[#D4AF37] transition mb-6">
-          <FaArrowLeft /> Back to Shop
+        <Link to="/shop" className="inline-flex items-center gap-2 text-[#0F766E] dark:text-[#14b8a6] hover:text-[#D4AF37] transition mb-3 sm:mb-4 md:mb-6 text-xs sm:text-sm md:text-base">
+          <FaArrowLeft className="text-xs sm:text-sm md:text-base" /> Back to Shop
         </Link>
 
-        <div className="grid md:grid-cols-2 gap-12">
+        <div className="grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-12">
           
-          {/* Product Images */}
+          {/* ============================================================
+          PRODUCT IMAGES GALLERY
+          ============================================================ */}
           <div className="relative">
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-[#E5E7EB]">
-              <img 
-                src={product.image} 
-                alt={product.name}
-                className="w-full h-auto max-h-[500px] object-contain bg-white"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://via.placeholder.com/600x600/D4AF37/FFFFFF?text=' + product.name;
-                }}
-              />
+            <div className="bg-[#F5F3FF] dark:bg-[#1F2937] rounded-3xl overflow-hidden border-4 border-purple-500 shadow-xl shadow-purple-500/20 relative">
+              <div className="w-full h-[300px] sm:h-[400px] md:h-[450px] lg:h-[500px] relative flex items-center justify-center bg-[#F5F3FF] dark:bg-[#1F2937]">
+                <img
+                  src={mainImage || product.image}
+                  alt={product.name}
+                  className={`max-w-full max-h-full object-contain transition-all duration-500 p-2 ${
+                    imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                  }`}
+                  onLoad={() => setImageLoaded(true)}
+                  onError={(e) => {
+                    e.currentTarget.src = `https://via.placeholder.com/600x800/D4AF37/FFFFFF?text=${encodeURIComponent(product.name)}`;
+                    setImageLoaded(true);
+                  }}
+                />
+                {!imageLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
+              
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 rounded-full p-2 sm:p-3 hover:bg-white dark:hover:bg-gray-700 transition shadow-lg z-10 border-2 border-purple-300"
+                  >
+                    <FaChevronLeft className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 rounded-full p-2 sm:p-3 hover:bg-white dark:hover:bg-gray-700 transition shadow-lg z-10 border-2 border-purple-300"
+                  >
+                    <FaChevronRight className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300" />
+                  </button>
+                </>
+              )}
             </div>
-            <span className="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-full shadow-lg">
-              {product.discount}% OFF
-            </span>
-            <button className="absolute top-4 right-4 bg-white rounded-full p-3 shadow-lg hover:bg-[#D4AF37] transition">
-              <FaHeart className="text-gray-600 hover:text-white" />
-            </button>
+
+            {images.length > 1 && (
+              <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-black/70 text-white text-[10px] sm:text-xs px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full z-10 border border-white/20">
+                {images.indexOf(mainImage) + 1} / {images.length}
+              </div>
+            )}
+
+            <div className="mt-3 sm:mt-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-2 sm:gap-2.5 min-w-max">
+                {images.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setMainImage(img);
+                      setImageLoaded(false);
+                    }}
+                    className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition ${
+                      mainImage === img || (mainImage === '' && i === 0)
+                        ? 'border-purple-500 shadow-md shadow-purple-500/30'
+                        : 'border-transparent hover:border-purple-300'
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`${product.name} ${i+1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://via.placeholder.com/100x100/D4AF37/FFFFFF?text=${i+1}`;
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Badges */}
+            {discountPercent > 0 && (
+              <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                -{discountPercent}%
+              </span>
+            )}
+            {product.isNew && (
+              <span className="absolute top-3 left-14 sm:top-4 sm:left-20 bg-green-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                NEW
+              </span>
+            )}
+            {product.isBestSeller && (
+              <span className="absolute top-3 left-28 sm:top-4 sm:left-36 bg-[#D4AF37] text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                ★ BEST
+              </span>
+            )}
+            {product.isOrganic && (
+              <span className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-green-700 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                🌿 Organic
+              </span>
+            )}
+            {product.isPremium && (
+              <span className="absolute top-12 right-3 sm:top-14 sm:right-4 bg-[#D4AF37] text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-lg z-10 border-2 border-white/50">
+                💎 Premium
+              </span>
+            )}
           </div>
 
-          {/* Product Info */}
-          <div>
-            <div className="flex items-center gap-2 text-sm mb-2">
-              <span className="bg-[#D4AF37]/10 text-[#D4AF37] px-3 py-1 rounded-full text-xs font-medium">
-                {product.category}
+          {/* ============================================================
+          PRODUCT INFO
+          ============================================================ */}
+          <div className="flex flex-col gap-3 sm:gap-4 md:gap-5 overflow-visible">
+            
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium capitalize">
+                🥜 {product.subCategory || 'Dry Fruits'}
               </span>
-              <div className="flex items-center gap-1">
+              {product.productType && (
+                <span className="bg-blue-100 text-blue-600 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium">
+                  {product.productType}
+                </span>
+              )}
+              <div className="flex items-center gap-0.5">
                 {[...Array(5)].map((_, i) => (
                   <FaStar key={i} className={i < Math.floor(product.rating) ? 'text-[#D4AF37]' : 'text-gray-300'} />
                 ))}
-                <span className="text-gray-400 text-xs ml-1">({product.rating})</span>
+                <span className="text-gray-400 dark:text-gray-500 text-[10px] ml-0.5">({product.rating})</span>
               </div>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-bold text-[#111827]">{product.name}</h1>
-            
-            <div className="flex items-center gap-3 mt-2">
-              <span className="text-3xl font-bold text-[#D4AF37]">PKR {currentPrice.toLocaleString()}</span>
-              <span className="text-gray-400 line-through text-lg">PKR {product.oldPrice.toLocaleString()}</span>
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[#111827] dark:text-white leading-tight">
+              {product.name}
+            </h1>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xl sm:text-2xl md:text-3xl font-bold text-[#D4AF37]">
+                Rs. {currentPrice.toLocaleString()}
+              </span>
+              {currentOldPrice > currentPrice && (
+                <span className="text-gray-400 dark:text-gray-500 line-through text-sm sm:text-base">
+                  Rs. {currentOldPrice.toLocaleString()}
+                </span>
+              )}
+              {discountPercent > 0 && (
+                <span className="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] sm:text-xs font-medium px-2 py-0.5 sm:px-3 sm:py-1 rounded-full">
+                  Save {discountPercent}%
+                </span>
+              )}
+              {product.isOnSale && (
+                <span className="bg-red-100 text-red-600 text-[10px] sm:text-xs font-medium px-2 py-0.5 sm:px-3 sm:py-1 rounded-full animate-pulse">
+                  🔥 On Sale!
+                </span>
+              )}
             </div>
 
-            <p className="text-gray-600 mt-4 leading-relaxed">{product.description}</p>
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${isInStock() ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}></span>
+              <span className={`text-[10px] sm:text-xs md:text-sm font-medium ${isInStock() ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {isInStock() ? `In Stock (${currentStock} available)` : 'Out of Stock'}
+              </span>
+            </div>
 
-            <div className="mt-6">
-              <h3 className="font-semibold text-[#111827] mb-3">✨ Key Benefits</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.benefits.map((benefit, i) => (
-                  <span key={i} className="bg-[#F8FAFC] border border-[#E5E7EB] px-3 py-1 rounded-full text-sm text-gray-600">
-                    {benefit}
-                  </span>
-                ))}
+            {/* ✅ Weight Variants */}
+            {product.weightVariants && product.weightVariants.length > 0 && (
+              <div>
+                <label className="block text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-1.5">
+                  Select Weight <span className="text-red-500">*</span>
+                </label>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {product.weightVariants.map((variant) => {
+                    const isActive = selectedVariant?.id === variant.id;
+                    return (
+                      <button
+                        key={variant.id}
+                        onClick={() => {
+                          setSelectedVariant(variant);
+                          setSelectedWeight(variant.weight);
+                        }}
+                        className={`px-2.5 py-1 sm:px-3.5 sm:py-1.5 md:px-4 md:py-2 rounded-full text-[10px] sm:text-xs md:text-sm font-medium transition flex flex-col items-center ${
+                          isActive
+                            ? 'bg-[#D4AF37] text-white shadow-md'
+                            : 'bg-[#F8FAFC] dark:bg-[#1F2937] text-gray-600 dark:text-gray-300 hover:bg-[#E5E7EB] dark:hover:bg-gray-700 border border-[#E5E7EB] dark:border-gray-700'
+                        }`}
+                      >
+                        <span>{variant.weight}{variant.weightUnit}</span>
+                        <span className={`text-[8px] sm:text-[10px] ${isActive ? 'text-white/80' : 'text-gray-400'}`}>
+                          Rs. {variant.price.toLocaleString()}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-[#F8FAFC] dark:bg-[#1F2937] rounded-xl border border-[#E5E7EB] dark:border-gray-700 p-3 sm:p-4 max-h-[200px] overflow-y-auto">
+              <div className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm leading-relaxed space-y-1">
+                {descriptionLines.length > 0 ? (
+                  descriptionLines.map((line, idx) => {
+                    if (line.includes('🥜') || line.includes('🌰') || line.includes('✨') || 
+                        line.includes('⭐') || line.includes('🌟') ||
+                        (line.length < 40 && line === line.toUpperCase() && line.trim().length > 0)) {
+                      return (
+                        <div key={idx} className="font-semibold text-[#111827] dark:text-white text-xs sm:text-sm mt-2 first:mt-0">
+                          {line}
+                        </div>
+                      );
+                    }
+                    if (line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
+                      return (
+                        <div key={idx} className="flex items-start gap-1.5 sm:gap-2 py-0.5">
+                          <FaCircle className="text-[#D4AF37] text-[4px] sm:text-[6px] mt-1.5 flex-shrink-0" />
+                          <span className="text-gray-600 dark:text-gray-300 text-[10px] sm:text-xs">
+                            {line.replace(/^[•\-*]\s*/, '')}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={idx} className="text-gray-600 dark:text-gray-300 text-[10px] sm:text-xs py-0.5">
+                        {line}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-gray-500 text-sm">No description available.</p>
+                )}
               </div>
             </div>
 
-            {/* Weight Selector */}
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Weight</label>
-              <div className="flex flex-wrap gap-2">
-                {weights.map((w) => {
-                  const price = product.weightPrices?.[w as keyof typeof product.weightPrices] || product.price;
-                  return (
-                    <button
-                      key={w}
-                      onClick={() => setSelectedWeight(w)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                        selectedWeight === w
-                          ? 'bg-[#D4AF37] text-white shadow-md'
-                          : 'bg-[#F8FAFC] text-gray-600 hover:bg-[#E5E7EB] border border-[#E5E7EB]'
-                      }`}
-                    >
-                      {w}
-                      <span className="text-[10px] ml-1 text-gray-400">
-                        PKR {price}
-                      </span>
-                    </button>
-                  );
-                })}
+            {/* Benefits */}
+            {product.benefits && product.benefits.length > 0 && (
+              <div className="p-2.5 sm:p-3 md:p-4 bg-[#F8FAFC] dark:bg-[#1F2937] rounded-xl border border-[#E5E7EB] dark:border-gray-700">
+                <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-[#111827] dark:text-white mb-1">✨ Key Benefits:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {product.benefits.map((benefit, i) => (
+                    <span key={i} className="bg-white dark:bg-[#1F2937] border border-[#E5E7EB] dark:border-gray-700 px-2 py-0.5 rounded-full text-[10px] sm:text-xs text-gray-600 dark:text-gray-300">
+                      {benefit}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              {product.origin && (
+                <div className="p-2.5 sm:p-3 bg-gradient-to-br from-[#0F766E]/5 to-[#0F766E]/10 rounded-xl border border-[#0F766E]/20">
+                  <p className="text-[8px] sm:text-[10px] text-[#0F766E] font-semibold uppercase tracking-wider">Origin</p>
+                  <p className="text-[10px] sm:text-xs md:text-sm text-gray-700 dark:text-gray-300 font-medium">{product.origin}</p>
+                </div>
+              )}
+              {product.shelfLife && (
+                <div className="p-2.5 sm:p-3 bg-gradient-to-br from-[#D4AF37]/5 to-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20">
+                  <p className="text-[8px] sm:text-[10px] text-[#D4AF37] font-semibold uppercase tracking-wider">Shelf Life</p>
+                  <p className="text-[10px] sm:text-xs md:text-sm text-gray-700 dark:text-gray-300 font-medium">{product.shelfLife}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              <label className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">Qty</label>
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-[#F8FAFC] dark:bg-[#1F2937] hover:bg-[#E5E7EB] dark:hover:bg-gray-700 transition flex items-center justify-center"
+                >
+                  <span className="text-sm sm:text-base font-medium">-</span>
+                </button>
+                <span className="w-6 sm:w-7 md:w-8 text-center font-semibold text-sm sm:text-base">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-[#F8FAFC] dark:bg-[#1F2937] hover:bg-[#E5E7EB] dark:hover:bg-gray-700 transition flex items-center justify-center"
+                >
+                  <span className="text-sm sm:text-base font-medium">+</span>
+                </button>
               </div>
             </div>
 
-            {/* Quantity */}
-            <div className="mt-6 flex items-center gap-4">
-              <label className="text-sm font-medium text-gray-700">Quantity</label>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-8 h-8 rounded-full bg-[#F8FAFC] hover:bg-[#E5E7EB] transition">-</button>
-                <span className="w-8 text-center font-semibold">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="w-8 h-8 rounded-full bg-[#F8FAFC] hover:bg-[#E5E7EB] transition">+</button>
-              </div>
-            </div>
-
-            {/* ✅ Action Buttons */}
-            <div className="flex gap-4 mt-8">
-              {/* Add to Cart */}
-              <button 
+            <div className="flex flex-col xs:flex-row gap-2 sm:gap-2.5 md:gap-3 mt-1">
+              <button
                 onClick={() => {
                   addToCart({
                     ...product,
                     price: currentPrice,
-                    weight: selectedWeight,
+                    weight: selectedWeight || product.weight,
+                    weightUnit: selectedVariant?.weightUnit || product.weightUnit,
+                    variantId: selectedVariant?.id,
                     quantity: quantity,
                     totalPrice: totalPrice
                   });
-                  alert(`✅ ${product.name} added to cart!`);
+                  alert('✅ Added to Cart!');
                 }}
-                disabled={product.stock === 0}
-                className={`flex-1 bg-[#0F766E] text-white px-8 py-3 rounded-full font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 ${
-                  product.stock > 0
-                    ? 'hover:bg-[#065F46]'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                disabled={!isInStock()}
+                className={`flex-1 px-3 py-2 sm:px-5 sm:py-2.5 md:px-7 md:py-3 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 ${
+                  isInStock()
+                    ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
+                    : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                 }`}
               >
-                <FaShoppingCart /> Add to Cart
+                <FaShoppingCart className="text-xs sm:text-sm" />
+                <span>{isInStock() ? 'Add to Cart' : 'Out of Stock'}</span>
               </button>
-
-              {/* ✅ Buy Now - Clickable */}
-              <button 
+              <button
                 onClick={() => {
-                  if (product.stock === 0) {
+                  if (!isInStock()) {
                     alert('❌ This product is out of stock!');
                     return;
                   }
-                  
                   addToCart({
                     ...product,
                     price: currentPrice,
-                    weight: selectedWeight,
+                    weight: selectedWeight || product.weight,
+                    weightUnit: selectedVariant?.weightUnit || product.weightUnit,
+                    variantId: selectedVariant?.id,
                     quantity: quantity,
                     totalPrice: totalPrice
                   });
-                  
                   window.location.href = '/checkout';
                 }}
-                disabled={product.stock === 0}
-                className={`bg-[#D4AF37] text-white px-8 py-3 rounded-full font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 ${
-                  product.stock > 0
-                    ? 'hover:bg-[#b8941f] cursor-pointer'
-                    : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                disabled={!isInStock()}
+                className={`px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 ${
+                  isInStock() 
+                    ? 'bg-[#D4AF37] text-white hover:bg-[#b8941f] cursor-pointer' 
+                    : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50'
                 }`}
               >
-                <FaShoppingCart /> Buy Now
+                Buy Now
               </button>
             </div>
 
-            {/* Delivery Info */}
-            <div className="mt-8 grid grid-cols-3 gap-3">
-              <div className="bg-white/80 backdrop-blur p-3 rounded-xl border border-[#E5E7EB] text-center">
-                <FaTruck className="text-[#D4AF37] text-xl mx-auto" />
-                <p className="text-xs text-gray-500 mt-1">Delivery Pakistan</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const shareData = {
+                    title: product.name,
+                    text: `Check out ${product.name} at Maha One Hypermart!`,
+                    url: window.location.href
+                  };
+
+                  if (navigator.share) {
+                    navigator.share(shareData).catch(() => {});
+                    return;
+                  }
+
+                  const fullText = `${shareData.text}\n${shareData.url}`;
+                  navigator.clipboard.writeText(fullText).then(() => {
+                    alert('✅ Link copied to clipboard! Share it anywhere.');
+                  }).catch(() => {
+                    window.location.href = `mailto:?subject=${encodeURIComponent(shareData.title)}&body=${encodeURIComponent(fullText)}`;
+                  });
+                }}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-2 rounded-full text-[10px] sm:text-xs font-medium transition flex items-center justify-center gap-1"
+              >
+                <FaShare /> Share
+              </button>
+
+              <button
+                onClick={() => {
+                  const message = `Check out ${product.name} at Maha One Hypermart! ${window.location.href}`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+                }}
+                className="flex-1 bg-[#25D366] hover:bg-[#1DA851] text-white px-3 py-2 rounded-full text-[10px] sm:text-xs font-medium transition flex items-center justify-center gap-1"
+              >
+                <FaWhatsapp /> WhatsApp
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-1">
+              <div className="bg-white/80 dark:bg-[#1F2937]/80 backdrop-blur p-1.5 sm:p-2 md:p-2.5 rounded-xl border border-[#E5E7EB] dark:border-gray-700 text-center">
+                <FaTruck className="text-[#D4AF37] text-sm sm:text-base md:text-lg mx-auto" />
+                <p className="text-[8px] sm:text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-0.5">Delivery Across Pakistan</p>
               </div>
-              <div className="bg-white/80 backdrop-blur p-3 rounded-xl border border-[#E5E7EB] text-center">
-                <FaShieldAlt className="text-[#D4AF37] text-xl mx-auto" />
-                <p className="text-xs text-gray-500 mt-1">Premium Quality</p>
+              <div className="bg-white/80 dark:bg-[#1F2937]/80 backdrop-blur p-1.5 sm:p-2 md:p-2.5 rounded-xl border border-[#E5E7EB] dark:border-gray-700 text-center">
+                <FaShieldAlt className="text-[#D4AF37] text-sm sm:text-base md:text-lg mx-auto" />
+                <p className="text-[8px] sm:text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-0.5">Premium Quality</p>
               </div>
-              <div className="bg-white/80 backdrop-blur p-3 rounded-xl border border-[#E5E7EB] text-center">
-                <FaLeaf className="text-[#D4AF37] text-xl mx-auto" />
-                <p className="text-xs text-gray-500 mt-1">100% Natural</p>
+              <div className="bg-white/80 dark:bg-[#1F2937]/80 backdrop-blur p-1.5 sm:p-2 md:p-2.5 rounded-xl border border-[#E5E7EB] dark:border-gray-700 text-center">
+                <FaLeaf className="text-[#D4AF37] text-sm sm:text-base md:text-lg mx-auto" />
+                <p className="text-[8px] sm:text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-0.5">100% Natural</p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* ============================================================
+        SUGGESTED PRODUCTS SLIDER
+        ============================================================ */}
+        {suggestedProducts.length > 0 && (
+          <div className="mt-8 sm:mt-10 md:mt-12">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#111827] dark:text-white flex items-center gap-2">
+                <span className="text-[#D4AF37]">✨</span> You May Also Like
+              </h2>
+              <Link to="/shop" className="text-[#D4AF37] hover:text-[#b8941f] transition text-xs sm:text-sm font-medium flex items-center gap-1">
+                View All <span className="text-xs">→</span>
+              </Link>
+            </div>
+            <ProductSlider 
+              products={suggestedProducts} 
+              sliderRef={sliderRef}
+              scrollLeft={() => scrollLeft(sliderRef)}
+              scrollRight={() => scrollRight(sliderRef)}
+              addToCart={addToCart}
+            />
+          </div>
+        )}
+
+        {/* ============================================================
+        CUSTOMER REVIEWS
+        ============================================================ */}
+        <div className="mt-10 sm:mt-12 md:mt-14">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#111827] dark:text-white flex items-center gap-2">
+              <span className="text-[#D4AF37]">⭐</span> Customer Reviews
+              <span className="text-sm font-normal text-gray-400">({reviews.length} reviews)</span>
+            </h2>
+          </div>
+
+          {reviewLoading ? (
+            <div className="text-center py-8">
+              <FaSpinner className="animate-spin text-2xl text-[#D4AF37] mx-auto" />
+              <p className="text-gray-500 mt-2">Loading reviews...</p>
+            </div>
+          ) : reviews.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              {reviews.map((review) => (
+                <div 
+                  key={review.id}
+                  className="bg-white dark:bg-[#1F2937] rounded-2xl p-5 sm:p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 hover:-translate-y-1"
+                >
+                  <div className="flex items-center gap-1 text-[#D4AF37] text-sm sm:text-base mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <FaStar key={i} className={i < (review.rating || 0) ? 'text-[#D4AF37]' : 'text-gray-300'} />
+                    ))}
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-3">
+                    <FaQuoteLeft className="text-[#D4AF37]/30 text-xs inline mr-1" />
+                    {review.comment}
+                  </p>
+                  <div className="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <img 
+                      src={review.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.name || 'User')}&background=0F766E&color=fff&size=60`} 
+                      alt={review.name || 'User'}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-[#D4AF37]/30"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=User&background=0F766E&color=fff&size=60`;
+                      }}
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-white">{review.name || 'Anonymous'}</p>
+                      <div className="flex items-center gap-1 text-xs text-gray-400">
+                        <FaCalendarAlt className="text-[10px]" />
+                        {review.date ? new Date(review.date).toLocaleDateString('en-PK', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        }) : 'Recent'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 bg-white dark:bg-[#1F2937] rounded-2xl border border-gray-100 dark:border-gray-700">
+              <p className="text-gray-400">No reviews yet. Be the first to review this product! ⭐</p>
+            </div>
+          )}
+
+          {reviews.length > 0 && (
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-6 p-4 bg-white dark:bg-[#1F2937] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl font-bold text-[#D4AF37]">{avgRating.toFixed(1)}</div>
+                <div>
+                  <div className="flex gap-0.5 text-[#D4AF37] text-sm">
+                    {[...Array(5)].map((_, i) => (
+                      <FaStar key={i} className={i < Math.round(avgRating) ? 'text-[#D4AF37]' : 'text-gray-300'} />
+                    ))}
+                  </div>
+                  <span className="text-xs text-gray-400">Based on {reviews.length} reviews</span>
+                </div>
+              </div>
+              <div className="w-px h-10 bg-gray-200 dark:bg-gray-700"></div>
+              {[5, 4, 3].map((star) => {
+                const count = ratingDistribution[star - 1] || 0;
+                const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                return (
+                  <div key={star} className="text-center">
+                    <p className="text-sm text-gray-500">⭐ {star} star</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 sm:w-32 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${star >= 4 ? 'bg-green-500' : star >= 3 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${percentage}%` }}></div>
+                      </div>
+                      <span className="text-xs text-gray-400">{percentage.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
+    </div>
+  );
+};
+
+// ✅ Product Slider Component
+interface ProductSliderProps {
+  products: DryFruitsProduct[];
+  sliderRef: React.RefObject<HTMLDivElement>;
+  scrollLeft: () => void;
+  scrollRight: () => void;
+  addToCart: (product: any) => void;
+}
+
+const ProductSlider: React.FC<ProductSliderProps> = ({ 
+  products, 
+  sliderRef, 
+  scrollLeft, 
+  scrollRight,
+  addToCart 
+}) => {
+  return (
+    <div className="relative">
+      <button
+        onClick={scrollLeft}
+        className="absolute -left-2 sm:-left-4 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-[#1F2937] rounded-full p-1.5 sm:p-2 shadow-lg border border-[#E5E7EB] dark:border-gray-700 hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition"
+      >
+        <FaChevronLeft className="text-gray-600 dark:text-gray-400 text-sm sm:text-base" />
+      </button>
+
+      <div
+        ref={sliderRef}
+        className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {products.map((product) => (
+          <Link
+            key={product.id}
+            to={`/dry-product/${product.id}`}
+            className="flex-shrink-0 w-[140px] sm:w-[160px] md:w-[180px] lg:w-[200px] bg-white dark:bg-[#1F2937] rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-[#E5E7EB] dark:border-gray-700 hover:-translate-y-1 group"
+          >
+            <div className="relative aspect-square bg-[#F5F3FF] dark:bg-[#1F2937] flex items-center justify-center">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 p-2"
+                onError={(e) => {
+                  e.currentTarget.src = `https://via.placeholder.com/300x300/D4AF37/FFFFFF?text=${encodeURIComponent(product.name)}`;
+                }}
+              />
+              {product.discount && product.discount > 0 && (
+                <span className="absolute top-1 left-1 bg-red-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  -{product.discount}%
+                </span>
+              )}
+              {product.isNew && (
+                <span className="absolute top-1 left-10 bg-green-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  NEW
+                </span>
+              )}
+              <div className="absolute bottom-1 right-1 flex items-center gap-1">
+                <span className={`w-1.5 h-1.5 rounded-full ${product.stock > 0 ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}></span>
+              </div>
+            </div>
+            <div className="p-2 sm:p-3">
+              <h4 className="font-semibold text-[#111827] dark:text-white text-[10px] sm:text-xs line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
+                {product.name}
+              </h4>
+              <div className="flex items-center gap-1 mt-0.5 sm:mt-1">
+                <span className="text-[#D4AF37] font-bold text-xs sm:text-sm">
+                  Rs. {product.price.toLocaleString()}
+                </span>
+                {product.oldPrice && product.oldPrice > product.price && (
+                  <span className="text-gray-400 line-through text-[8px] sm:text-[10px]">
+                    Rs. {product.oldPrice.toLocaleString()}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (product.stock > 0) {
+                    addToCart({ ...product, quantity: 1 });
+                    alert(`✅ ${product.name} added to cart!`);
+                  }
+                }}
+                disabled={product.stock === 0}
+                className={`w-full mt-1 px-2 py-1 rounded-full text-[8px] sm:text-[10px] font-medium transition flex items-center justify-center gap-1 ${
+                  product.stock > 0
+                    ? 'bg-[#0F766E] text-white hover:bg-[#065F46]'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <FaShoppingCart className="text-[8px] sm:text-[10px]" />
+                {product.stock > 0 ? 'Add' : 'Sold'}
+              </button>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <button
+        onClick={scrollRight}
+        className="absolute -right-2 sm:-right-4 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-[#1F2937] rounded-full p-1.5 sm:p-2 shadow-lg border border-[#E5E7EB] dark:border-gray-700 hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition"
+      >
+        <FaChevronRight className="text-gray-600 dark:text-gray-400 text-sm sm:text-base" />
+      </button>
     </div>
   );
 };

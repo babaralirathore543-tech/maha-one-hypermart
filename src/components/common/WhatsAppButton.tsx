@@ -14,14 +14,14 @@ const WhatsAppButton: React.FC = () => {
       className="fixed bottom-6 left-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-2xl hover:shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center"
       style={{
         position: 'fixed',
-        bottom: '24px',
-        left: '24px',        // ← Left side
+        bottom: '50px',
+        right: '24px',        // ← Right side
         zIndex: 9999,
         backgroundColor: '#25D366',
         color: 'white',
         width: '60px',       // ← Circle size
         height: '60px',      // ← Circle size
-        borderRadius: '50%', // ← Circle
+        borderRadius: '40%', // ← Circle
         boxShadow: '0 10px 25px rgba(37, 211, 102, 0.4)',
         textDecoration: 'none',
         display: 'flex',

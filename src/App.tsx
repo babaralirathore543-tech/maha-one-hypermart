@@ -11,7 +11,7 @@ import { auth, onAuthStateChanged } from './config/firebase';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import WhatsAppButton from './components/common/WhatsAppButton';
-import AIAssistant from './components/common/AIAssistant';
+
 import Popup from './components/common/Popup';
 
 import AdminPanel from './components/admin/AdminPanel';
@@ -192,7 +192,7 @@ function App() {
   // true = maintenance page
   // false = normal website
 
-  const MAINTENANCE_MODE = true;
+  const MAINTENANCE_MODE = false;
 
 
   // ==========================================================
@@ -597,7 +597,7 @@ function App() {
 
             <WhatsAppButton />
 
-            <AIAssistant />
+          
 
 
             {/* ==================================================

@@ -1,3 +1,4 @@
+// src/components/pages/CheckoutPage.tsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -10,6 +11,8 @@ import {
 import { useCart } from '../../context/CartContext';
 import { placeOrder } from '../../services/orderService';
 import QRCodePayment from '../Payment/QRCodePayment';
+import { sendOrderConfirmationWhatsApp } from '../../services/whatsappNotificationService';
+// ✅ Removed unused import: sendSignupWelcomeWhatsApp
 
 const CheckoutPage = () => {
   const { cart, getCartTotal, clearCart } = useCart();
@@ -95,6 +98,9 @@ const CheckoutPage = () => {
     setIsSubmitting(true);
 
     try {
+      // ✅ FIXED: Properly typed paymentMethod
+      const validPaymentMethod = paymentMethod as 'jazzcash' | 'bank' | 'cod' | 'card';
+      
       const orderData = {
         userId: userId,
         userEmail: formData.email || user?.email || 'guest@email.com',
@@ -107,13 +113,17 @@ const CheckoutPage = () => {
           quantity: item.quantity,
           total: item.price * item.quantity,
           image: item.image || '/images/placeholder.jpg',
-          weight: item.weight || null
+          weight: item.weight || null,
+          colour: item.colour || null,
+          size: item.size || null,
+          variantId: item.variantId || null,
+          sku: item.sku || null
         })),
         subtotal: subtotal,
         shipping: shipping,
         discount: discount,
         total: total,
-        paymentMethod: paymentMethod as 'jazzcash' | 'bank' | 'cod' | 'card',
+        paymentMethod: validPaymentMethod,
         paymentStatus: (paymentMethod === 'cod' ? 'pending' : 'paid') as
           | 'pending'
           | 'paid'
@@ -134,9 +144,28 @@ const CheckoutPage = () => {
       const result = await placeOrder(orderData);
       
       if (result.success) {
-        setOrderId(result.orderNumber || '');
+        const orderNumber = result.orderNumber || '';
+        setOrderId(orderNumber);
         setOrderPlaced(true);
         clearCart();
+        
+        // ✅ Send WhatsApp Order Confirmation
+        if (formData.phone) {
+          sendOrderConfirmationWhatsApp(
+            formData.phone,
+            orderNumber,
+            `${formData.firstName} ${formData.lastName}`,
+            cart.map((item: any) => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price
+            })),
+            total,
+            `${formData.address}, ${formData.city}, ${formData.province}`,
+            '2-3 business days'
+          );
+        }
+        
         window.dispatchEvent(new Event('orderPlaced'));
         window.dispatchEvent(new Event('storage'));
       } else {
@@ -365,7 +394,6 @@ const CheckoutPage = () => {
                     <select name="city" value={formData.city} onChange={handleChange} className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition">
                       {cities.map(city => <option key={city} value={city}>{city}</option>)}
                     </select>
-                    {/* ✅ Shipping Charges Display */}
                     <p className="text-xs text-gray-500 mt-1">
                       Shipping: PKR {calculateShipping(formData.city)} 
                       {formData.city.toLowerCase() === 'karachi' ? ' (Karachi rate)' : ' (Other cities rate)'}

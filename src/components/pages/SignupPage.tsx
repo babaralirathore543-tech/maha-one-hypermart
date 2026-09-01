@@ -1,3 +1,4 @@
+// src/components/pages/SignupPage.tsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
@@ -10,6 +11,7 @@ import {
   FaCheckCircle
 } from 'react-icons/fa';
 import { db, collection, addDoc, query, where, getDocs } from '../../config/firebase';
+import { sendSignupWelcomeWhatsApp } from '../../services/whatsappNotificationService';
 
 // ✅ Logo Import
 const logo = '/images/logo.png';
@@ -87,7 +89,7 @@ const SignupPage: React.FC = () => {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        password: formData.password, // ⚠️ In production, hash this!
+        password: formData.password,
         role: 'customer',
         isActive: true,
         isVerified: false,
@@ -104,6 +106,16 @@ const SignupPage: React.FC = () => {
       });
 
       setSuccess(true);
+      
+      // ✅ Send WhatsApp Welcome Message
+      if (formData.phone) {
+        sendSignupWelcomeWhatsApp(
+          formData.phone,
+          formData.name,
+          formData.email
+        );
+      }
+
       setFormData({
         name: '',
         email: '',
@@ -126,8 +138,9 @@ const SignupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+    // ✅ Added pt-16 sm:pt-20 md:pt-24 to prevent search bar overlap
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8 pt-16 sm:pt-20 md:pt-24 lg:pt-28">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md my-4 sm:my-6">
         
         {/* Logo */}
         <div className="text-center mb-6">
@@ -135,20 +148,20 @@ const SignupPage: React.FC = () => {
             <img 
               src={logo} 
               alt="Maha One Logo" 
-              className="h-16 w-auto"
+              className="h-14 sm:h-16 w-auto"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 const parent = e.currentTarget.parentElement;
                 if (parent) {
                   const fallback = document.createElement('div');
-                  fallback.className = 'w-16 h-16 bg-[#0F766E] rounded-full flex items-center justify-center text-white text-2xl font-bold';
+                  fallback.className = 'w-14 h-14 sm:w-16 sm:h-16 bg-[#0F766E] rounded-full flex items-center justify-center text-white text-2xl font-bold';
                   fallback.textContent = 'M';
                   parent.appendChild(fallback);
                 }
               }}
             />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mt-3">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mt-3">
             <span className="text-[#0F766E]">MAHA</span>
             <span className="text-[#D4AF37]"> ONE</span>
           </h1>
@@ -157,9 +170,9 @@ const SignupPage: React.FC = () => {
 
         {/* Success Message */}
         {success && (
-          <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
-            <FaCheckCircle className="text-green-500" />
-            <span>Account created successfully! Redirecting to login...</span>
+          <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+            <FaCheckCircle className="text-green-500 flex-shrink-0" />
+            <span>Account created successfully! A WhatsApp welcome message has been sent to your phone. Redirecting to login...</span>
           </div>
         )}
 
@@ -171,7 +184,7 @@ const SignupPage: React.FC = () => {
         )}
 
         {/* Signup Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           {/* Full Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -184,7 +197,7 @@ const SignupPage: React.FC = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="Mahnoor Ali"
                 required
               />
@@ -203,7 +216,7 @@ const SignupPage: React.FC = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="your@email.com"
                 required
               />
@@ -222,11 +235,12 @@ const SignupPage: React.FC = () => {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="03XX-XXXXXXX"
                 required
               />
             </div>
+            <p className="text-[10px] text-gray-400 mt-1">📱 We'll send order updates via WhatsApp</p>
           </div>
 
           {/* Password */}
@@ -241,7 +255,7 @@ const SignupPage: React.FC = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none"
+                className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="••••••••"
                 required
                 minLength={6}
@@ -268,7 +282,7 @@ const SignupPage: React.FC = () => {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none"
+                className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="••••••••"
                 required
               />
@@ -285,7 +299,7 @@ const SignupPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#0F766E] text-white py-2.5 rounded-lg font-medium hover:bg-[#065F46] transition disabled:opacity-50"
+            className="w-full bg-[#0F766E] text-white py-2.5 rounded-lg font-medium hover:bg-[#065F46] transition disabled:opacity-50 text-sm sm:text-base"
           >
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
