@@ -192,7 +192,7 @@ function App() {
   // true = maintenance page
   // false = normal website
 
-  const MAINTENANCE_MODE = false;
+  const MAINTENANCE_MODE = true;
 
 
   // ==========================================================
