@@ -8,7 +8,7 @@ import {
 import { useCart } from '../../context/CartContext';
 import { db, collection, getDocs, query, where } from '../../config/firebase';
 
-// ✅ Product Interface - Matching Admin Product Form
+// ✅ Product Interface
 interface FashionProduct {
   id: string;
   name: string;
@@ -43,57 +43,21 @@ interface FashionProduct {
   updatedAt?: any;
 }
 
-// ✅ Category Icons Mapping
+// ✅ Category Icons
 const categoryIcons: Record<string, string> = {
   'clothing': '👗',
   'footwear': '👠',
   'bags': '👜',
   'accessories': '💎',
-  'unstitched': '🧵',
-  'ready-to-wear': '👔',
-  'sarees': '🥻',
-  'abayas': '🧕',
-  'nightwear': '🌙',
-  'heels': '👠',
-  'flats': '👟',
-  'slippers': '🩴',
-  'sandals': '👡',
-  'khussa': '👞',
-  'sneakers': '👟',
-  'hand-bags': '👜',
-  'shoulder-bags': '👜',
-  'tote-bags': '👜',
-  'crossbody-bags': '👜',
-  'clutches': '👛',
-  'wallets': '👛',
-  'jewellery': '💍',
-  'watches': '⌚',
-  'sunglasses': '🕶️',
-  'scarves-hijabs': '🧣',
-  'hair-accessories': '🎀',
   'shirts': '👔',
   't-shirts': '👕',
   'jeans': '👖',
   'kurta': '👕',
   'trousers': '👖',
   'suits': '🤵',
-  'formal-shoes': '👞',
-  'casual-shoes': '👟',
-  'backpacks': '🎒',
-  'messenger-bags': '💼',
-  'briefcases': '💼',
-  'belts': '🔗',
-  'ties': '👔',
-  'boys': '👦',
-  'girls': '👧',
-  'baby': '👶',
   'dresses': '👗',
   'frocks': '👗',
   'kurti': '👕',
-  'lawn': '🌿',
-  'onesies': '👶',
-  'sleepwear': '🌙',
-  'hats': '🧢'
 };
 
 // ✅ Gender Icons
@@ -108,11 +72,9 @@ const FashionPage = () => {
   const { addToCart } = useCart();
   const [searchParams] = useSearchParams();
   
-  // ✅ Get filters from URL
   const urlGender = searchParams.get('gender');
   const urlCategory = searchParams.get('category');
   
-  // ✅ State
   const [products, setProducts] = useState<FashionProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<FashionProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,13 +86,12 @@ const FashionPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [imageError, setImageError] = useState<{ [key: string]: boolean }>({});
 
-  // ✅ Fetch Products from Firebase with filters
+  // ✅ Fetch Products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         
-        // ✅ Build query based on URL filters
         let q;
         const productsRef = collection(db, 'products');
         
@@ -157,39 +118,40 @@ const FashionPage = () => {
         const productsData: FashionProduct[] = [];
         
         querySnapshot.forEach((doc) => {
-          const data = doc.data();
+          // ✅ FIX: Use 'as any' to avoid TypeScript errors
+          const data = doc.data() as any;
           productsData.push({
             id: doc.id,
-            name: data.name || '',
-            price: data.price || 0,
-            oldPrice: data.oldPrice || 0,
-            discountPrice: data.discountPrice || 0,
-            discount: data.discount || data.discountPrice || 0,
-            rating: data.rating || 0,
-            category: data.category || 'fashion',
-            gender: data.gender || '',
-            productType: data.productType || '',
-            subCategory: data.subCategory || '',
-            subSubCategory: data.subSubCategory || '',
-            style: data.style || '',
-            productId: data.productId || '',
-            image: data.image || '',
-            images: data.images || [],
-            colorImages: data.colorImages || {},
-            sizes: data.sizes || [],
-            colors: data.colors || [],
-            stock: data.stock || 0,
-            description: data.description || '',
-            shortDescription: data.shortDescription || '',
-            material: data.material || '',
-            careInstructions: data.careInstructions || '',
-            isNew: data.isNew || false,
-            isFeatured: data.isFeatured || false,
-            isBestSeller: data.isBestSeller || false,
-            isOnSale: data.isOnSale || false,
-            status: data.status || 'active',
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt
+            name: data?.name || '',
+            price: data?.price || 0,
+            oldPrice: data?.oldPrice || 0,
+            discountPrice: data?.discountPrice || 0,
+            discount: data?.discount || data?.discountPrice || 0,
+            rating: data?.rating || 0,
+            category: data?.category || 'fashion',
+            gender: data?.gender || '',
+            productType: data?.productType || '',
+            subCategory: data?.subCategory || '',
+            subSubCategory: data?.subSubCategory || '',
+            style: data?.style || '',
+            productId: data?.productId || '',
+            image: data?.image || '',
+            images: data?.images || [],
+            colorImages: data?.colorImages || {},
+            sizes: data?.sizes || [],
+            colors: data?.colors || [],
+            stock: data?.stock || 0,
+            description: data?.description || '',
+            shortDescription: data?.shortDescription || '',
+            material: data?.material || '',
+            careInstructions: data?.careInstructions || '',
+            isNew: data?.isNew || false,
+            isFeatured: data?.isFeatured || false,
+            isBestSeller: data?.isBestSeller || false,
+            isOnSale: data?.isOnSale || false,
+            status: data?.status || 'active',
+            createdAt: data?.createdAt,
+            updatedAt: data?.updatedAt
           });
         });
         
@@ -205,7 +167,6 @@ const FashionPage = () => {
     fetchProducts();
   }, [urlGender, urlCategory]);
 
-  // ✅ Get unique categories, sizes & colors from filtered products
   const allCategories = [...new Set(products.map(p => p.productType).filter(Boolean))];
   const allSizes = [...new Set(products.flatMap(p => p.sizes || []))];
   const allColors = [...new Set(products.flatMap(p => p.colors || []))];
@@ -214,27 +175,22 @@ const FashionPage = () => {
   useEffect(() => {
     let filtered = products;
 
-    // Filter by gender (if not already filtered by URL)
     if (selectedGender !== 'all' && !urlGender) {
       filtered = filtered.filter(p => p.gender === selectedGender);
     }
 
-    // Filter by category (productType) (if not already filtered by URL)
     if (selectedCategory !== 'all' && !urlCategory) {
       filtered = filtered.filter(p => p.productType === selectedCategory);
     }
 
-    // Filter by size
     if (selectedSize !== 'all') {
       filtered = filtered.filter(p => p.sizes && p.sizes.includes(selectedSize));
     }
 
-    // Filter by color
     if (selectedColor !== 'all') {
       filtered = filtered.filter(p => p.colors && p.colors.includes(selectedColor));
     }
 
-    // Sort
     filtered = filtered.sort((a, b) => {
       if (sortBy === 'popular') return (b.rating || 0) - (a.rating || 0);
       if (sortBy === 'price-low') return a.price - b.price;
@@ -246,7 +202,6 @@ const FashionPage = () => {
     setFilteredProducts(filtered);
   }, [products, selectedGender, selectedCategory, selectedSize, selectedColor, sortBy, urlGender, urlCategory]);
 
-  // ✅ Get price with discount
   const getDiscountedPrice = (product: FashionProduct) => {
     if (product.discountPrice && product.discountPrice < product.price) {
       return product.discountPrice;
@@ -257,7 +212,6 @@ const FashionPage = () => {
     return product.price;
   };
 
-  // ✅ Get discount percentage
   const getDiscountPercent = (product: FashionProduct) => {
     if (product.discount) return product.discount;
     if (product.discountPrice && product.discountPrice < product.price) {
@@ -266,7 +220,6 @@ const FashionPage = () => {
     return 0;
   };
 
-  // ✅ Gender tabs with counts
   const genders = [
     { id: 'all', label: 'All', icon: null },
     { id: 'women', label: 'Women', icon: <FaFemale className="text-sm sm:text-base" /> },
@@ -275,7 +228,6 @@ const FashionPage = () => {
     { id: 'unisex', label: 'Unisex', icon: <FaChild className="text-sm sm:text-base" /> },
   ];
 
-  // ✅ Category tabs with counts
   const categoryTabs = [
     { id: 'all', label: 'All' },
     ...allCategories.filter((cat): cat is string => typeof cat === 'string').map((cat) => ({ 
@@ -285,12 +237,10 @@ const FashionPage = () => {
     }))
   ];
 
-  // ✅ Handle image error
   const handleImageError = (productId: string) => {
     setImageError(prev => ({ ...prev, [productId]: true }));
   };
 
-  // ✅ Get title based on URL filter
   const getTitle = () => {
     if (urlGender === 'men') return "👔 Men's Fashion";
     if (urlGender === 'women') return "👗 Women's Fashion";
@@ -326,7 +276,6 @@ const FashionPage = () => {
     <div className="bg-[#FFFDF7] pt-16 sm:pt-6 md:pt-8 lg:pt-12 pb-6 sm:pb-8 md:pb-12 min-h-screen">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         
-        {/* ✅ Page Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#111827]">
             {getTitle()}
@@ -339,7 +288,7 @@ const FashionPage = () => {
           </div>
         </div>
 
-        {/* ✅ Mobile Filter Toggle */}
+        {/* Mobile Filter Toggle */}
         <div className="lg:hidden flex items-center justify-between mb-4">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -357,11 +306,10 @@ const FashionPage = () => {
           </span>
         </div>
 
-        {/* ✅ Filters Section */}
+        {/* Filters */}
         <div className={`${showFilters ? 'block' : 'hidden lg:block'} mb-6`}>
           <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 border border-gray-100">
             
-            {/* Gender Tabs */}
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4">
               <span className="text-xs sm:text-sm font-medium text-gray-700 mr-1">Gender:</span>
               {genders.map((g) => {
@@ -384,7 +332,6 @@ const FashionPage = () => {
               })}
             </div>
 
-            {/* Category Tabs */}
             {selectedGender !== 'all' && (
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4 border-t pt-4 border-gray-100">
                 <span className="text-xs sm:text-sm font-medium text-gray-700 mr-1">Category:</span>
@@ -411,9 +358,7 @@ const FashionPage = () => {
               </div>
             )}
 
-            {/* Size & Color Filters */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-t pt-4 border-gray-100">
-              {/* Size Filter */}
               {allSizes.length > 0 && (
                 <div className="flex items-center gap-1 sm:gap-2">
                   <span className="text-[10px] sm:text-xs text-gray-500">Size:</span>
@@ -430,7 +375,6 @@ const FashionPage = () => {
                 </div>
               )}
 
-              {/* Color Filter */}
               {allColors.length > 0 && (
                 <div className="flex items-center gap-1 sm:gap-2">
                   <span className="text-[10px] sm:text-xs text-gray-500">Color:</span>
@@ -447,7 +391,6 @@ const FashionPage = () => {
                 </div>
               )}
 
-              {/* Sort */}
               <div className="flex items-center gap-1 sm:gap-2 ml-auto">
                 <span className="text-[10px] sm:text-xs text-gray-500">Sort:</span>
                 <select
@@ -462,7 +405,6 @@ const FashionPage = () => {
                 </select>
               </div>
 
-              {/* Reset Filters */}
               {(selectedGender !== 'all' || selectedCategory !== 'all' || selectedSize !== 'all' || selectedColor !== 'all') && (
                 <button
                   onClick={() => {
@@ -481,7 +423,7 @@ const FashionPage = () => {
           </div>
         </div>
 
-        {/* ✅ Products Grid */}
+        {/* Products Grid */}
         {filteredProducts.length === 0 ? (
           <div className="text-center py-8 sm:py-12 md:py-16">
             <div className="text-4xl sm:text-5xl md:text-6xl mb-4">👗</div>
@@ -512,7 +454,6 @@ const FashionPage = () => {
                 <Link to={`/fashion/${product.id}`} key={product.id} className="group">
                   <div className="bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-1 h-full flex flex-col">
                     
-                    {/* ✅ Image Container - Purple Border + Rounded Corners */}
                     <div className="relative overflow-hidden aspect-[3/4] sm:aspect-[4/5] bg-[#F8FAFC] rounded-2xl m-2 sm:m-3 border-4 border-purple-500 shadow-md shadow-purple-500/20">
                       <img
                         src={hasError ? `https://via.placeholder.com/400x500/D4AF37/FFFFFF?text=${product.name}` : product.image}
@@ -522,7 +463,6 @@ const FashionPage = () => {
                         loading="lazy"
                       />
                       
-                      {/* Badges Row - Image par */}
                       <div className="absolute top-2 left-2 flex flex-wrap gap-1">
                         {discountPercent > 0 && (
                           <span className="bg-red-500 text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full shadow-lg border-2 border-white/50">
@@ -541,7 +481,6 @@ const FashionPage = () => {
                         )}
                       </div>
                       
-                      {/* Wishlist Button */}
                       <button
                         onClick={(e) => {
                           e.preventDefault();
@@ -552,7 +491,6 @@ const FashionPage = () => {
                         <FaHeart className="text-xs sm:text-sm text-gray-600 group-hover:text-white transition" />
                       </button>
                       
-                      {/* Category Badge on Image */}
                       {product.productType && (
                         <div className="absolute bottom-2 right-2">
                           <span className="text-[8px] sm:text-[10px] bg-black/60 backdrop-blur text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full capitalize border border-purple-300/30">
@@ -562,10 +500,8 @@ const FashionPage = () => {
                       )}
                     </div>
 
-                    {/* ✅ Product Info - Card Style */}
                     <div className="p-2.5 sm:p-3 md:p-4 flex-1 flex flex-col">
                       
-                      {/* Rating */}
                       <div className="flex items-center gap-0.5 text-[#D4AF37] text-[8px] sm:text-[10px]">
                         {[...Array(5)].map((_, i) => (
                           <FaStar key={i} className={i < Math.floor(product.rating || 0) ? 'text-[#D4AF37]' : 'text-gray-300'} />
@@ -573,24 +509,20 @@ const FashionPage = () => {
                         <span className="text-gray-400 ml-0.5 text-[8px] sm:text-[10px]">({product.rating || 0})</span>
                       </div>
 
-                      {/* Name */}
                       <h3 className="font-semibold text-[#111827] text-xs sm:text-sm md:text-base mt-0.5 line-clamp-2 group-hover:text-[#D4AF37] transition">
                         {product.name}
                       </h3>
 
-                      {/* Product ID */}
                       {product.productId && (
                         <p className="text-[8px] sm:text-[10px] text-gray-400 font-mono mt-0.5">{product.productId}</p>
                       )}
 
-                      {/* Gender Badge */}
                       {product.gender && (
                         <span className="text-[8px] sm:text-[10px] text-gray-400 mt-0.5">
                           {genderIcons[product.gender] || '👤'} {product.gender}
                         </span>
                       )}
 
-                      {/* ✅ STOCK INDICATOR - Blinking Green Dot */}
                       <div className="flex items-center gap-1.5 mt-1">
                         <span className={`w-2 h-2 rounded-full ${isInStock ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}></span>
                         <span className={`text-[10px] sm:text-xs font-medium ${isInStock ? 'text-green-600' : 'text-red-500'}`}>
@@ -598,7 +530,6 @@ const FashionPage = () => {
                         </span>
                       </div>
 
-                      {/* Price */}
                       <div className="flex items-center gap-1 sm:gap-2 mt-1">
                         <span className="text-[#D4AF37] font-bold text-sm sm:text-base md:text-lg">
                           Rs. {finalPrice.toLocaleString()}
@@ -610,7 +541,6 @@ const FashionPage = () => {
                         )}
                       </div>
 
-                      {/* Colors & Sizes Tags */}
                       <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-1">
                         {product.colors && product.colors.slice(0, 3).map((color) => (
                           <span key={color} className="text-[8px] sm:text-[10px] bg-gray-100 px-1 py-0.5 rounded text-gray-600">
@@ -633,7 +563,6 @@ const FashionPage = () => {
                         )}
                       </div>
 
-                      {/* Add to Cart Button */}
                       <button
                         onClick={(e) => {
                           e.preventDefault();
@@ -659,7 +588,6 @@ const FashionPage = () => {
                         <span>{isInStock ? 'Add to Cart' : 'Out of Stock'}</span>
                       </button>
 
-                      {/* On Sale Badge */}
                       {product.isOnSale && (
                         <div className="mt-1 text-[8px] sm:text-[10px] text-red-500 font-medium text-center animate-pulse">
                           🔥 On Sale!
@@ -673,7 +601,6 @@ const FashionPage = () => {
           </div>
         )}
 
-        {/* ✅ Results Count */}
         <div className="text-center text-xs text-gray-400 mt-4 sm:mt-6">
           Showing {filteredProducts.length} of {products.length} products
         </div>
