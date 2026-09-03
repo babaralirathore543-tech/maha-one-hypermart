@@ -65,7 +65,7 @@ const CheckoutPage = () => {
   const BANK_DETAILS = {
     accountTitle: 'MAHNOOR',
     bankName: 'HABIBMETRO BANK',
-    accountNumber: '9702347140143438',
+    accountNumber: '697022930571414343438',
     iban: 'PK05MPBL9702347140143438',
     branch: 'Main Branch'
   };
