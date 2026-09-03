@@ -86,7 +86,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // ============================================================
 
 function App() {
-  const SHOW_EID_MILAD = true;
+  const SHOW_EID_MILAD = false;
   const MAINTENANCE_MODE = false;
 
   // ==========================================================
