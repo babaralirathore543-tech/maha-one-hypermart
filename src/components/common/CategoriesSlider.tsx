@@ -1,30 +1,21 @@
 // src/components/common/CategoriesSlider.tsx
 import React, { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // ✅ Import useNavigate instead of Link
+import { useNavigate } from 'react-router-dom';
 import { 
   FaChevronLeft, 
-  FaChevronRight,
-  FaAppleAlt,
-  FaTshirt,
-  FaCandyCane,
-  FaBirthdayCake,
-  FaUtensils,
-  FaShoePrints,
-  FaShoppingBag,
-  FaGem,
-  FaLeaf,
-  FaSeedling
+  FaChevronRight
 } from 'react-icons/fa';
 
 interface Category {
   id: string;
   name: string;
-  icon: React.ReactNode;
+  icon: React.ReactNode; // Will now be image URL or React node
   link: string;
   sectionId: string;
   color: string;
   bgColor: string;
   activeBgColor: string;
+  imageUrl?: string; // ✅ Optional image URL
 }
 
 interface CategoriesSliderProps {
@@ -36,7 +27,7 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
   isCompact = false,
   isSticky = false
 }) => {
-  const navigate = useNavigate(); // ✅ useNavigate hook
+  const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<{ [key: string]: HTMLAnchorElement | null }>({});
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -46,128 +37,119 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
   const [scrollLeft, setScrollLeft] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string>('dry-fruits');
 
-  // Categories Data with section IDs
+  // ✅ Categories Data with IMAGE URLs - Add your images here
   const categories: Category[] = [
     {
       id: 'dry-fruits',
       name: 'Dry Fruits',
-      icon: <FaAppleAlt className="text-lg sm:text-xl" />,
+      icon: null, // Will use imageUrl
       link: '/shop',
       sectionId: 'dryfruits-section',
       color: 'text-amber-600',
       bgColor: 'bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40',
-      activeBgColor: 'bg-amber-500 dark:bg-amber-600 text-white shadow-lg shadow-amber-500/30'
+      activeBgColor: 'bg-amber-500 dark:bg-amber-600 text-white shadow-lg shadow-amber-500/30',
+      imageUrl: '/images/categories/dry-fruits.png' // ✅ Add your image path
     },
     {
       id: 'mens-fashion',
       name: "Men's Fashion",
-      icon: <FaTshirt className="text-lg sm:text-xl" />,
+      icon: null,
       link: '/fashion?gender=men',
       sectionId: 'mens-fashion-section',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40',
-      activeBgColor: 'bg-blue-500 dark:bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+      activeBgColor: 'bg-blue-500 dark:bg-blue-600 text-white shadow-lg shadow-blue-500/30',
+      imageUrl: '/images/categories/mens-fashion.png'
     },
     {
       id: 'womens-fashion',
       name: "Women's Fashion",
-      icon: <FaTshirt className="text-lg sm:text-xl" />,
+      icon: null,
       link: '/fashion?gender=women',
       sectionId: 'womens-fashion-section',
       color: 'text-purple-600',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40',
-      activeBgColor: 'bg-purple-500 dark:bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+      activeBgColor: 'bg-purple-500 dark:bg-purple-600 text-white shadow-lg shadow-purple-500/30',
+      imageUrl: '/images/categories/womens-fashion.png'
     },
     {
       id: 'kids-fashion',
       name: "Kids Fashion",
-      icon: <FaTshirt className="text-lg sm:text-xl" />,
+      icon: null,
       link: '/fashion?gender=kids',
       sectionId: 'kids-fashion-section',
       color: 'text-pink-600',
       bgColor: 'bg-pink-50 dark:bg-pink-900/20 hover:bg-pink-100 dark:hover:bg-pink-900/40',
-      activeBgColor: 'bg-pink-500 dark:bg-pink-600 text-white shadow-lg shadow-pink-500/30'
+      activeBgColor: 'bg-pink-500 dark:bg-pink-600 text-white shadow-lg shadow-pink-500/30',
+      imageUrl: '/images/categories/kids-fashion.png'
     },
     {
       id: 'sweets',
       name: 'Sweets',
-      icon: <FaCandyCane className="text-lg sm:text-xl" />,
+      icon: null,
       link: '/sweets',
       sectionId: 'sweets-section',
       color: 'text-rose-600',
       bgColor: 'bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/40',
-      activeBgColor: 'bg-rose-500 dark:bg-rose-600 text-white shadow-lg shadow-rose-500/30'
+      activeBgColor: 'bg-rose-500 dark:bg-rose-600 text-white shadow-lg shadow-rose-500/30',
+      imageUrl: '/images/categories/sweets.png'
     },
     {
       id: 'cakes',
       name: 'Cakes & Bakery',
-      icon: <FaBirthdayCake className="text-lg sm:text-xl" />,
+      icon: null,
       link: '/cakes',
       sectionId: 'cakes-section',
       color: 'text-orange-600',
       bgColor: 'bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/40',
-      activeBgColor: 'bg-orange-500 dark:bg-orange-600 text-white shadow-lg shadow-orange-500/30'
+      activeBgColor: 'bg-orange-500 dark:bg-orange-600 text-white shadow-lg shadow-orange-500/30',
+      imageUrl: '/images/categories/cakes.png'
     },
     {
       id: 'food',
       name: 'Food Items',
-      icon: <FaUtensils className="text-lg sm:text-xl" />,
+      icon: null,
       link: '/shop?category=food',
       sectionId: 'food-section',
       color: 'text-green-600',
       bgColor: 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40',
-      activeBgColor: 'bg-green-500 dark:bg-green-600 text-white shadow-lg shadow-green-500/30'
+      activeBgColor: 'bg-green-500 dark:bg-green-600 text-white shadow-lg shadow-green-500/30',
+      imageUrl: '/images/categories/food.png'
     },
     {
       id: 'footwear',
       name: 'Footwear',
-      icon: <FaShoePrints className="text-lg sm:text-xl" />,
+      icon: null,
       link: '/fashion?category=footwear',
       sectionId: 'footwear-section',
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40',
-      activeBgColor: 'bg-emerald-500 dark:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
+      activeBgColor: 'bg-emerald-500 dark:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30',
+      imageUrl: '/images/categories/footwear.png'
     },
     {
       id: 'bags',
       name: 'Bags',
-      icon: <FaShoppingBag className="text-lg sm:text-xl" />,
+      icon: null,
       link: '/fashion?category=bags',
       sectionId: 'bags-section',
       color: 'text-indigo-600',
       bgColor: 'bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40',
-      activeBgColor: 'bg-indigo-500 dark:bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+      activeBgColor: 'bg-indigo-500 dark:bg-indigo-600 text-white shadow-lg shadow-indigo-500/30',
+      imageUrl: '/images/categories/bags.png'
     },
     {
       id: 'accessories',
       name: 'Accessories',
-      icon: <FaGem className="text-lg sm:text-xl" />,
+      icon: null,
       link: '/fashion?category=accessories',
       sectionId: 'accessories-section',
       color: 'text-amber-600',
       bgColor: 'bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40',
-      activeBgColor: 'bg-amber-500 dark:bg-amber-600 text-white shadow-lg shadow-amber-500/30'
+      activeBgColor: 'bg-amber-500 dark:bg-amber-600 text-white shadow-lg shadow-amber-500/30',
+      imageUrl: '/images/categories/accessories.png'
     },
-    {
-      id: 'organic',
-      name: 'Organic',
-      icon: <FaLeaf className="text-lg sm:text-xl" />,
-      link: '/shop?category=organic',
-      sectionId: 'organic-section',
-      color: 'text-teal-600',
-      bgColor: 'bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100 dark:hover:bg-teal-900/40',
-      activeBgColor: 'bg-teal-500 dark:bg-teal-600 text-white shadow-lg shadow-teal-500/30'
-    },
-    {
-      id: 'seeds',
-      name: 'Seeds & Nuts',
-      icon: <FaSeedling className="text-lg sm:text-xl" />,
-      link: '/shop?category=seeds',
-      sectionId: 'seeds-section',
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/40',
-      activeBgColor: 'bg-yellow-500 dark:bg-yellow-600 text-white shadow-lg shadow-yellow-500/30'
-    },
+    
   ];
 
   // ✅ IntersectionObserver for active category detection
@@ -180,14 +162,12 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
             const category = categories.find(cat => cat.sectionId === sectionId);
             if (category) {
               setActiveCategory(category.id);
-              // Auto-scroll active category into view
               const activeElement = categoryRefs.current[category.id];
               if (activeElement && scrollContainerRef.current) {
                 const container = scrollContainerRef.current;
                 const elementRect = activeElement.getBoundingClientRect();
                 const containerRect = container.getBoundingClientRect();
                 
-                // Check if element is outside visible area
                 if (elementRect.left < containerRect.left || elementRect.right > containerRect.right) {
                   activeElement.scrollIntoView({
                     behavior: 'smooth',
@@ -207,7 +187,6 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
       }
     );
 
-    // Observe all section elements
     categories.forEach((category) => {
       const element = document.getElementById(category.sectionId);
       if (element) {
@@ -250,11 +229,9 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
   const handleCategoryClick = (e: React.MouseEvent, sectionId: string, link: string) => {
     e.preventDefault();
     
-    // Check if on homepage
     if (window.location.pathname === '/') {
       const targetElement = document.getElementById(sectionId);
       if (targetElement) {
-        // ✅ Fixed: Cast to HTMLElement for offsetHeight
         const navElement = document.querySelector('nav') as HTMLElement | null;
         const sliderElement = document.querySelector('.categories-slider') as HTMLElement | null;
         
@@ -273,12 +250,10 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
         setActiveCategory(sectionId.replace('-section', ''));
       }
     } else {
-      // Navigate to homepage with section anchor
       navigate(link);
       setTimeout(() => {
         const targetElement = document.getElementById(sectionId);
         if (targetElement) {
-          // ✅ Fixed: Cast to HTMLElement for offsetHeight
           const navElement = document.querySelector('nav') as HTMLElement | null;
           const sliderElement = document.querySelector('.categories-slider') as HTMLElement | null;
           
@@ -355,6 +330,57 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
     };
   }, []);
 
+  // ✅ Render icon or image
+  const renderIcon = (category: Category) => {
+    if (category.imageUrl) {
+      return (
+        <img 
+          src={category.imageUrl} 
+          alt={category.name}
+          className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 object-contain transition-transform duration-300 group-hover:scale-110 ${
+            activeCategory === category.id ? 'brightness-200' : ''
+          }`}
+          onError={(e) => {
+            // Fallback to emoji if image fails to load
+            e.currentTarget.style.display = 'none';
+            const parent = e.currentTarget.parentElement;
+            if (parent) {
+              const fallback = document.createElement('span');
+              fallback.className = `text-2xl sm:text-3xl md:text-4xl ${category.color}`;
+              fallback.textContent = getEmoji(category.id);
+              parent.appendChild(fallback);
+            }
+          }}
+        />
+      );
+    }
+    // Fallback to emoji
+    return (
+      <span className={`text-2xl sm:text-3xl md:text-4xl ${category.color}`}>
+        {getEmoji(category.id)}
+      </span>
+    );
+  };
+
+  // ✅ Emoji fallback
+  const getEmoji = (id: string) => {
+    const emojis: { [key: string]: string } = {
+      'dry-fruits': '🥜',
+      'mens-fashion': '👔',
+      'womens-fashion': '👗',
+      'kids-fashion': '🧒',
+      'sweets': '🍬',
+      'cakes': '🎂',
+      'food': '🍱',
+      'footwear': '👟',
+      'bags': '👜',
+      'accessories': '💎',
+      'organic': '🌿',
+      'seeds': '🌱'
+    };
+    return emojis[id] || '📦';
+  };
+
   return (
     <div className={`relative w-full bg-white dark:bg-[#1F2937] border-b border-gray-100 dark:border-gray-700 categories-slider transition-all duration-300 ${
       isCompact ? 'py-0.5 sm:py-1' : 'py-1 sm:py-1.5'
@@ -410,9 +436,9 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
                   } ${isCompact ? 'p-1 sm:p-1.5 min-w-[50px] sm:min-w-[60px]' : 'p-1.5 sm:p-2 md:p-2.5 min-w-[55px] sm:min-w-[65px] md:min-w-[75px]'}`}
                 >
                   <div className={`transition-transform duration-300 group-hover:scale-110 ${
-                    isActive ? 'text-white scale-110' : category.color
+                    isActive ? 'scale-110' : ''
                   } ${isCompact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base md:text-lg'}`}>
-                    {category.icon}
+                    {renderIcon(category)}
                   </div>
                   <span className={`font-medium text-center leading-tight transition-colors ${
                     isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300 group-hover:text-[#D4AF37]'

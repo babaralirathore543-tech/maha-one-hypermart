@@ -1,8 +1,14 @@
 // src/components/common/AnimatedRoutes.tsx
 import { Routes, Route, useLocation, Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
-// Page Components
+// 🔥 IMPORT LOADING SCREEN
+import LoadingScreen from './LoadingScreen';
+
+// ============================================================
+// PAGE IMPORTS — SAB IMPORTS KAREIN
+// ============================================================
 import HomePage from '../pages/HomePage';
 import DryFruitsPage from '../pages/DryFruitsPage';
 import SweetsPage from '../pages/SweetsPage';
@@ -21,13 +27,17 @@ import WishlistPage from '../pages/WishlistPage';
 import DashboardPage from '../pages/DashboardPage';
 import CakesPage from '../pages/CakesPage';
 import CakesDetailPage from '../pages/CakesDetailPage';
+
+// Admin Imports
 import AdminPanel from '../admin/AdminPanel';
 import AdminProductForm from '../pages/AdminProductForm';
 import AdminCakesProductForm from '../pages/AdminCakesProductForm';
 import AdminDryFruitsForm from '../pages/AdminDryFruitsForm';
 import AdminSweetsForm from '../pages/AdminSweetsForm';
 
-// ✅ Page Transition Variants
+// ============================================================
+// PAGE TRANSITION VARIANTS
+// ============================================================
 const pageVariants = {
   initial: {
     opacity: 0,
@@ -46,14 +56,15 @@ const pageVariants = {
   },
 };
 
-// ✅ Page Transition Settings - FIXED: Using proper easing values
 const pageTransition = {
   type: 'tween' as const,
   ease: 'easeInOut' as const,
   duration: 0.5,
 };
 
-// ✅ Page Transition Component
+// ============================================================
+// PAGE TRANSITION COMPONENT
+// ============================================================
 const PageTransition = ({ children }: { children: React.ReactNode }) => {
   return (
     <motion.div
@@ -69,314 +80,357 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// ✅ Main Animated Routes Component
+// ============================================================
+// MAIN ANIMATED ROUTES WITH LOADER
+// ============================================================
 const AnimatedRoutes = () => {
   const location = useLocation();
+  const [isLoading, setIsLoading] = useState(true);
+  const [prevPath, setPrevPath] = useState(location.pathname);
+
+  // 🔥 INITIAL LOAD
+  useEffect(() => {
+    console.log('🔄 Initial load started');
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      console.log('✅ Initial load complete');
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 🔥 ROUTE CHANGE PAR LOADER SHOW
+  useEffect(() => {
+    if (prevPath !== location.pathname) {
+      console.log('🔄 Route changed to:', location.pathname);
+      setIsLoading(true);
+      setPrevPath(location.pathname);
+      
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+        console.log('✅ Route load complete');
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname, prevPath]);
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        
-        {/* Public Routes */}
-        <Route 
-          path="/" 
-          element={
-            <PageTransition>
-              <HomePage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/shop" 
-          element={
-            <PageTransition>
-              <DryFruitsPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/sweets" 
-          element={
-            <PageTransition>
-              <SweetsPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/fashion" 
-          element={
-            <PageTransition>
-              <FashionPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/fashion/:id" 
-          element={
-            <PageTransition>
-              <FashionDetailPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/sweet-product/:id" 
-          element={
-            <PageTransition>
-              <SweetsDetailPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/dry-product/:id" 
-          element={
-            <PageTransition>
-              <DryFruitsDetailPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/login" 
-          element={
-            <PageTransition>
-              <LoginPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/signup" 
-          element={
-            <PageTransition>
-              <SignupPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/about" 
-          element={
-            <PageTransition>
-              <AboutPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/contact" 
-          element={
-            <PageTransition>
-              <ContactPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/category/:categoryName" 
-          element={
-            <PageTransition>
-              <CategoryPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/cakes" 
-          element={
-            <PageTransition>
-              <CakesPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/cakes/:id" 
-          element={
-            <PageTransition>
-              <CakesDetailPage />
-            </PageTransition>
-          } 
-        />
+    <>
+      {/* 🔥 LOADING SCREEN */}
+      {isLoading && <LoadingScreen />}
+      
+      {/* 🔥 PAGE CONTENT — LOADING COMPLETE HONE PAR SHOW HO */}
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          {/* ==================================================
+              PUBLIC ROUTES
+          ================================================== */}
+          <Route 
+            path="/" 
+            element={
+              <PageTransition>
+                <HomePage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/shop" 
+            element={
+              <PageTransition>
+                <DryFruitsPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/sweets" 
+            element={
+              <PageTransition>
+                <SweetsPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/fashion" 
+            element={
+              <PageTransition>
+                <FashionPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/fashion/:id" 
+            element={
+              <PageTransition>
+                <FashionDetailPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/sweet-product/:id" 
+            element={
+              <PageTransition>
+                <SweetsDetailPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/dry-product/:id" 
+            element={
+              <PageTransition>
+                <DryFruitsDetailPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/login" 
+            element={
+              <PageTransition>
+                <LoginPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/signup" 
+            element={
+              <PageTransition>
+                <SignupPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/about" 
+            element={
+              <PageTransition>
+                <AboutPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/contact" 
+            element={
+              <PageTransition>
+                <ContactPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/category/:categoryName" 
+            element={
+              <PageTransition>
+                <CategoryPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/cakes" 
+            element={
+              <PageTransition>
+                <CakesPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/cakes/:id" 
+            element={
+              <PageTransition>
+                <CakesDetailPage />
+              </PageTransition>
+            } 
+          />
 
-        {/* Protected Routes */}
-        <Route 
-          path="/cart" 
-          element={
-            <PageTransition>
-              <CartPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/checkout" 
-          element={
-            <PageTransition>
-              <CheckoutPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/wishlist" 
-          element={
-            <PageTransition>
-              <WishlistPage />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/dashboard" 
-          element={
-            <PageTransition>
-              <DashboardPage />
-            </PageTransition>
-          } 
-        />
+          {/* ==================================================
+              PROTECTED ROUTES
+          ================================================== */}
+          <Route 
+            path="/cart" 
+            element={
+              <PageTransition>
+                <CartPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/checkout" 
+            element={
+              <PageTransition>
+                <CheckoutPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/wishlist" 
+            element={
+              <PageTransition>
+                <WishlistPage />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/dashboard" 
+            element={
+              <PageTransition>
+                <DashboardPage />
+              </PageTransition>
+            } 
+          />
 
-        {/* Admin Routes */}
-        <Route 
-          path="/admin" 
-          element={
-            <PageTransition>
-              <AdminPanel />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/products" 
-          element={
-            <PageTransition>
-              <AdminPanel />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/orders" 
-          element={
-            <PageTransition>
-              <AdminPanel />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/users" 
-          element={
-            <PageTransition>
-              <AdminPanel />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/categories" 
-          element={
-            <PageTransition>
-              <AdminPanel />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/products/add" 
-          element={
-            <PageTransition>
-              <AdminProductForm />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/products/edit/:id" 
-          element={
-            <PageTransition>
-              <AdminProductForm />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/dryfruits/add" 
-          element={
-            <PageTransition>
-              <AdminDryFruitsForm />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/dryfruits/edit/:id" 
-          element={
-            <PageTransition>
-              <AdminDryFruitsForm />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/sweets/add" 
-          element={
-            <PageTransition>
-              <AdminSweetsForm />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/sweets/edit/:id" 
-          element={
-            <PageTransition>
-              <AdminSweetsForm />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/cakes/add" 
-          element={
-            <PageTransition>
-              <AdminCakesProductForm />
-            </PageTransition>
-          } 
-        />
-        
-        <Route 
-          path="/admin/cakes/edit/:id" 
-          element={
-            <PageTransition>
-              <AdminCakesProductForm />
-            </PageTransition>
-          } 
-        />
+          {/* ==================================================
+              ADMIN ROUTES
+          ================================================== */}
+          <Route 
+            path="/admin" 
+            element={
+              <PageTransition>
+                <AdminPanel />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/products" 
+            element={
+              <PageTransition>
+                <AdminPanel />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/orders" 
+            element={
+              <PageTransition>
+                <AdminPanel />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/users" 
+            element={
+              <PageTransition>
+                <AdminPanel />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/categories" 
+            element={
+              <PageTransition>
+                <AdminPanel />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/products/add" 
+            element={
+              <PageTransition>
+                <AdminProductForm />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/products/edit/:id" 
+            element={
+              <PageTransition>
+                <AdminProductForm />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/dryfruits/add" 
+            element={
+              <PageTransition>
+                <AdminDryFruitsForm />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/dryfruits/edit/:id" 
+            element={
+              <PageTransition>
+                <AdminDryFruitsForm />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/sweets/add" 
+            element={
+              <PageTransition>
+                <AdminSweetsForm />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/sweets/edit/:id" 
+            element={
+              <PageTransition>
+                <AdminSweetsForm />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/cakes/add" 
+            element={
+              <PageTransition>
+                <AdminCakesProductForm />
+              </PageTransition>
+            } 
+          />
+          
+          <Route 
+            path="/admin/cakes/edit/:id" 
+            element={
+              <PageTransition>
+                <AdminCakesProductForm />
+              </PageTransition>
+            } 
+          />
 
-        {/* 404 Page */}
-        <Route 
-          path="*" 
-          element={
-            <PageTransition>
-              <div className="flex flex-col items-center justify-center h-96">
-                <h1 className="text-6xl font-bold text-gray-300">404</h1>
-                <p className="text-gray-500 mt-2">Page not found</p>
-                <Link to="/" className="mt-4 text-[#0F766E] hover:underline">
-                  Go back home
-                </Link>
-              </div>
-            </PageTransition>
-          } 
-        />
-        
-      </Routes>
-    </AnimatePresence>
+          {/* ==================================================
+              404 PAGE
+          ================================================== */}
+          <Route 
+            path="*" 
+            element={
+              <PageTransition>
+                <div className="flex flex-col items-center justify-center h-96">
+                  <h1 className="text-6xl font-bold text-gray-300">404</h1>
+                  <p className="text-gray-500 mt-2">Page not found</p>
+                  <Link to="/" className="mt-4 text-[#0F766E] hover:underline">
+                    Go back home
+                  </Link>
+                </div>
+              </PageTransition>
+            } 
+          />
+        </Routes>
+      </AnimatePresence>
+    </>
   );
 };
 

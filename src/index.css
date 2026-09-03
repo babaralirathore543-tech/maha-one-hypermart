@@ -44,6 +44,52 @@
 }
 
 /* ============================================================
+   🔥 ANNOUNCEMENT BAR - COMPLETELY HIDDEN
+   ============================================================ */
+
+/* Hide all announcement/promo/top bars */
+.announcement-bar,
+.announcement-wrapper,
+.announcement-container,
+.promo-banner,
+.top-banner,
+.alert-banner,
+.top-bar,
+.notification-bar,
+.offer-bar,
+[class*="Announcement"],
+[class*="announcement"],
+[class*="promo"],
+[class*="alert-"],
+[class*="top-bar"],
+[class*="offer-"],
+[class*="notification-"],
+[class*="banner-top"],
+[class*="header-banner"],
+[role="banner"]:not(.main-banner) {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  border: none !important;
+}
+
+/* Hide any div with announcement text */
+div:has(.announcement-text),
+div:has([class*="announce"]),
+section:has([class*="announce"]) {
+  display: none !important;
+}
+
+/* ============================================================
    CARD BOX - COMPLETELY FLAT (NO SHADOW, NO ANIMATION)
    ============================================================ */
 .animate-float-box {

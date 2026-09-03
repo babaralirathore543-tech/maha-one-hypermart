@@ -23,7 +23,6 @@ const Navbar = () => {
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
   const [showFullSearch, setShowFullSearch] = useState(true);
-  const [showAnnouncement, setShowAnnouncement] = useState(true);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
   const { getCartCount } = useCart();
   const navigate = useNavigate();
@@ -165,10 +164,9 @@ const Navbar = () => {
     };
   }, [userId]);
 
-  // ✅ Scroll listener for compact header
+  // ✅ Scroll listener for compact header (without announcement bar)
   useEffect(() => {
     let ticking = false;
-    const announcementHeight = 36;
     const scrollThreshold = 40;
 
     const handleScroll = () => {
@@ -179,11 +177,9 @@ const Navbar = () => {
           
           if (isMobile) {
             setIsCompact(scrollY > scrollThreshold);
-            setShowAnnouncement(scrollY < announcementHeight);
             setShowFullSearch(scrollY < scrollThreshold);
           } else {
             setIsCompact(false);
-            setShowAnnouncement(true);
             setShowFullSearch(true);
           }
           
@@ -303,7 +299,6 @@ const Navbar = () => {
         behavior: 'smooth'
       });
     } else {
-      // If on homepage, scroll to top where categories are visible
       if (window.location.pathname === '/') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
@@ -321,20 +316,8 @@ const Navbar = () => {
 
   return (
     <>
-      {/* FIXED SPACER */}
-      <div className={`h-[56px] sm:h-[64px] md:h-[80px] transition-all duration-300 ${!showAnnouncement ? 'md:hidden' : ''}`}></div>
-
-      {/* ANNOUNCEMENT BAR */}
-      <div className={`fixed top-0 left-0 w-full z-[45] bg-gradient-to-r from-[#0F766E] to-[#D4AF37] text-white text-center text-[10px] sm:text-xs py-1.5 px-2 font-medium tracking-wide transition-all duration-300 ${
-        showAnnouncement ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
-      }`}>
-        🚚 Free Delivery on Orders Above Rs. 2,000
-      </div>
-
-      {/* NAVBAR - FIXED */}
-      <nav className={`fixed left-0 w-full z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl shadow-2xl border-b border-[#D4AF37]/20 transition-all duration-300 ${
-        isCompact ? 'top-0' : `top-[${showAnnouncement ? '32px' : '0px'}]`
-      } sm:top-[${showAnnouncement ? '36px' : '0px'}] md:top-auto`}>
+      {/* NAVBAR - FIXED (No announcement bar) */}
+      <nav className="fixed top-0 left-0 w-full z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl shadow-2xl border-b border-[#D4AF37]/20 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           
           {/* TOP ROW */}
@@ -352,34 +335,28 @@ const Navbar = () => {
             </button>
 
             {/* CENTER: Logo + Name */}
-            <Link
-  to="/"
-  className="flex items-center gap-2 sm:gap-3 group flex-shrink-0"
->
-  <div className="relative">
-    <img
-      src={logo}
-      alt="MAHA ONE"
-      className="h-14 sm:h-16 md:h-18 w-auto object-contain"
-      onError={(e) => {
-        e.currentTarget.style.display = "none";
-      }}
-    />
-
-    <FaCrown className="absolute -top-1 -right-2 text-[#D4AF37] text-[9px] sm:text-sm animate-pulse" />
-  </div>
-
-  <div className="flex flex-col leading-tight">
-    <span className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight">
-      <span className="text-[#0F766E]">MAHA</span>
-      <span className="text-[#D4AF37]"> ONE</span>
-    </span>
-
-    <span className="hidden sm:block text-[9px] sm:text-[10px] md:text-[11px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-gray-400 font-medium">
-      HYPERMART
-    </span>
-  </div>
-</Link>
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 group flex-shrink-0">
+              <div className="relative">
+                <img 
+                  src={logo} 
+                  alt="MAHA ONE" 
+                  className="h-6 sm:h-9 md:h-11 w-auto object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <FaCrown className="absolute -top-1 -right-2 text-[#D4AF37] text-[8px] sm:text-xs animate-pulse" />
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="text-xs sm:text-lg md:text-2xl font-extrabold tracking-tight">
+                  <span className="text-[#0F766E]">MAHA</span>
+                  <span className="text-[#D4AF37]"> ONE</span>
+                </span>
+                <span className="hidden sm:block text-[7px] sm:text-[8px] md:text-[9px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-gray-400 font-medium">
+                  HYPERMART
+                </span>
+              </div>
+            </Link>
 
             {/* CENTER-RIGHT: Search Bar - Desktop */}
             <div className="hidden md:flex flex-1 max-w-md mx-2 sm:mx-4">
@@ -726,12 +703,12 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* ✅ MOBILE BOTTOM NAVIGATION - Updated with 5 items */}
+      {/* ✅ MOBILE BOTTOM NAVIGATION */}
       {shouldShowBottomNav && (
         <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border-t border-[#D4AF37]/20 shadow-2xl safe-area-bottom">
           <div className="grid grid-cols-5 max-w-md mx-auto px-1">
             
-            {/* 1. HOME - First item */}
+            {/* 1. HOME */}
             <Link
               to="/"
               className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative ${
@@ -754,13 +731,13 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* 2. DARK MODE - Second item */}
+            {/* 2. DARK MODE */}
             <div className="flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 text-gray-500 dark:text-gray-400">
               <ThemeToggle />
               <span className="text-[9px] sm:text-[10px] font-medium">Dark Mode</span>
             </div>
 
-            {/* 3. CATEGORIES - Center item */}
+            {/* 3. CATEGORIES - Center */}
             <button
               onClick={scrollToCategories}
               className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative text-[#D4AF37]`}
@@ -774,7 +751,7 @@ const Navbar = () => {
               <span className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-[#D4AF37] to-[#0F766E] rounded-full"></span>
             </button>
 
-            {/* 4. CART - Fourth item */}
+            {/* 4. CART */}
             <Link
               to="/cart"
               className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative ${
@@ -804,7 +781,7 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* 5. ACCOUNT - Fifth item */}
+            {/* 5. ACCOUNT */}
             <Link
               to={isLoggedIn ? "/dashboard" : "/login"}
               className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative ${
@@ -850,7 +827,6 @@ const Navbar = () => {
         .animate-slideDown {
           animation: slideDown 0.3s ease-out forwards;
         }
-        /* Safe area for iPhone */
         .safe-area-bottom {
           padding-bottom: env(safe-area-inset-bottom);
         }
