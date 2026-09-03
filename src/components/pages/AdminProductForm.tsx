@@ -270,7 +270,6 @@ const categoryData: CategoryData = {
               'jeans': { label: 'Jeans', styles: ['Slim', 'Regular'] },
               'kurta': { label: 'Kurta', styles: ['Simple', 'Embroidered'] },
               'trousers': { label: 'Trousers', styles: ['Formal', 'Casual'] },
-              'shawls': { label: 'Winter Shawls', styles: ['premium', ''] }
             }
           },
           'girls': {
