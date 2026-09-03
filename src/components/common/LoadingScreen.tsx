@@ -13,25 +13,88 @@ const LoadingScreen = () => {
       <div className="text-center">
         
         {/* ==================================================
-            🔥 NAYA LOGO + BRAND NAME
+            🔥 LOGO WITH MULTI-COLOR ROTATING CIRCLE
         ================================================== */}
-        <motion.div
-          initial={{ scale: 0.5, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-6"
-        >
-          {/* 🔥 NAYA LOGO IMAGE - with animation */}
+        <div className="relative inline-block mb-6">
+          
+          {/* 🔥 MULTI-COLOR ROTATING CIRCLE */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="absolute inset-0 rounded-full"
+            style={{
+              border: '4px solid transparent',
+              borderTop: '4px solid #D4AF37',      // Gold
+              borderRight: '4px solid #F59E0B',     // Amber
+              borderBottom: '4px solid #0F766E',    // Teal
+              borderLeft: '4px solid #EC4899',      // Pink
+              borderRadius: '50%',
+              padding: '8px',
+              boxShadow: '0 0 40px rgba(212, 175, 55, 0.3)',
+            }}
+          />
+          
+          {/* 🔥 SECOND MULTI-COLOR CIRCLE (Opposite direction) */}
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{
+              duration: 5,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="absolute inset-0 rounded-full"
+            style={{
+              border: '3px solid transparent',
+              borderTop: '3px solid #8B5CF6',      // Purple
+              borderRight: '3px solid #3B82F6',     // Blue
+              borderBottom: '3px solid #10B981',    // Green
+              borderLeft: '3px solid #F43F5E',      // Rose
+              borderRadius: '50%',
+              padding: '14px',
+              opacity: 0.7,
+            }}
+          />
+          
+          {/* 🔥 THIRD CIRCLE - Dotted */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="absolute inset-0 rounded-full"
+            style={{
+              border: '2px dotted rgba(212, 175, 55, 0.4)',
+              borderRadius: '50%',
+              padding: '20px',
+            }}
+          />
+          
+          {/* 🔥 LOGO IMAGE */}
           <motion.img
             src="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787685509/logo_mhrzum.png"
             alt="MAHA ONE HYPERMARKET Logo"
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ duration: 0.8, delay: 0.3, type: "spring", stiffness: 100 }}
-            className="w-48 sm:w-56 md:w-72 lg:w-80 mx-auto mb-6 drop-shadow-2xl"
+            className="w-32 sm:w-40 md:w-48 lg:w-56 mx-auto relative z-10 drop-shadow-2xl"
           />
           
-          {/* 🔥 TEXT VERSION - as fallback or additional detail */}
+        </div>
+        
+        {/* ==================================================
+            BRAND NAME
+        ================================================== */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
           <div className="text-5xl sm:text-6xl md:text-7xl font-extrabold">
             <span className="text-[#D4AF37]">MAHA</span>
             <span className="text-white"> ONE</span>

@@ -3,9 +3,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaStar, FaHeart, FaShoppingCart, FaArrowLeft, FaSpinner } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
-import { db, collection, getDocs, query, where, orderBy } from '../../config/firebase';
+import { db, collection, getDocs, query, where } from '../../config/firebase';
 
-// ✅ Sweet Product Type Interface
 interface SweetProduct {
   id: string;
   name: string;
@@ -30,25 +29,36 @@ const SweetsPage = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
 
-  // ✅ Fetch sweets from Firebase
   useEffect(() => {
     const fetchSweets = async () => {
       try {
         setLoading(true);
+        console.log('🔍 Fetching sweets...');
+        
+        const productsRef = collection(db, 'products');
         const q = query(
-          collection(db, 'products'),
-          where('category', '==', 'sweets'),
-          where('status', '==', 'active'),
-          orderBy('createdAt', 'desc')
+          productsRef,
+          where('category', '==', 'sweets')
         );
+        
         const snapshot = await getDocs(q);
+        console.log('📦 Total sweets found:', snapshot.size);
+        
+        // 🔥 HAR EK PRODUCT KA DATA CONSOLE MEIN DEKHEIN
+        snapshot.forEach(doc => {
+          console.log('📄 Product ID:', doc.id);
+          console.log('📄 Product Data:', doc.data());
+        });
+        
         const productsData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as SweetProduct[];
+        
         setProducts(productsData);
+        
       } catch (error) {
-        console.error('Error fetching sweets:', error);
+        console.error('❌ Error:', error);
       } finally {
         setLoading(false);
       }
@@ -56,19 +66,16 @@ const SweetsPage = () => {
     fetchSweets();
   }, []);
 
-  // ✅ Get unique categories from products
   const getCategories = () => {
     const categories = products.map(p => p.subCategory || 'Sweets');
     return ['All', ...new Set(categories)];
   };
 
   const categories = getCategories();
-
   const filteredProducts = filter === 'All' 
     ? products 
     : products.filter(p => (p.subCategory || 'Sweets') === filter);
 
-  // ✅ Get discounted price
   const getDiscountedPrice = (product: SweetProduct) => {
     if (product.discount && product.discount > 0) {
       return product.price - (product.price * product.discount / 100);
@@ -76,11 +83,21 @@ const SweetsPage = () => {
     return product.price;
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <FaSpinner className="animate-spin text-4xl text-[#D4AF37] mx-auto" />
+          <p className="mt-4 text-gray-500 dark:text-gray-400">Loading sweets...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#FFFDF7] dark:bg-[#111827] py-6 sm:py-8 md:py-12 min-h-screen">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Link to="/" className="flex items-center gap-1 sm:gap-2 text-[#0F766E] dark:text-[#14b8a6] hover:text-[#D4AF37] transition text-sm sm:text-base">
@@ -100,37 +117,31 @@ const SweetsPage = () => {
           Premium sweets made with love and the finest ingredients.
         </p>
 
-        {/* Filter Buttons */}
-        <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-6 sm:mb-8 overflow-x-auto pb-2">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setFilter(cat)}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
-                filter === cat
-                  ? 'bg-[#D4AF37] text-white shadow-lg shadow-[#D4AF37]/30'
-                  : 'bg-white dark:bg-[#1F2937] text-gray-600 dark:text-gray-300 hover:bg-[#F8FAFC] dark:hover:bg-gray-800 border border-[#E5E7EB] dark:border-gray-700'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Loading State */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <FaSpinner className="animate-spin text-4xl text-[#D4AF37] mx-auto" />
-            <p className="mt-4 text-gray-500 dark:text-gray-400">Loading sweets...</p>
+        {categories.length > 1 && (
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-6 sm:mb-8 overflow-x-auto pb-2">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setFilter(cat)}
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
+                  filter === cat
+                    ? 'bg-[#D4AF37] text-white shadow-lg shadow-[#D4AF37]/30'
+                    : 'bg-white dark:bg-[#1F2937] text-gray-600 dark:text-gray-300 hover:bg-[#F8FAFC] dark:hover:bg-gray-800 border border-[#E5E7EB] dark:border-gray-700'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
-        ) : filteredProducts.length === 0 ? (
+        )}
+
+        {filteredProducts.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">🍬</div>
             <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300">No sweets found</h3>
-            <p className="text-gray-400 mt-2">Try changing the filter</p>
+            <p className="text-gray-400 mt-2">Check console for details</p>
           </div>
         ) : (
-          /* ✅ Products Grid */
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
             {filteredProducts.map((product) => {
               const isInStock = product.stock > 0;
@@ -199,7 +210,6 @@ const SweetsPage = () => {
                         )}
                       </div>
                       
-                      {/* Stock Status */}
                       <div className="mt-1 sm:mt-2 flex items-center gap-1 sm:gap-1.5">
                         <span 
                           className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isInStock ? 'bg-green-500 animate-blink' : 'bg-red-500'}`}

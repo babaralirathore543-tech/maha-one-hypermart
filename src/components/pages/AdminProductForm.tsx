@@ -269,7 +269,8 @@ const categoryData: CategoryData = {
               't-shirts': { label: 'T-Shirts', styles: ['Casual', 'Graphic', 'Polo'] },
               'jeans': { label: 'Jeans', styles: ['Slim', 'Regular'] },
               'kurta': { label: 'Kurta', styles: ['Simple', 'Embroidered'] },
-              'trousers': { label: 'Trousers', styles: ['Formal', 'Casual'] }
+              'trousers': { label: 'Trousers', styles: ['Formal', 'Casual'] },
+              'shawls': { label: 'Winter Shawls', styles: ['premium', ''] }
             }
           },
           'girls': {

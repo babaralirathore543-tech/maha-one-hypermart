@@ -1,7 +1,11 @@
 // src/pages/HomePage.tsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaStar, FaHeart, FaShoppingCart, FaArrowRight, FaSpinner } from 'react-icons/fa';
+import { 
+  FaStar, FaHeart, FaShoppingCart, FaArrowRight, FaSpinner,
+  FaAppleAlt, FaMale, FaFemale, FaChild, FaCookie, 
+  FaShoePrints, FaShoppingBag, FaGem
+} from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { db, collection, getDocs, query, where, limit } from '../../config/firebase';
 
@@ -233,17 +237,74 @@ const CategoryProductSection: React.FC<CategoryProductSectionProps> = ({
   );
 };
 
-// ✅ Shop by Category Component - Premium Design (4 per row on ALL devices)
+// ✅ Shop by Category Component - Premium Design with Vector Icons (White Fill + Green Border)
 const ShopByCategory = () => {
+  // ✅ Categories with Vector Icons (White Fill + Green Border Style)
   const categories = [
-    { id: 'dryfruits', name: 'Dry Fruits', icon: '🥜', link: '/shop', color: 'from-amber-600 to-amber-800', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-    { id: 'mens-fashion', name: "Men's Fashion", icon: '👔', link: '/fashion?gender=men', color: 'from-blue-600 to-blue-800', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-    { id: 'womens-fashion', name: "Women's Fashion", icon: '👗', link: '/fashion?gender=women', color: 'from-purple-600 to-purple-800', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-    { id: 'kids-fashion', name: "Kids Fashion", icon: '🧒', link: '/fashion?gender=kids', color: 'from-pink-500 to-pink-700', bg: 'bg-pink-50 dark:bg-pink-900/20' },
-    { id: 'sweets', name: 'Sweets', icon: '🍬', link: '/sweets', color: 'from-rose-500 to-rose-700', bg: 'bg-rose-50 dark:bg-rose-900/20' },
-    { id: 'footwear', name: 'Footwear', icon: '👟', link: '/fashion?category=footwear', color: 'from-emerald-600 to-emerald-800', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-    { id: 'bags', name: 'Bags', icon: '👜', link: '/fashion?category=bags', color: 'from-indigo-600 to-indigo-800', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
-    { id: 'accessories', name: 'Accessories', icon: '💎', link: '/fashion?category=accessories', color: 'from-amber-500 to-amber-700', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { 
+      id: 'dryfruits', 
+      name: 'Dry Fruits', 
+      icon: <FaAppleAlt className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#0F766E] group-hover:text-white transition-colors" />,
+      link: '/shop', 
+      color: 'from-amber-600 to-amber-800', 
+      bg: 'bg-amber-50 dark:bg-amber-900/20' 
+    },
+    { 
+      id: 'mens-fashion', 
+      name: "Men's Fashion", 
+      icon: <FaMale className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#0F766E] group-hover:text-white transition-colors" />,
+      link: '/fashion?gender=men', 
+      color: 'from-blue-600 to-blue-800', 
+      bg: 'bg-blue-50 dark:bg-blue-900/20' 
+    },
+    { 
+      id: 'womens-fashion', 
+      name: "Women's Fashion", 
+      icon: <FaFemale className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#0F766E] group-hover:text-white transition-colors" />,
+      link: '/fashion?gender=women', 
+      color: 'from-purple-600 to-purple-800', 
+      bg: 'bg-purple-50 dark:bg-purple-900/20' 
+    },
+    { 
+      id: 'kids-fashion', 
+      name: "Kids Fashion", 
+      icon: <FaChild className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#0F766E] group-hover:text-white transition-colors" />,
+      link: '/fashion?gender=kids', 
+      color: 'from-pink-500 to-pink-700', 
+      bg: 'bg-pink-50 dark:bg-pink-900/20' 
+    },
+    { 
+      id: 'sweets', 
+      name: 'Sweets', 
+      icon: <FaCookie className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#0F766E] group-hover:text-white transition-colors" />,
+      link: '/sweets', 
+      color: 'from-rose-500 to-rose-700', 
+      bg: 'bg-rose-50 dark:bg-rose-900/20' 
+    },
+    { 
+      id: 'footwear', 
+      name: 'Footwear', 
+      icon: <FaShoePrints className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#0F766E] group-hover:text-white transition-colors" />,
+      link: '/fashion?category=footwear', 
+      color: 'from-emerald-600 to-emerald-800', 
+      bg: 'bg-emerald-50 dark:bg-emerald-900/20' 
+    },
+    { 
+      id: 'bags', 
+      name: 'Bags', 
+      icon: <FaShoppingBag className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#0F766E] group-hover:text-white transition-colors" />,
+      link: '/fashion?category=bags', 
+      color: 'from-indigo-600 to-indigo-800', 
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20' 
+    },
+    { 
+      id: 'accessories', 
+      name: 'Accessories', 
+      icon: <FaGem className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#0F766E] group-hover:text-white transition-colors" />,
+      link: '/fashion?category=accessories', 
+      color: 'from-amber-500 to-amber-700', 
+      bg: 'bg-amber-50 dark:bg-amber-900/20' 
+    },
   ];
 
   return (
@@ -269,9 +330,11 @@ const ShopByCategory = () => {
               <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-90 transition-all duration-500`}></div>
               
               <div className="relative z-10">
-                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl mb-1 sm:mb-2 transform group-hover:scale-110 transition-transform duration-300">
+                {/* ✅ Vector Icon with White Fill + Green Border Circle */}
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-white border-2 border-[#0F766E] flex items-center justify-center mx-auto mb-1 sm:mb-2 shadow-sm transition-all duration-300 group-hover:border-[#D4AF37] group-hover:shadow-md">
                   {category.icon}
                 </div>
+                
                 <h3 className="text-gray-700 dark:text-gray-300 group-hover:text-white font-semibold text-[8px] sm:text-xs md:text-sm lg:text-base transition-colors duration-300 leading-tight">
                   {category.name}
                 </h3>
@@ -549,7 +612,7 @@ const HomePage = () => {
     <div className="bg-[#FFFDF7] dark:bg-[#111827] min-h-screen">
       
       {/* ============================================================
-      HERO SECTION - With scroll-margin-top to prevent hiding behind slider
+      HERO SECTION
       ============================================================ */}
       <section 
         id="hero-section"
@@ -559,7 +622,6 @@ const HomePage = () => {
         <div className="relative w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-4 md:py-6">
           <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl bg-[#F5F3FF] dark:bg-[#1F2937] border-2 sm:border-4 border-purple-500 shadow-purple-500/20">
             
-            {/* ✅ Hero Image Container - object-cover for full frame fit */}
             <div className="relative w-full h-[200px] xs:h-[250px] sm:h-[300px] md:h-[400px] lg:h-[450px] xl:h-[500px] 2xl:h-[550px] flex items-center justify-center bg-[#F5F3FF] dark:bg-[#1F2937] overflow-hidden">
               <Link to={slides[currentSlide].link} className="block w-full h-full">
                 <img
@@ -574,7 +636,6 @@ const HomePage = () => {
               </Link>
             </div>
 
-            {/* ✅ Slide Indicators - Mobile Responsive */}
             <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1 sm:gap-1.5 md:gap-2 z-20">
               {slides.map((_, index) => (
                 <button
@@ -589,7 +650,6 @@ const HomePage = () => {
               ))}
             </div>
 
-            {/* ✅ Navigation Arrows - Mobile Responsive */}
             <button
               onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
               className="absolute left-1 sm:left-2 md:left-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 sm:p-1.5 md:p-2.5 transition-all duration-300 backdrop-blur-sm z-10"
@@ -613,12 +673,12 @@ const HomePage = () => {
       </section>
 
       {/* ============================================================
-      SHOP BY CATEGORY SECTION
+      SHOP BY CATEGORY SECTION — ✅ UPDATED WITH VECTOR ICONS
       ============================================================ */}
       <ShopByCategory />
 
       {/* ============================================================
-      CATEGORY SECTIONS - With IDs for IntersectionObserver
+      CATEGORY SECTIONS
       ============================================================ */}
       {sectionConfigs.map((section, index) => (
         <div 

@@ -1,12 +1,12 @@
 // src/components/pages/FashionPage.tsx
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { 
   FaStar, FaHeart, FaShoppingCart, FaMale, FaFemale, FaChild, 
   FaFilter, FaTimes, FaChevronDown, FaChevronUp
 } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
-import { db, collection, getDocs } from '../../config/firebase';
+import { db, collection, getDocs, query, where } from '../../config/firebase';
 
 // ✅ Product Interface - Matching Admin Product Form
 interface FashionProduct {
@@ -106,65 +106,91 @@ const genderIcons: Record<string, string> = {
 
 const FashionPage = () => {
   const { addToCart } = useCart();
+  const [searchParams] = useSearchParams();
+  
+  // ✅ Get filters from URL
+  const urlGender = searchParams.get('gender');
+  const urlCategory = searchParams.get('category');
   
   // ✅ State
   const [products, setProducts] = useState<FashionProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<FashionProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedGender, setSelectedGender] = useState<string>('all');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedGender, setSelectedGender] = useState<string>(urlGender || 'all');
+  const [selectedCategory, setSelectedCategory] = useState<string>(urlCategory || 'all');
   const [selectedSize, setSelectedSize] = useState('all');
   const [selectedColor, setSelectedColor] = useState('all');
   const [sortBy, setSortBy] = useState('popular');
   const [showFilters, setShowFilters] = useState(false);
   const [imageError, setImageError] = useState<{ [key: string]: boolean }>({});
 
-  // ✅ Fetch Products from Firebase
+  // ✅ Fetch Products from Firebase with filters
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const querySnapshot = await getDocs(collection(db, 'products'));
+        
+        // ✅ Build query based on URL filters
+        let q;
+        const productsRef = collection(db, 'products');
+        
+        if (urlGender) {
+          q = query(
+            productsRef,
+            where('category', '==', 'fashion'),
+            where('gender', '==', urlGender)
+          );
+        } else if (urlCategory) {
+          q = query(
+            productsRef,
+            where('category', '==', 'fashion'),
+            where('productType', '==', urlCategory)
+          );
+        } else {
+          q = query(
+            productsRef,
+            where('category', '==', 'fashion')
+          );
+        }
+        
+        const querySnapshot = await getDocs(q);
         const productsData: FashionProduct[] = [];
         
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          // ✅ Filter only fashion category
-          if (data.category === 'fashion') {
-            productsData.push({
-              id: doc.id,
-              name: data.name || '',
-              price: data.price || 0,
-              oldPrice: data.oldPrice || 0,
-              discountPrice: data.discountPrice || 0,
-              discount: data.discount || data.discountPrice || 0,
-              rating: data.rating || 0,
-              category: data.category || 'fashion',
-              gender: data.gender || '',
-              productType: data.productType || '',
-              subCategory: data.subCategory || '',
-              subSubCategory: data.subSubCategory || '',
-              style: data.style || '',
-              productId: data.productId || '',
-              image: data.image || '',
-              images: data.images || [],
-              colorImages: data.colorImages || {},
-              sizes: data.sizes || [],
-              colors: data.colors || [],
-              stock: data.stock || 0,
-              description: data.description || '',
-              shortDescription: data.shortDescription || '',
-              material: data.material || '',
-              careInstructions: data.careInstructions || '',
-              isNew: data.isNew || false,
-              isFeatured: data.isFeatured || false,
-              isBestSeller: data.isBestSeller || false,
-              isOnSale: data.isOnSale || false,
-              status: data.status || 'active',
-              createdAt: data.createdAt,
-              updatedAt: data.updatedAt
-            });
-          }
+          productsData.push({
+            id: doc.id,
+            name: data.name || '',
+            price: data.price || 0,
+            oldPrice: data.oldPrice || 0,
+            discountPrice: data.discountPrice || 0,
+            discount: data.discount || data.discountPrice || 0,
+            rating: data.rating || 0,
+            category: data.category || 'fashion',
+            gender: data.gender || '',
+            productType: data.productType || '',
+            subCategory: data.subCategory || '',
+            subSubCategory: data.subSubCategory || '',
+            style: data.style || '',
+            productId: data.productId || '',
+            image: data.image || '',
+            images: data.images || [],
+            colorImages: data.colorImages || {},
+            sizes: data.sizes || [],
+            colors: data.colors || [],
+            stock: data.stock || 0,
+            description: data.description || '',
+            shortDescription: data.shortDescription || '',
+            material: data.material || '',
+            careInstructions: data.careInstructions || '',
+            isNew: data.isNew || false,
+            isFeatured: data.isFeatured || false,
+            isBestSeller: data.isBestSeller || false,
+            isOnSale: data.isOnSale || false,
+            status: data.status || 'active',
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt
+          });
         });
         
         setProducts(productsData);
@@ -177,9 +203,9 @@ const FashionPage = () => {
     };
 
     fetchProducts();
-  }, []);
+  }, [urlGender, urlCategory]);
 
-  // ✅ Get unique genders, categories, sizes & colors
+  // ✅ Get unique categories, sizes & colors from filtered products
   const allCategories = [...new Set(products.map(p => p.productType).filter(Boolean))];
   const allSizes = [...new Set(products.flatMap(p => p.sizes || []))];
   const allColors = [...new Set(products.flatMap(p => p.colors || []))];
@@ -188,13 +214,13 @@ const FashionPage = () => {
   useEffect(() => {
     let filtered = products;
 
-    // Filter by gender
-    if (selectedGender !== 'all') {
+    // Filter by gender (if not already filtered by URL)
+    if (selectedGender !== 'all' && !urlGender) {
       filtered = filtered.filter(p => p.gender === selectedGender);
     }
 
-    // Filter by category (productType)
-    if (selectedCategory !== 'all') {
+    // Filter by category (productType) (if not already filtered by URL)
+    if (selectedCategory !== 'all' && !urlCategory) {
       filtered = filtered.filter(p => p.productType === selectedCategory);
     }
 
@@ -218,7 +244,7 @@ const FashionPage = () => {
     });
 
     setFilteredProducts(filtered);
-  }, [products, selectedGender, selectedCategory, selectedSize, selectedColor, sortBy]);
+  }, [products, selectedGender, selectedCategory, selectedSize, selectedColor, sortBy, urlGender, urlCategory]);
 
   // ✅ Get price with discount
   const getDiscountedPrice = (product: FashionProduct) => {
@@ -264,6 +290,27 @@ const FashionPage = () => {
     setImageError(prev => ({ ...prev, [productId]: true }));
   };
 
+  // ✅ Get title based on URL filter
+  const getTitle = () => {
+    if (urlGender === 'men') return "👔 Men's Fashion";
+    if (urlGender === 'women') return "👗 Women's Fashion";
+    if (urlGender === 'kids') return "🧒 Kids Fashion";
+    if (urlCategory === 'footwear') return "👟 Footwear";
+    if (urlCategory === 'bags') return "👜 Bags";
+    if (urlCategory === 'accessories') return "💎 Accessories";
+    return "👗 Fashion Collection";
+  };
+
+  const getSubtitle = () => {
+    if (urlGender === 'men') return "Premium men's clothing and accessories";
+    if (urlGender === 'women') return "Elegant women's fashion collection";
+    if (urlGender === 'kids') return "Stylish kids' clothing and accessories";
+    if (urlCategory === 'footwear') return "Comfortable and stylish footwear";
+    if (urlCategory === 'bags') return "Premium bags and handbags";
+    if (urlCategory === 'accessories') return "Complete your look with accessories";
+    return "Discover the latest fashion trends";
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] bg-[#FFFDF7]">
@@ -282,10 +329,10 @@ const FashionPage = () => {
         {/* ✅ Page Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#111827]">
-            👗 Fashion <span className="text-[#D4AF37]">Collection</span>
+            {getTitle()}
           </h1>
           <p className="text-gray-500 text-xs sm:text-sm md:text-base mt-1 sm:mt-2 max-w-2xl mx-auto">
-            Discover the latest trends in ethnic wear, casual wear, and accessories.
+            {getSubtitle()}
           </p>
           <div className="text-xs text-gray-400 mt-2">
             {products.length} products available

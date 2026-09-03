@@ -164,7 +164,7 @@ const Navbar = () => {
     };
   }, [userId]);
 
-  // ✅ Scroll listener for compact header (without announcement bar)
+  // ✅ Scroll listener for compact header
   useEffect(() => {
     let ticking = false;
     const scrollThreshold = 40;
@@ -285,27 +285,72 @@ const Navbar = () => {
     }, 100);
   };
 
-  // ✅ Scroll to categories slider
+  // ✅ Scroll to categories section on Home page
   const scrollToCategories = () => {
-    const sliderElement = document.querySelector('.categories-slider');
-    if (sliderElement) {
+    console.log('🔄 Scrolling to categories...');
+    
+    // 🔥 TRY 1: Direct ID from HomePage
+    let targetElement = document.getElementById('shop-by-category');
+    
+    // 🔥 TRY 2: If not found, try section with grid-cols-4
+    if (!targetElement) {
+      targetElement = document.querySelector('section:has(.grid-cols-4)');
+    }
+    
+    // 🔥 TRY 3: If still not found, try by class
+    if (!targetElement) {
+      targetElement = document.querySelector('[class*="ShopByCategory"]');
+    }
+    
+    // 🔥 TRY 4: Last resort — find by text
+    if (!targetElement) {
+      const allSections = document.querySelectorAll('section');
+      for (const section of allSections) {
+        if (section.textContent?.includes('Shop by Category')) {
+          targetElement = section;
+          break;
+        }
+      }
+    }
+    
+    if (targetElement) {
+      console.log('✅ Categories section found:', targetElement);
+      
+      // Get header height for offset
       const navElement = document.querySelector('nav') as HTMLElement | null;
       const headerHeight = navElement?.offsetHeight || 80;
-      const elementPosition = sliderElement.getBoundingClientRect().top + window.pageYOffset;
-      const offsetPosition = elementPosition - headerHeight - 10;
       
+      // Calculate scroll position
+      const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+      const offsetPosition = elementPosition - headerHeight - 20;
+      
+      // Smooth scroll
       window.scrollTo({
         top: offsetPosition,
         behavior: 'smooth'
       });
     } else {
-      if (window.location.pathname === '/') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
+      console.warn('⚠️ Categories section not found, navigating to home...');
+      
+      // If not on home page, go to home first
+      if (window.location.pathname !== '/') {
         navigate('/');
+        // Wait for page to load then scroll
         setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 300);
+          const retryElement = document.getElementById('shop-by-category') || 
+                             document.querySelector('section:has(.grid-cols-4)');
+          if (retryElement) {
+            const headerHeight = document.querySelector('nav')?.offsetHeight || 80;
+            const elementPosition = retryElement.getBoundingClientRect().top + window.pageYOffset;
+            window.scrollTo({
+              top: elementPosition - headerHeight - 20,
+              behavior: 'smooth'
+            });
+          }
+        }, 500);
+      } else {
+        // If on home page but still not found, scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   };
@@ -316,169 +361,136 @@ const Navbar = () => {
 
   return (
     <>
-      {/* NAVBAR - FIXED (No announcement bar) */}
-      <nav className="fixed top-0 left-0 w-full z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl shadow-2xl border-b border-[#D4AF37]/20 transition-all duration-300">
+      {/* ============================================================
+          🔥 NAVBAR — COMPACT MODE: HAMBURGER + LOGO + SEARCH + CART
+          ============================================================ */}
+      <nav className={`fixed top-0 left-0 w-full z-40 bg-white dark:bg-gray-900 border-b border-[#D4AF37]/20 shadow-md transition-all duration-300 ${
+        isCompact ? 'h-[52px] sm:h-[56px]' : 'h-auto'
+      }`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           
-          {/* TOP ROW */}
-          <div className="flex items-center justify-between h-[48px] sm:h-[56px] md:h-[80px] gap-2 sm:gap-3">
+          {/* ==========================================================
+              TOP ROW — Hamburger + Logo + Icons
+              ========================================================== */}
+          <div className={`flex items-center justify-between gap-2 sm:gap-3 transition-all duration-300 ${
+            isCompact ? 'h-[52px] sm:h-[56px]' : 'h-[56px] sm:h-[64px] md:h-[72px]'
+          }`}>
             
-            {/* LEFT: Hamburger Menu */}
+            {/* LEFT: Hamburger Menu — 🔥 ALWAYS VISIBLE */}
             <button 
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-colors flex-shrink-0"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle menu"
             >
               {isMenuOpen ? 
-                <FaTimes className="text-lg sm:text-xl text-[#0F766E]" /> : 
-                <FaBars className="text-lg sm:text-xl text-gray-600 dark:text-gray-400" />
+                <FaTimes className="text-xl text-[#0F766E]" /> : 
+                <FaBars className={`text-xl text-gray-600 dark:text-gray-300 transition-all duration-300 ${
+                  isCompact ? 'text-[#0F766E]' : ''
+                }`} />
               }
             </button>
 
-            {/* CENTER: Logo + Name */}
-            <Link to="/" className="flex items-center gap-2 sm:gap-3 group flex-shrink-0">
+            {/* CENTER: Logo + Name — 🔥 SHRINK ON COMPACT */}
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 group flex-shrink-0 transition-all duration-300">
               <div className="relative">
                 <img 
                   src={logo} 
                   alt="MAHA ONE" 
-                  className="h-6 sm:h-9 md:h-11 w-auto object-contain"
+                  className={`transition-all duration-300 ${
+                    isCompact ? 'h-5 sm:h-6' : 'h-7 sm:h-9 md:h-11'
+                  } w-auto object-contain`}
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
                 />
-                <FaCrown className="absolute -top-1 -right-2 text-[#D4AF37] text-[8px] sm:text-xs animate-pulse" />
+                <FaCrown className={`absolute -top-1 -right-2 text-[#D4AF37] ${
+                  isCompact ? 'text-[6px] sm:text-[8px]' : 'text-[8px] sm:text-xs'
+                } animate-pulse`} />
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="text-xs sm:text-lg md:text-2xl font-extrabold tracking-tight">
+                <span className={`font-extrabold tracking-tight transition-all duration-300 ${
+                  isCompact ? 'text-xs sm:text-sm' : 'text-sm sm:text-lg md:text-2xl'
+                }`}>
                   <span className="text-[#0F766E]">MAHA</span>
                   <span className="text-[#D4AF37]"> ONE</span>
                 </span>
-                <span className="hidden sm:block text-[7px] sm:text-[8px] md:text-[9px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-gray-400 font-medium">
+                <span className={`hidden sm:block text-gray-400 font-medium uppercase tracking-[0.35em] transition-all duration-300 ${
+                  isCompact ? 'text-[5px]' : 'text-[7px] sm:text-[8px] md:text-[9px]'
+                }`}>
                   HYPERMART
                 </span>
               </div>
             </Link>
 
-            {/* CENTER-RIGHT: Search Bar - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-md mx-2 sm:mx-4">
-              <form onSubmit={handleSearch} className="relative w-full">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder={isVoiceListening ? '🎤 Listening...' : (isSearchFocused ? 'Search products...' : displayText)}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => {
-                    setTimeout(() => {
-                      setIsSearchFocused(false);
-                    }, 200);
-                  }}
-                  className={`w-full pl-10 pr-24 py-2 sm:py-2.5 rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-[#F8FAFC] dark:bg-gray-800 ${
-                    isSearchFocused || searchTerm.length > 0 || isVoiceListening
-                      ? 'border-2 border-[#D4AF37] focus:border-[#D4AF37]'
-                      : 'border-2 border-[#0F766E]'
-                  }`}
-                />
-                <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#D4AF37] transition-colors">
-                  <FaSearch className="text-sm sm:text-base" />
-                </button>
-
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  <VoiceSearch
-                    onTranscript={handleVoiceTranscript}
-                    onListening={handleVoiceListening}
-                    className="p-1.5 text-sm"
-                  />
-                  
-                  {searchTerm && (
-                    <button
-                      type="button"
-                      onClick={clearSearch}
-                      className="text-gray-400 hover:text-red-500 transition-colors text-sm p-1"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </form>
-
-              {searchSuggestions.length > 0 && !isVoiceListening && (
-                <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 max-w-2xl mx-auto">
-                  {searchSuggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/20 transition flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
-                    >
-                      <FaSearch className="text-[#D4AF37] text-xs" />
-                      <span dangerouslySetInnerHTML={{
-                        __html: suggestion.replace(
-                          new RegExp(searchTerm, 'gi'),
-                          (match) => `<strong class="text-[#D4AF37]">${match}</strong>`
-                        )
-                      }} />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* RIGHT: Icons */}
+            {/* RIGHT: Icons — 🔥 SEARCH + CART ALWAYS VISIBLE, OTHERS HIDE ON COMPACT */}
             <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
-              {/* Search Icon - Mobile Compact */}
+              
+              {/* 🔥 SEARCH ICON — ALWAYS VISIBLE */}
               <button 
-                className="md:hidden p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-colors"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 onClick={openSearchOverlay}
                 aria-label="Search"
               >
-                <FaSearch className="text-base sm:text-lg text-gray-600 dark:text-gray-400" />
+                <FaSearch className={`text-lg text-gray-600 dark:text-gray-300 transition-colors ${
+                  isCompact ? 'text-[#D4AF37]' : ''
+                }`} />
               </button>
 
-              {/* Wishlist */}
-              <Link to="/wishlist" className="hidden sm:flex p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group">
-                <FaHeart className="text-base sm:text-lg text-gray-600 dark:text-gray-400 group-hover:text-[#D4AF37] transition-colors" />
-                {wishlistCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-red-500 to-red-600 text-white text-[8px] sm:text-[10px] font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-md">
-                    {wishlistCount}
-                  </span>
+              {/* 🔥 ALL OTHER ICONS — HIDE ON COMPACT */}
+              <div className={`flex items-center gap-1 sm:gap-2 md:gap-3 transition-all duration-300 ${
+                isCompact ? 'opacity-0 scale-95 pointer-events-none w-0 overflow-hidden' : 'opacity-100 scale-100 pointer-events-auto'
+              }`}>
+                {/* Wishlist */}
+                <Link to="/wishlist" className="hidden sm:flex p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 relative group">
+                  <FaHeart className="text-lg text-gray-600 dark:text-gray-300 group-hover:text-[#D4AF37] transition-colors" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-red-500 to-red-600 text-white text-[8px] sm:text-[10px] font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-md">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Link>
+
+                <ThemeToggle />
+
+                <Link to="/dashboard" className="hidden sm:flex p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300">
+                  <FaUser className="text-lg text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] transition-colors" />
+                </Link>
+
+                {isAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className="hidden sm:flex p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 relative group"
+                    title="Admin Panel"
+                  >
+                    <FaCog className="text-lg text-[#D4AF37] group-hover:text-[#0F766E] transition-colors" />
+                    <span className="absolute -top-0.5 -right-0.5 bg-[#D4AF37] text-white text-[8px] sm:text-[10px] font-bold rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 flex items-center justify-center shadow-md">
+                      ⚙
+                    </span>
+                  </Link>
                 )}
-              </Link>
+              </div>
 
-              <ThemeToggle />
-
-              <Link to="/dashboard" className="hidden sm:flex p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300">
-                <FaUser className="text-base sm:text-lg text-gray-600 dark:text-gray-400 hover:text-[#D4AF37] transition-colors" />
-              </Link>
-              
-              <Link to="/cart" className="p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group">
-                <FaShoppingBag className="text-base sm:text-lg text-gray-600 dark:text-gray-400 group-hover:text-[#D4AF37] transition-colors" />
+              {/* 🔥 CART ICON — ALWAYS VISIBLE */}
+              <Link to="/cart" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 relative group">
+                <FaShoppingBag className={`text-lg text-gray-600 dark:text-gray-300 group-hover:text-[#D4AF37] transition-colors ${
+                  isCompact ? 'text-[#D4AF37]' : ''
+                }`} />
                 <span className="absolute -top-0.5 -right-0.5 bg-[#0F766E] text-white text-[8px] sm:text-[10px] font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center shadow-md">
                   {getCartCount()}
                 </span>
               </Link>
-
-              {isAdmin && (
-                <Link 
-                  to="/admin" 
-                  className="hidden sm:flex p-1.5 sm:p-2 rounded-full hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 relative group"
-                  title="Admin Panel"
-                >
-                  <FaCog className="text-base sm:text-lg text-[#D4AF37] group-hover:text-[#0F766E] transition-colors" />
-                  <span className="absolute -top-0.5 -right-0.5 bg-[#D4AF37] text-white text-[8px] sm:text-[10px] font-bold rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 flex items-center justify-center shadow-md">
-                    ⚙
-                  </span>
-                </Link>
-              )}
             </div>
           </div>
 
-          {/* MOBILE SEARCH BAR - Only show when not compact */}
-          <div className={`md:hidden transition-all duration-300 overflow-hidden ${
-            showFullSearch ? 'max-h-20 opacity-100 py-2 sm:py-3' : 'max-h-0 opacity-0 py-0'
-          } border-t border-[#E5E7EB] dark:border-gray-700`}>
-            <form onSubmit={handleSearch} className="relative">
+          {/* ==========================================================
+              SEARCH BAR — 🔥 SHOW/HIDE ON SCROLL
+              ========================================================== */}
+          <div className={`transition-all duration-300 overflow-hidden ${
+            showFullSearch ? 'max-h-20 opacity-100 pb-2 sm:pb-3' : 'max-h-0 opacity-0 py-0'
+          }`}>
+            <form onSubmit={handleSearch} className="relative w-full">
               <input
-                id="mobile-search-input"
+                ref={searchInputRef}
                 type="text"
                 placeholder={isVoiceListening ? '🎤 Listening...' : (isSearchFocused ? 'Search products...' : displayText)}
                 value={searchTerm}
@@ -489,17 +501,13 @@ const Navbar = () => {
                     setIsSearchFocused(false);
                   }, 200);
                 }}
-                className={`w-full pl-10 pr-24 py-2 sm:py-2.5 rounded-full text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-[#F8FAFC] dark:bg-gray-800 ${
-                  isSearchFocused || searchTerm.length > 0 || isVoiceListening
-                    ? 'border-2 border-[#D4AF37] focus:border-[#D4AF37]'
-                    : 'border-2 border-[#0F766E]'
-                }`}
+                className="w-full pl-12 pr-24 py-2.5 sm:py-3 rounded-full text-sm sm:text-base text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-gray-100 dark:bg-gray-800 border-2 border-[#0F766E] focus:border-[#D4AF37]"
               />
-              <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#D4AF37] transition-colors">
-                <FaSearch className="text-sm sm:text-base" />
+              <button type="submit" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#D4AF37] transition-colors">
+                <FaSearch className="text-base sm:text-lg" />
               </button>
 
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 <VoiceSearch
                   onTranscript={handleVoiceTranscript}
                   onListening={handleVoiceListening}
@@ -518,6 +526,7 @@ const Navbar = () => {
               </div>
             </form>
 
+            {/* Search Suggestions */}
             {searchSuggestions.length > 0 && !isVoiceListening && (
               <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
                 {searchSuggestions.map((suggestion, index) => (
@@ -539,19 +548,21 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* CATEGORIES SLIDER - Sticky on compact mode */}
-          <div className={`transition-all duration-300 ${
-            isCompact ? 'sticky top-0 z-30' : 'relative'
-          }`}>
+          {/* ==========================================================
+              CATEGORIES SLIDER — Search Bar ke Neeche
+              ========================================================== */}
+          <div className="pb-1">
             <CategoriesSlider 
               isCompact={isCompact}
               isSticky={isCompact}
             />
           </div>
 
-          {/* Mobile Menu */}
+          {/* ==========================================================
+              MOBILE MENU
+              ========================================================== */}
           {isMenuOpen && (
-            <div className="lg:hidden py-3 sm:py-4 border-t border-[#E5E7EB] dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 backdrop-blur max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="lg:hidden py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 max-h-[calc(100vh-4rem)] overflow-y-auto">
               <div className="grid grid-cols-2 gap-1 px-2">
                 {links.map((link) => (
                   <Link
@@ -560,7 +571,7 @@ const Navbar = () => {
                     className={`block py-2.5 px-3 text-sm font-medium rounded-lg transition-all duration-300 text-center ${
                       location.pathname === link.path
                         ? 'bg-[#D4AF37] text-white'
-                        : 'text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] hover:bg-[#F8FAFC] dark:hover:bg-gray-800'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -569,12 +580,12 @@ const Navbar = () => {
                 ))}
               </div>
 
-              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 px-2">
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
                 {isLoggedIn && (
                   <>
                     <Link
                       to="/dashboard"
-                      className="block py-2.5 px-3 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] hover:bg-[#F8FAFC] dark:hover:bg-gray-800 transition-all duration-300 text-center"
+                      className="block py-2.5 px-3 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 text-center"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       👤 My Account
@@ -625,7 +636,9 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* SEARCH OVERLAY - Mobile */}
+      {/* ==========================================================
+          SEARCH OVERLAY — Mobile
+          ========================================================== */}
       {isSearchOverlayOpen && (
         <div 
           ref={searchOverlayRef}
@@ -654,7 +667,7 @@ const Navbar = () => {
                 placeholder={isVoiceListening ? '🎤 Listening...' : 'Search for products...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-24 py-3 rounded-full text-base text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-[#F8FAFC] dark:bg-gray-800 border-2 border-[#D4AF37] focus:border-[#D4AF37]"
+                className="w-full pl-12 pr-24 py-3 rounded-full text-base text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:shadow-lg transition-all duration-300 bg-gray-100 dark:bg-gray-800 border-2 border-[#D4AF37] focus:border-[#D4AF37]"
                 autoFocus
               />
               <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#D4AF37] transition-colors">
@@ -703,9 +716,11 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* ✅ MOBILE BOTTOM NAVIGATION */}
+      {/* ==========================================================
+          MOBILE BOTTOM NAVIGATION
+          ========================================================== */}
       {shouldShowBottomNav && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border-t border-[#D4AF37]/20 shadow-2xl safe-area-bottom">
+        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white dark:bg-gray-900 border-t border-[#D4AF37]/20 shadow-2xl safe-area-bottom">
           <div className="grid grid-cols-5 max-w-md mx-auto px-1">
             
             {/* 1. HOME */}
@@ -734,13 +749,13 @@ const Navbar = () => {
             {/* 2. DARK MODE */}
             <div className="flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 text-gray-500 dark:text-gray-400">
               <ThemeToggle />
-              <span className="text-[9px] sm:text-[10px] font-medium">Dark Mode</span>
+              <span className="text-[9px] sm:text-[10px] font-medium">Theme</span>
             </div>
 
-            {/* 3. CATEGORIES - Center */}
+            {/* 3. CATEGORIES - Center — 🔥 FIXED */}
             <button
               onClick={scrollToCategories}
-              className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative text-[#D4AF37]`}
+              className="flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative text-[#D4AF37]"
             >
               <span className="scale-110">
                 <FaThLarge className="text-xl sm:text-2xl text-[#D4AF37]" />

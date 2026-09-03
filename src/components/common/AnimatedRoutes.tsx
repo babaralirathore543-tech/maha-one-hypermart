@@ -87,6 +87,7 @@ const AnimatedRoutes = () => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [prevPath, setPrevPath] = useState(location.pathname);
+  const [loadingCount, setLoadingCount] = useState(0);
 
   // 🔥 INITIAL LOAD
   useEffect(() => {
@@ -102,18 +103,36 @@ const AnimatedRoutes = () => {
   // 🔥 ROUTE CHANGE PAR LOADER SHOW
   useEffect(() => {
     if (prevPath !== location.pathname) {
-      console.log('🔄 Route changed to:', location.pathname);
+      console.log('🔄 Route changed from:', prevPath, 'to:', location.pathname);
+      setLoadingCount(prev => prev + 1);
       setIsLoading(true);
       setPrevPath(location.pathname);
       
       const timer = setTimeout(() => {
         setIsLoading(false);
-        console.log('✅ Route load complete');
+        console.log('✅ Route load complete for:', location.pathname);
       }, 1500);
       
       return () => clearTimeout(timer);
     }
   }, [location.pathname, prevPath]);
+
+  // 🔥 EMERGENCY TIMEOUT — If loading stuck for more than 5 seconds
+  useEffect(() => {
+    if (isLoading) {
+      const emergencyTimer = setTimeout(() => {
+        console.warn('⚠️ Loading stuck! Force resetting...');
+        setIsLoading(false);
+      }, 5000);
+      
+      return () => clearTimeout(emergencyTimer);
+    }
+  }, [isLoading]);
+
+  // 🔥 Console log for debugging
+  useEffect(() => {
+    console.log('📊 Current state:', { isLoading, pathname: location.pathname, loadingCount });
+  }, [isLoading, location.pathname, loadingCount]);
 
   return (
     <>

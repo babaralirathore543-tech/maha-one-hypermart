@@ -44,53 +44,271 @@
 }
 
 /* ============================================================
-   🔥 ANNOUNCEMENT BAR - COMPLETELY HIDDEN
+   🔥 FIX: PAGE CONTENT HIDE HONE KA ISSUE
+   🔥 Categories Slider ki wajah se content hide ho raha tha
    ============================================================ */
 
-/* Hide all announcement/promo/top bars */
-.announcement-bar,
-.announcement-wrapper,
-.announcement-container,
-.promo-banner,
-.top-banner,
-.alert-banner,
-.top-bar,
-.notification-bar,
-.offer-bar,
-[class*="Announcement"],
-[class*="announcement"],
-[class*="promo"],
-[class*="alert-"],
-[class*="top-bar"],
-[class*="offer-"],
-[class*="notification-"],
-[class*="banner-top"],
-[class*="header-banner"],
-[role="banner"]:not(.main-banner) {
-  display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  min-height: 0 !important;
-  max-height: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  overflow: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  position: absolute !important;
-  width: 0 !important;
-  border: none !important;
+/* ============================================================
+   1. NAVBAR + CATEGORIES SLIDER KA TOTAL HEIGHT
+   ============================================================ */
+
+/* Desktop */
+:root {
+  --navbar-height: 80px;
+  --categories-height: 60px;
+  --total-header-height: 140px;
 }
 
-/* Hide any div with announcement text */
-div:has(.announcement-text),
-div:has([class*="announce"]),
-section:has([class*="announce"]) {
-  display: none !important;
+/* Mobile */
+@media (max-width: 640px) {
+  :root {
+    --navbar-height: 56px;
+    --categories-height: 50px;
+    --total-header-height: 106px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 1024px) {
+  :root {
+    --navbar-height: 64px;
+    --categories-height: 55px;
+    --total-header-height: 119px;
+  }
 }
 
 /* ============================================================
-   CARD BOX - COMPLETELY FLAT (NO SHADOW, NO ANIMATION)
+   2. FIX: MAIN CONTENT PADDING TOP
+   ============================================================ */
+
+/* Main content container */
+main,
+.page-container,
+.flex-grow {
+  padding-top: var(--total-header-height) !important;
+  margin-top: 0 !important;
+}
+
+/* Pages ke liye extra padding */
+main > div,
+.page-content,
+[class*="page"]:not(.page-container) {
+  padding-top: 1rem;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  main,
+  .page-container,
+  .flex-grow {
+    padding-top: calc(var(--total-header-height) + 10px) !important;
+  }
+}
+
+/* ============================================================
+   3. FIX: SPECIFIC PAGES
+   ============================================================ */
+
+/* Home Page */
+.home-page,
+[class*="HomePage"],
+[class*="home-page"] {
+  padding-top: 0.5rem;
+}
+
+/* Shop / Dry Fruits */
+.shop-page,
+.dry-fruits-page,
+[class*="ShopPage"],
+[class*="DryFruitsPage"] {
+  padding-top: 0.5rem;
+}
+
+/* Fashion Page */
+.fashion-page,
+[class*="FashionPage"] {
+  padding-top: 0.5rem;
+}
+
+/* Sweets Page */
+.sweets-page,
+[class*="SweetsPage"] {
+  padding-top: 0.5rem;
+}
+
+/* Cakes Page */
+.cakes-page,
+[class*="CakesPage"] {
+  padding-top: 0.5rem;
+}
+
+/* ============================================================
+   4. FIX: CATEGORIES SLIDER STICKY POSITION
+   ============================================================ */
+
+.categories-slider {
+  position: sticky;
+  top: var(--navbar-height);
+  z-index: 30;
+  background: white;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.dark .categories-slider {
+  background: #1F2937;
+}
+
+/* Mobile - Categories Slider */
+@media (max-width: 640px) {
+  .categories-slider {
+    top: 56px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .categories-slider {
+    top: 64px;
+  }
+}
+
+/* ============================================================
+   5. FIX: NAVBAR STICKY POSITION
+   ============================================================ */
+
+nav.fixed,
+nav.sticky,
+.navbar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 40 !important;
+}
+
+/* ============================================================
+   6. FIX: SCROLL OFFSET FOR ANCHOR LINKS
+   ============================================================ */
+
+/* Global scroll padding for all pages */
+html {
+  scroll-padding-top: calc(var(--total-header-height) + 20px);
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  html {
+    scroll-padding-top: calc(var(--total-header-height) + 15px);
+  }
+}
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 1024px) {
+  html {
+    scroll-padding-top: calc(var(--total-header-height) + 15px);
+  }
+}
+
+/* All sections with IDs */
+section,
+[id$="-section"],
+[id*="-section"] {
+  scroll-margin-top: calc(var(--total-header-height) + 10px);
+}
+
+@media (max-width: 640px) {
+  section,
+  [id$="-section"],
+  [id*="-section"] {
+    scroll-margin-top: calc(var(--total-header-height) + 5px);
+  }
+}
+
+/* ============================================================
+   7. FIX: BOTTOM NAVIGATION SPACER
+   ============================================================ */
+
+/* Mobile bottom nav spacer */
+.lg\:hidden.h-\[60px\] {
+  height: 60px !important;
+}
+
+@media (max-width: 640px) {
+  .lg\:hidden.h-\[60px\] {
+    height: 70px !important;
+  }
+}
+
+/* ============================================================
+   8. FIX: BODY PADDING TOP (Emergency)
+   ============================================================ */
+
+body {
+  padding-top: 0 !important;
+}
+
+/* ============================================================
+   9. FIX: FIRST CHILD OF MAIN
+   ============================================================ */
+
+main > *:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* ============================================================
+   10. FIX: CATEGORIES SLIDER HEIGHT
+   ============================================================ */
+
+.categories-slider .flex {
+  min-height: 50px;
+}
+
+@media (max-width: 640px) {
+  .categories-slider .flex {
+    min-height: 40px;
+  }
+}
+
+/* ============================================================
+   11. FIX: PAGE CONTAINER
+   ============================================================ */
+
+.page-container {
+  padding-top: 0.5rem;
+  padding-bottom: 2rem;
+}
+
+@media (min-width: 640px) {
+  .page-container {
+    padding-top: 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .page-container {
+    padding-top: 1.5rem;
+  }
+}
+
+/* ============================================================
+   12. FIX: CONTENT WRAPPER
+   ============================================================ */
+
+.content-wrapper,
+[class*="content"]:not(.categories-slider) {
+  padding-top: 0.5rem;
+}
+
+/* ============================================================
+   END OF FIXES
+   ============================================================ */
+
+/* ============================================================
+   CARD BOX - COMPLETELY FLAT
    ============================================================ */
 .animate-float-box {
   box-shadow: none !important;
@@ -205,7 +423,7 @@ section:has([class*="announce"]) {
 }
 
 /* ============================================================
-   DARK MODE - COMPLETE
+   DARK MODE
    ============================================================ */
 
 .dark,
@@ -557,4 +775,68 @@ section,
   .sticky-header-offset {
     scroll-margin-top: 130px;
   }
+}
+
+/* ============================================================
+   🔥 EMERGENCY — HIDE ANNOUNCEMENT BAR
+   ============================================================ */
+
+/* Hide announcement bar - Method 1 */
+[class*="announcement"],
+[class*="Announcement"],
+[class*="promo"],
+[class*="Promo"],
+[class*="alert"],
+[class*="Alert"],
+[class*="banner-top"],
+[class*="top-banner"],
+[class*="offer-bar"],
+[class*="OfferBar"],
+[class*="notification"],
+[class*="Notification"],
+[class*="delivery"],
+[class*="Delivery"],
+[class*="free-shipping"],
+[class*="FreeShipping"] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  border: none !important;
+}
+
+/* Hide any div with Free Delivery text */
+div:has(> :contains("Free Delivery")),
+div:has(> span:contains("Free Delivery")),
+div:has(> p:contains("Free Delivery")),
+div:has(> div:contains("Free Delivery")),
+div:has(> strong:contains("Free Delivery")),
+div:has(> b:contains("Free Delivery")) {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Hide any header first-child that looks like banner */
+header > *:first-child:not(nav):not(.main-nav):not(.navbar) {
+  display: none !important;
+}
+
+/* Hide CategoriesSlider if it has announcement inside */
+.categories-slider:has([class*="announce"]),
+.categories-slider:has([class*="promo"]),
+.categories-slider:has([class*="delivery"]) {
+  display: none !important;
 }
