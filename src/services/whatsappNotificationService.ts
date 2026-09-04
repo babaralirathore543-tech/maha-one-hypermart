@@ -55,7 +55,7 @@ ${estimatedDelivery || '2-3 business days'}
 ${window.location.origin}/orders/${orderId}
 
 📞 *Need Help?*
-Contact us on WhatsApp: +92-XXX-XXXXXXX
+Contact us on WhatsApp: +92-303-3169725
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -79,8 +79,8 @@ Thank you for joining the MAHA ONE family! We're excited to have you on board. �
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ✨ *Exclusive Benefits:*
-• 🛒 *10% OFF* on your first order (Code: WELCOME10)
-• 📦 *Free delivery* on orders above Rs. 2,000
+
+• 📦 *Fast delivery* on orders 
 • 🎁 Special birthday offers
 • 📱 Easy order tracking
 • ⭐ Early access to sales
@@ -93,7 +93,7 @@ ${window.location.origin}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📧 *Email:* ${email}
-📱 *WhatsApp:* +92-XXX-XXXXXXX
+📱 *WhatsApp:* +92-303-3169725
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -136,7 +136,7 @@ ${window.location.origin}/orders/${orderId}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📞 *Need Help?*
-Contact us on WhatsApp: +92-XXX-XXXXXXX
+Contact us on WhatsApp: +92-303-3169725
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

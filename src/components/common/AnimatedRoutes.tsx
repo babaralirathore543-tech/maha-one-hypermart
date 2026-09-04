@@ -18,6 +18,7 @@ import SweetsDetailPage from '../pages/SweetsDetailPage';
 import DryFruitsDetailPage from '../pages/DryFruitsDetailPage';
 import LoginPage from '../pages/LoginPage';
 import SignupPage from '../pages/SignupPage';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage'; // ✅ ADDED
 import CartPage from '../pages/CartPage';
 import CheckoutPage from '../pages/CheckoutPage';
 import AboutPage from '../pages/AboutPage';
@@ -213,6 +214,16 @@ const AnimatedRoutes = () => {
             element={
               <PageTransition>
                 <LoginPage />
+              </PageTransition>
+            } 
+          />
+          
+          {/* ✅ FORGOT PASSWORD ROUTE */}
+          <Route 
+            path="/forgot-password" 
+            element={
+              <PageTransition>
+                <ForgotPasswordPage />
               </PageTransition>
             } 
           />
