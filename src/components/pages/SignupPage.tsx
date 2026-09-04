@@ -1,30 +1,34 @@
 // src/components/pages/SignupPage.tsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  FaUser, 
-  FaEnvelope, 
-  FaLock, 
-  FaPhone, 
-  FaEye, 
+import {
+  FaUser,
+  FaEnvelope,
+  FaLock,
+  FaPhone,
+  FaEye,
   FaEyeSlash,
-  FaCheckCircle
+  FaCheckCircle,
+  FaSpinner,
 } from 'react-icons/fa';
-import { db, collection, addDoc, query, where, getDocs } from '../../config/firebase';
-import { sendSignupWelcomeWhatsApp } from '../../services/whatsappNotificationService';
 
-// ✅ Logo Import
+// ✅ FIREBASE IMPORTS — SAHI TAREEQA
+import { auth, db, collection, query, where, getDocs, doc, setDoc } from '../../config/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+
 const logo = '/images/logo.png';
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,64 +36,74 @@ const SignupPage: React.FC = () => {
   const [success, setSuccess] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
     setSuccess(false);
+    setLoading(true);
 
-    // ✅ Validation
-    if (!formData.name || !formData.email || !formData.phone || !formData.password) {
-      setError('Please fill in all required fields');
-      setLoading(false);
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      setLoading(false);
-      return;
-    }
+    const name = formData.name.trim();
+    const email = formData.email.trim().toLowerCase();
+    const phone = formData.phone.trim();
+    const password = formData.password;
+    const confirmPassword = formData.confirmPassword;
 
     try {
-      // ✅ Check if user already exists
+      // ✅ Validation
+      if (!name || !email || !phone || !password || !confirmPassword) {
+        setError('Please fill in all required fields.');
+        setLoading(false);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        setLoading(false);
+        return;
+      }
+
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Check if phone already exists in Firestore
+      console.log('🔎 Checking phone number...');
       const usersRef = collection(db, 'users');
-      
-      // ✅ Check email
-      const emailQuery = query(usersRef, where('email', '==', formData.email));
-      const emailSnapshot = await getDocs(emailQuery);
-      
-      if (!emailSnapshot.empty) {
-        setError('User with this email already exists');
-        setLoading(false);
-        return;
-      }
-
-      // ✅ Check phone
-      const phoneQuery = query(usersRef, where('phone', '==', formData.phone));
+      const phoneQuery = query(usersRef, where('phone', '==', phone));
       const phoneSnapshot = await getDocs(phoneQuery);
-      
+
       if (!phoneSnapshot.empty) {
-        setError('User with this phone number already exists');
+        setError('User with this phone number already exists.');
         setLoading(false);
         return;
       }
 
-      // ✅ Create new user in Firestore
-      await addDoc(collection(db, 'users'), {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
+      // 🔥 STEP 1: CREATE USER IN FIREBASE AUTHENTICATION
+      console.log('🔐 Creating user in Firebase Authentication...');
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      console.log('✅ Firebase Auth user created with UID:', firebaseUser.uid);
+
+      // 🔥 STEP 2: UPDATE FIREBASE PROFILE
+      await updateProfile(firebaseUser, { displayName: name });
+      console.log('✅ Firebase profile updated');
+
+      // 🔥 STEP 3: SAVE USER DATA TO FIRESTORE
+      console.log('💾 Saving user data to Firestore...');
+      const userDocRef = doc(db, 'users', firebaseUser.uid);
+      await setDoc(userDocRef, {
+        uid: firebaseUser.uid,
+        name: name,
+        email: email,
+        phone: phone,
         role: 'customer',
         isActive: true,
         isVerified: false,
@@ -100,54 +114,69 @@ const SignupPage: React.FC = () => {
           city: '',
           province: '',
           postalCode: '',
-          country: 'Pakistan'
+          country: 'Pakistan',
         },
-        createdAt: new Date()
+        createdAt: new Date(),
       });
+      console.log('✅ Firestore user profile created');
 
+      // ✅ Success
       setSuccess(true);
-      
-      // ✅ Send WhatsApp Welcome Message
-      if (formData.phone) {
-        sendSignupWelcomeWhatsApp(
-          formData.phone,
-          formData.name,
-          formData.email
-        );
-      }
-
       setFormData({
         name: '',
         email: '',
         phone: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
       });
 
-      // ✅ Redirect to login after 3 seconds
+      // ✅ Redirect to login after 2 seconds
       setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+        navigate('/login', { replace: true });
+      }, 2000);
 
     } catch (error: any) {
-      console.error('Signup error:', error);
-      setError(error.message || 'Signup failed. Please try again.');
+      console.error('❌ Signup error:', error);
+
+      let message = 'Signup failed. Please try again.';
+
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          message = '❌ An account with this email already exists.';
+          break;
+        case 'auth/invalid-email':
+          message = '❌ Please enter a valid email address.';
+          break;
+        case 'auth/weak-password':
+          message = '❌ Password must be at least 6 characters.';
+          break;
+        case 'auth/network-request-failed':
+          message = '❌ Network error. Please check your internet connection.';
+          break;
+        case 'auth/operation-not-allowed':
+          message = '❌ Email/Password authentication is not enabled in Firebase.';
+          break;
+        default:
+          message = error.message || 'Signup failed. Please try again.';
+      }
+
+      setError(message);
+
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    // ✅ Added pt-16 sm:pt-20 md:pt-24 to prevent search bar overlap
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8 pt-16 sm:pt-20 md:pt-24 lg:pt-28">
       <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md my-4 sm:my-6">
-        
+
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center">
-            <img 
-              src={logo} 
-              alt="Maha One Logo" 
+            <img
+              src={logo}
+              alt="Maha One Logo"
               className="h-14 sm:h-16 w-auto"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -172,20 +201,21 @@ const SignupPage: React.FC = () => {
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
             <FaCheckCircle className="text-green-500 flex-shrink-0" />
-            <span>Account created successfully! A WhatsApp welcome message has been sent to your phone. Redirecting to login...</span>
+            <span>Account created successfully! Redirecting to login...</span>
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg mb-4 text-sm">
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
             {error}
           </div>
         )}
 
         {/* Signup Form */}
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-          {/* Full Name */}
+
+          {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Full Name <span className="text-red-500">*</span>
@@ -199,6 +229,7 @@ const SignupPage: React.FC = () => {
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="Mahnoor Ali"
+                autoComplete="name"
                 required
               />
             </div>
@@ -218,6 +249,7 @@ const SignupPage: React.FC = () => {
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="your@email.com"
+                autoComplete="email"
                 required
               />
             </div>
@@ -237,6 +269,7 @@ const SignupPage: React.FC = () => {
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="03XX-XXXXXXX"
+                autoComplete="tel"
                 required
               />
             </div>
@@ -257,8 +290,9 @@ const SignupPage: React.FC = () => {
                 onChange={handleChange}
                 className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="••••••••"
-                required
+                autoComplete="new-password"
                 minLength={6}
+                required
               />
               <button
                 type="button"
@@ -284,6 +318,7 @@ const SignupPage: React.FC = () => {
                 onChange={handleChange}
                 className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="••••••••"
+                autoComplete="new-password"
                 required
               />
               <button
@@ -296,13 +331,22 @@ const SignupPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#0F766E] text-white py-2.5 rounded-lg font-medium hover:bg-[#065F46] transition disabled:opacity-50 text-sm sm:text-base"
+            className="w-full bg-[#0F766E] text-white py-2.5 rounded-lg font-medium hover:bg-[#065F46] transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base flex items-center justify-center gap-2"
           >
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading ? (
+              <>
+                <FaSpinner className="animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              'Create Account'
+            )}
           </button>
+
         </form>
 
         {/* Login Link */}
@@ -313,9 +357,11 @@ const SignupPage: React.FC = () => {
           </Link>
         </p>
 
+        {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-4">
           © 2024 Maha One HyperMart. All rights reserved.
         </p>
+
       </div>
     </div>
   );

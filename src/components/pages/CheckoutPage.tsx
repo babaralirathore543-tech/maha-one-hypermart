@@ -12,7 +12,8 @@ import { useCart } from '../../context/CartContext';
 import { placeOrder } from '../../services/orderService';
 import QRCodePayment from '../Payment/QRCodePayment';
 import { sendOrderConfirmationWhatsApp } from '../../services/whatsappNotificationService';
-// ✅ Removed unused import: sendSignupWelcomeWhatsApp
+// ✅ FIREBASE AUTH IMPORT
+import { auth } from '../../config/firebase';
 
 const CheckoutPage = () => {
   const { cart, getCartTotal, clearCart } = useCart();
@@ -88,22 +89,34 @@ const CheckoutPage = () => {
   const discount = 0;
   const total = subtotal + shipping - discount;
 
-  // ✅ Get User Info
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
-  const userId = localStorage.getItem('userId') || 'guest';
+  // ✅ FIXED: Firebase Auth se userId lein
+  const getUserId = () => {
+    const user = auth.currentUser;
+    if (!user) {
+      alert('❌ Please login to place order');
+      window.location.href = '/login';
+      return null;
+    }
+    return user.uid;
+  };
 
   // ✅ Place Order Function (Firebase)
   const placeOrderToFirebase = async () => {
     setIsSubmitting(true);
 
     try {
-      // ✅ FIXED: Properly typed paymentMethod
+      // ✅ FIXED: Firebase Auth UID use karein
+      const userId = getUserId();
+      if (!userId) {
+        setIsSubmitting(false);
+        return;
+      }
+
       const validPaymentMethod = paymentMethod as 'jazzcash' | 'bank' | 'cod' | 'card';
       
       const orderData = {
-        userId: userId,
-        userEmail: formData.email || user?.email || 'guest@email.com',
+        userId: userId, // ✅ FIREBASE AUTH UID
+        userEmail: formData.email || auth.currentUser?.email || 'guest@email.com',
         userName: `${formData.firstName} ${formData.lastName}`,
         userPhone: formData.phone,
         items: cart.map((item: any) => ({
@@ -140,6 +153,9 @@ const CheckoutPage = () => {
         },
         notes: formData.notes || ''
       };
+
+      console.log('📦 Order Data:', orderData);
+      console.log('👤 User ID:', userId);
 
       const result = await placeOrder(orderData);
       
@@ -248,6 +264,13 @@ const CheckoutPage = () => {
     }
 
     if (step === 2) {
+      // ✅ Check if user is logged in before placing order
+      if (!auth.currentUser) {
+        alert('❌ Please login to place order');
+        window.location.href = '/login';
+        return;
+      }
+
       if (paymentMethod === 'jazzcash') {
         payWithJazzCash();
         return;
