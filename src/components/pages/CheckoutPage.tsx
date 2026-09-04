@@ -12,8 +12,8 @@ import { useCart } from '../../context/CartContext';
 import { placeOrder } from '../../services/orderService';
 import QRCodePayment from '../Payment/QRCodePayment';
 import { sendOrderConfirmationWhatsApp } from '../../services/whatsappNotificationService';
-// ✅ FIREBASE AUTH IMPORT
 import { auth } from '../../config/firebase';
+import { sendOrderConfirmationEmail } from '../../services/emailService';
 
 const CheckoutPage = () => {
   const { cart, getCartTotal, clearCart } = useCart();
@@ -89,7 +89,7 @@ const CheckoutPage = () => {
   const discount = 0;
   const total = subtotal + shipping - discount;
 
-  // ✅ FIXED: Firebase Auth se userId lein
+  // ✅ Firebase Auth se userId lein
   const getUserId = () => {
     const user = auth.currentUser;
     if (!user) {
@@ -100,12 +100,11 @@ const CheckoutPage = () => {
     return user.uid;
   };
 
-  // ✅ Place Order Function (Firebase)
+  // ✅ Place Order Function (Firebase + Email + WhatsApp)
   const placeOrderToFirebase = async () => {
     setIsSubmitting(true);
 
     try {
-      // ✅ FIXED: Firebase Auth UID use karein
       const userId = getUserId();
       if (!userId) {
         setIsSubmitting(false);
@@ -115,7 +114,7 @@ const CheckoutPage = () => {
       const validPaymentMethod = paymentMethod as 'jazzcash' | 'bank' | 'cod' | 'card';
       
       const orderData = {
-        userId: userId, // ✅ FIREBASE AUTH UID
+        userId: userId,
         userEmail: formData.email || auth.currentUser?.email || 'guest@email.com',
         userName: `${formData.firstName} ${formData.lastName}`,
         userPhone: formData.phone,
@@ -151,7 +150,8 @@ const CheckoutPage = () => {
           country: 'Pakistan',
           phone: formData.phone
         },
-        notes: formData.notes || ''
+        notes: formData.notes || '',
+        orderDate: new Date().toISOString()
       };
 
       console.log('📦 Order Data:', orderData);
@@ -165,21 +165,69 @@ const CheckoutPage = () => {
         setOrderPlaced(true);
         clearCart();
         
-        // ✅ Send WhatsApp Order Confirmation
-        if (formData.phone) {
-          sendOrderConfirmationWhatsApp(
-            formData.phone,
-            orderNumber,
-            `${formData.firstName} ${formData.lastName}`,
-            cart.map((item: any) => ({
+        // ==========================================================
+        // ✅ SEND ORDER CONFIRMATION EMAIL
+        // ==========================================================
+        try {
+          const emailResult = await sendOrderConfirmationEmail({
+            email: formData.email || auth.currentUser?.email || '',
+            name: `${formData.firstName} ${formData.lastName}`,
+            orderId: orderNumber,
+            orderDate: new Date().toLocaleDateString('en-PK', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }),
+            paymentMethod: paymentMethod,
+            subtotal: subtotal,
+            shipping: shipping,
+            discount: discount,
+            total: total,
+            customerName: `${formData.firstName} ${formData.lastName}`,
+            address: formData.address,
+            city: formData.city,
+            province: formData.province || 'Punjab',
+            postalCode: formData.postalCode || '54000',
+            phone: formData.phone,
+            items: cart.map((item: any) => ({
               name: item.name,
               quantity: item.quantity,
-              price: item.price
-            })),
-            total,
-            `${formData.address}, ${formData.city}, ${formData.province}`,
-            '2-3 business days'
-          );
+              price: item.price * item.quantity  // ✅ FIXED: number
+            }))
+          });
+          
+          if (emailResult.success) {
+            console.log('✅ Order confirmation email sent successfully');
+          } else {
+            console.warn('⚠️ Email failed but order placed:', emailResult.error);
+          }
+        } catch (emailError) {
+          console.error('❌ Email error:', emailError);
+          // Email fail ho toh bhi order place ho chuka hai
+        }
+        
+        // ==========================================================
+        // ✅ SEND WHATSAPP ORDER CONFIRMATION
+        // ==========================================================
+        if (formData.phone) {
+          try {
+            sendOrderConfirmationWhatsApp(
+              formData.phone,
+              orderNumber,
+              `${formData.firstName} ${formData.lastName}`,
+              cart.map((item: any) => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price
+              })),
+              total,
+              `${formData.address}, ${formData.city}, ${formData.province}`,
+              '2-3 business days'
+            );
+            console.log('');
+          } catch (whatsappError) {
+            console.error('❌ WhatsApp error:', whatsappError);
+          }
         }
         
         window.dispatchEvent(new Event('orderPlaced'));
@@ -229,7 +277,7 @@ const CheckoutPage = () => {
   const sendWhatsAppPayment = () => {
     const phone = JAZZCASH_DETAILS.number.replace(/-/g, '');
     const message = encodeURIComponent(
-      `🛍️ *MAHA ONE HYPERMART - Order Confirmation*\n\n` +
+      `🛍️ *MAHA ONE HYPERMARKET - Order Confirmation*\n\n` +
       `🧾 Order #: *MAHA-${Date.now().toString().slice(-6)}*\n` +
       `👤 Customer: ${formData.firstName} ${formData.lastName}\n` +
       `📱 Phone: ${formData.phone}\n` +
@@ -264,7 +312,6 @@ const CheckoutPage = () => {
     }
 
     if (step === 2) {
-      // ✅ Check if user is logged in before placing order
       if (!auth.currentUser) {
         alert('❌ Please login to place order');
         window.location.href = '/login';
@@ -297,7 +344,7 @@ const CheckoutPage = () => {
         <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 md:p-12 border border-[#E5E7EB] text-center">
           <div className="text-7xl mb-6">🎉</div>
           <h1 className="text-3xl md:text-4xl font-bold text-[#0F766E]">Order Placed!</h1>
-          <p className="text-gray-600 mt-2">Thank you for shopping with MAHA ONE HYPERMART</p>
+          <p className="text-gray-600 mt-2">Thank you for shopping with MAHA ONE HYPERMARKET</p>
           
           <div className="mt-6 bg-[#F8FAFC] rounded-2xl p-6 text-left">
             <div className="flex items-center gap-3 mb-4">
@@ -307,6 +354,7 @@ const CheckoutPage = () => {
             <div className="space-y-2 text-sm text-gray-600">
               {formData.email && <p>📧 Confirmation sent to: <strong>{formData.email}</strong></p>}
               <p>📱 Order tracking via SMS: <strong>{formData.phone}</strong></p>
+              <p>💬 WhatsApp confirmation sent to: <strong>{formData.phone}</strong></p>
               <div className="pt-3 border-t border-[#E5E7EB]">
                 <p className="font-medium text-gray-800">Payment Method:</p>
                 <p className="capitalize">
@@ -529,7 +577,7 @@ const CheckoutPage = () => {
                     </button>
                   </div>
 
-                  {/* JazzCash Details */}
+                  {/* Payment Details */}
                   {paymentMethod === 'jazzcash' && (
                     <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
                       <p className="text-sm text-gray-700 flex items-center gap-2">
@@ -540,7 +588,6 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
-                  {/* QR Code Details */}
                   {paymentMethod === 'qr' && (
                     <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-center gap-2">
@@ -554,7 +601,6 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
-                  {/* WhatsApp Details */}
                   {paymentMethod === 'whatsapp' && (
                     <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
                       <p className="text-sm text-gray-700 flex items-center gap-2">
@@ -565,7 +611,6 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
-                  {/* Bank Details */}
                   {paymentMethod === 'bank' && (
                     <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
                       <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">

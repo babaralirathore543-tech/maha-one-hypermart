@@ -1,6 +1,8 @@
 // src/components/pages/SignupPage.tsx
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+
 import {
   FaUser,
   FaEnvelope,
@@ -8,13 +10,19 @@ import {
   FaPhone,
   FaEye,
   FaEyeSlash,
-  FaCheckCircle,
-  FaSpinner,
+  FaCheckCircle
 } from 'react-icons/fa';
 
-// ✅ FIREBASE IMPORTS — SAHI TAREEQA
-import { auth, db, collection, query, where, getDocs, doc, setDoc } from '../../config/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import {
+  auth,
+  db,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  doc,
+  setDoc
+} from '../../config/firebase';
+
+import { sendSignupWelcomeWhatsApp } from '../../services/whatsappNotificationService';
 
 const logo = '/images/logo.png';
 
@@ -26,27 +34,37 @@ const SignupPage: React.FC = () => {
     email: '',
     phone: '',
     password: '',
-    confirmPassword: '',
+    confirmPassword: ''
   });
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  // ==========================================
+  // HANDLE INPUT CHANGE
+  // ==========================================
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
+
+  // ==========================================
+  // SIGNUP
+  // ==========================================
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setLoading(true);
     setError('');
     setSuccess(false);
-    setLoading(true);
 
     const name = formData.name.trim();
     const email = formData.email.trim().toLowerCase();
@@ -54,51 +72,62 @@ const SignupPage: React.FC = () => {
     const password = formData.password;
     const confirmPassword = formData.confirmPassword;
 
+    // ==========================================
+    // VALIDATION
+    // ==========================================
+
+    if (!name || !email || !phone || !password) {
+      setError('Please fill in all required fields.');
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // ✅ Validation
-      if (!name || !email || !phone || !password || !confirmPassword) {
-        setError('Please fill in all required fields.');
-        setLoading(false);
-        return;
-      }
+      // ==========================================
+      // 1. CREATE FIREBASE AUTH USER
+      // ==========================================
 
-      if (password !== confirmPassword) {
-        setError('Passwords do not match.');
-        setLoading(false);
-        return;
-      }
+      console.log('🔐 Creating Firebase Authentication user...');
 
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters.');
-        setLoading(false);
-        return;
-      }
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-      // ✅ Check if phone already exists in Firestore
-      console.log('🔎 Checking phone number...');
-      const usersRef = collection(db, 'users');
-      const phoneQuery = query(usersRef, where('phone', '==', phone));
-      const phoneSnapshot = await getDocs(phoneQuery);
-
-      if (!phoneSnapshot.empty) {
-        setError('User with this phone number already exists.');
-        setLoading(false);
-        return;
-      }
-
-      // 🔥 STEP 1: CREATE USER IN FIREBASE AUTHENTICATION
-      console.log('🔐 Creating user in Firebase Authentication...');
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
-      console.log('✅ Firebase Auth user created with UID:', firebaseUser.uid);
 
-      // 🔥 STEP 2: UPDATE FIREBASE PROFILE
-      await updateProfile(firebaseUser, { displayName: name });
+      console.log('✅ Firebase Auth user created');
+      console.log('👤 UID:', firebaseUser.uid);
+
+      // ==========================================
+      // 2. UPDATE FIREBASE PROFILE
+      // ==========================================
+
+      await updateProfile(firebaseUser, {
+        displayName: name
+      });
+
       console.log('✅ Firebase profile updated');
 
-      // 🔥 STEP 3: SAVE USER DATA TO FIRESTORE
-      console.log('💾 Saving user data to Firestore...');
+      // ==========================================
+      // 3. CREATE USER DOCUMENT IN FIRESTORE
+      // ==========================================
+
       const userDocRef = doc(db, 'users', firebaseUser.uid);
+
       await setDoc(userDocRef, {
         uid: firebaseUser.uid,
         name: name,
@@ -114,53 +143,112 @@ const SignupPage: React.FC = () => {
           city: '',
           province: '',
           postalCode: '',
-          country: 'Pakistan',
+          country: 'Pakistan'
         },
         createdAt: new Date(),
+        updatedAt: new Date()
       });
-      console.log('✅ Firestore user profile created');
 
-      // ✅ Success
+      console.log('✅ Firestore user document created');
+
+      // ==========================================
+      // 4. SAVE USER LOCALLY
+      // ==========================================
+
+      const userData = {
+        id: firebaseUser.uid,
+        uid: firebaseUser.uid,
+        name: name,
+        email: email,
+        phone: phone,
+        role: 'customer',
+        isActive: true,
+        isVerified: false
+      };
+
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('userId', firebaseUser.uid);
+
+      window.dispatchEvent(new Event('userUpdated'));
+
+      // ==========================================
+      // SUCCESS
+      // ==========================================
+
       setSuccess(true);
+
+      console.log('🎉 Signup completed successfully');
+
+      // ==========================================
+      // SEND WHATSAPP MESSAGE
+      // ==========================================
+
+      if (phone) {
+        try {
+          await sendSignupWelcomeWhatsApp(phone, name, email);
+          console.log('📱 WhatsApp welcome message triggered');
+        } catch (whatsappError) {
+          console.warn('⚠️ WhatsApp message failed:', whatsappError);
+        }
+      }
+
+      // ==========================================
+      // RESET FORM
+      // ==========================================
+
       setFormData({
         name: '',
         email: '',
         phone: '',
         password: '',
-        confirmPassword: '',
+        confirmPassword: ''
       });
 
-      // ✅ Redirect to login after 2 seconds
+      // ==========================================
+      // REDIRECT
+      // ==========================================
+
       setTimeout(() => {
-        navigate('/login', { replace: true });
+        navigate('/', {
+          replace: true
+        });
       }, 2000);
 
     } catch (error: any) {
       console.error('❌ Signup error:', error);
 
-      let message = 'Signup failed. Please try again.';
+      // ==========================================
+      // FIREBASE AUTH ERRORS
+      // ==========================================
+
+      let errorMessage = 'Signup failed. Please try again.';
 
       switch (error.code) {
         case 'auth/email-already-in-use':
-          message = '❌ An account with this email already exists.';
+          errorMessage = 'An account with this email already exists.';
           break;
+
         case 'auth/invalid-email':
-          message = '❌ Please enter a valid email address.';
+          errorMessage = 'Please enter a valid email address.';
           break;
+
         case 'auth/weak-password':
-          message = '❌ Password must be at least 6 characters.';
+          errorMessage = 'Password should be at least 6 characters.';
           break;
+
         case 'auth/network-request-failed':
-          message = '❌ Network error. Please check your internet connection.';
+          errorMessage = 'Network error. Please check your internet connection.';
           break;
-        case 'auth/operation-not-allowed':
-          message = '❌ Email/Password authentication is not enabled in Firebase.';
+
+        case 'permission-denied':
+          errorMessage = 'Permission denied. Please check Firebase Firestore Rules.';
           break;
+
         default:
-          message = error.message || 'Signup failed. Please try again.';
+          errorMessage = error.message || 'Signup failed. Please try again.';
       }
 
-      setError(message);
+      setError(errorMessage);
 
     } finally {
       setLoading(false);
@@ -171,7 +259,10 @@ const SignupPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8 pt-16 sm:pt-20 md:pt-24 lg:pt-28">
       <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md my-4 sm:my-6">
 
-        {/* Logo */}
+        {/* ==========================================
+            LOGO
+        ========================================== */}
+
         <div className="text-center mb-6">
           <div className="flex items-center justify-center">
             <img
@@ -190,58 +281,78 @@ const SignupPage: React.FC = () => {
               }}
             />
           </div>
+
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mt-3">
             <span className="text-[#0F766E]">MAHA</span>
             <span className="text-[#D4AF37]"> ONE</span>
           </h1>
-          <p className="text-gray-500 text-sm">Create your account</p>
+
+          <p className="text-gray-500 text-sm">
+            Create your account
+          </p>
         </div>
 
-        {/* Success Message */}
+        {/* ==========================================
+            SUCCESS MESSAGE
+        ========================================== */}
+
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
             <FaCheckCircle className="text-green-500 flex-shrink-0" />
-            <span>Account created successfully! Redirecting to login...</span>
+            <span>
+              Account created successfully! Redirecting...
+            </span>
           </div>
         )}
 
-        {/* Error Message */}
+        {/* ==========================================
+            ERROR MESSAGE
+        ========================================== */}
+
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
             {error}
           </div>
         )}
 
-        {/* Signup Form */}
+        {/* ==========================================
+            SIGNUP FORM
+        ========================================== */}
+
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
 
-          {/* Name */}
+          {/* FULL NAME */}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Full Name <span className="text-red-500">*</span>
             </label>
+
             <div className="relative">
               <FaUser className="absolute left-3 top-3 text-gray-400" />
+
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
-                placeholder="Mahnoor Ali"
-                autoComplete="name"
+                placeholder="Your Full Name"
                 required
               />
             </div>
           </div>
 
-          {/* Email */}
+          {/* EMAIL */}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email Address <span className="text-red-500">*</span>
             </label>
+
             <div className="relative">
               <FaEnvelope className="absolute left-3 top-3 text-gray-400" />
+
               <input
                 type="email"
                 name="email"
@@ -255,13 +366,16 @@ const SignupPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Phone */}
+          {/* PHONE */}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number <span className="text-red-500">*</span>
             </label>
+
             <div className="relative">
               <FaPhone className="absolute left-3 top-3 text-gray-400" />
+
               <input
                 type="tel"
                 name="phone"
@@ -273,16 +387,22 @@ const SignupPage: React.FC = () => {
                 required
               />
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">📱 We'll send order updates via WhatsApp</p>
+
+            <p className="text-[10px] text-gray-400 mt-1">
+              📱 We'll send order updates via WhatsApp
+            </p>
           </div>
 
-          {/* Password */}
+          {/* PASSWORD */}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Password <span className="text-red-500">*</span>
             </label>
+
             <div className="relative">
               <FaLock className="absolute left-3 top-3 text-gray-400" />
+
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -291,9 +411,10 @@ const SignupPage: React.FC = () => {
                 className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0F766E] focus:border-transparent outline-none text-sm sm:text-base"
                 placeholder="••••••••"
                 autoComplete="new-password"
-                minLength={6}
                 required
+                minLength={6}
               />
+
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -304,13 +425,16 @@ const SignupPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Confirm Password */}
+          {/* CONFIRM PASSWORD */}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Confirm Password <span className="text-red-500">*</span>
             </label>
+
             <div className="relative">
               <FaLock className="absolute left-3 top-3 text-gray-400" />
+
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 name="confirmPassword"
@@ -321,6 +445,7 @@ const SignupPage: React.FC = () => {
                 autoComplete="new-password"
                 required
               />
+
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -331,25 +456,22 @@ const SignupPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Submit */}
+          {/* SUBMIT BUTTON */}
+
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-[#0F766E] text-white py-2.5 rounded-lg font-medium hover:bg-[#065F46] transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base flex items-center justify-center gap-2"
+            disabled={loading || success}
+            className="w-full bg-[#0F766E] text-white py-2.5 rounded-lg font-medium hover:bg-[#065F46] transition disabled:opacity-50 text-sm sm:text-base"
           >
-            {loading ? (
-              <>
-                <FaSpinner className="animate-spin" />
-                Creating account...
-              </>
-            ) : (
-              'Create Account'
-            )}
+            {loading ? 'Creating account...' : success ? 'Account Created!' : 'Create Account'}
           </button>
 
         </form>
 
-        {/* Login Link */}
+        {/* ==========================================
+            LOGIN LINK
+        ========================================== */}
+
         <p className="text-center text-sm text-gray-600 mt-4">
           Already have an account?{' '}
           <Link to="/login" className="text-[#0F766E] font-medium hover:underline">
@@ -357,9 +479,8 @@ const SignupPage: React.FC = () => {
           </Link>
         </p>
 
-        {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-4">
-          © 2024 Maha One HyperMart. All rights reserved.
+          © 2026 Maha One HyperMart. All rights reserved.
         </p>
 
       </div>
