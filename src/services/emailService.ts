@@ -2,9 +2,12 @@
 import emailjs from '@emailjs/browser';
 
 // ✅ EmailJS Config
-const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'YOUR_SERVICE_ID';
-const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'YOUR_TEMPLATE_ID';
-const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'YOUR_PUBLIC_KEY';
+const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+// ✅ Use different templates for different emails
+const ORDER_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ORDER || import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const WELCOME_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_WELCOME || import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 
 export interface EmailData {
   to: string;
@@ -15,7 +18,7 @@ export interface EmailData {
 }
 
 // ✅ Generic send email function
-export const sendEmail = async (data: EmailData) => {
+export const sendEmail = async (data: EmailData, templateId: string) => {
   try {
     const templateParams = {
       to_email: data.to,
@@ -25,11 +28,14 @@ export const sendEmail = async (data: EmailData) => {
       html_content: data.html || data.message || ''
     };
 
+    console.log('📧 Sending email using template:', templateId);
+    console.log('📧 To:', data.to);
+
     const response = await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID,
+      SERVICE_ID,
+      templateId,
       templateParams,
-      EMAILJS_PUBLIC_KEY
+      PUBLIC_KEY
     );
 
     console.log('✅ Email sent successfully:', response.status);
@@ -46,7 +52,7 @@ export const sendOrderConfirmationEmail = async (orderData: {
   email: string;
   name: string;
   orderId: string;
-  orderDate?: string;  // ✅ Optional
+  orderDate?: string;
   paymentMethod: string;
   subtotal: number;
   shipping: number;
@@ -153,7 +159,7 @@ export const sendOrderConfirmationEmail = async (orderData: {
     subject,
     message,
     html
-  });
+  }, ORDER_TEMPLATE_ID);
 };
 
 // ✅ Send Welcome Email
@@ -174,7 +180,7 @@ export const sendWelcomeEmail = async (data: {
     - Fast delivery across Pakistan
     - Secure payment options
 
-    👉 Start Shopping: https://www.mahaonehypermaket.com
+    👉 Start Shopping: ${window.location.origin}/shop
 
     Have questions? Contact us at mahaonehypermarket@gmail.com
 
@@ -196,7 +202,7 @@ export const sendWelcomeEmail = async (data: {
         <h3 style="color: #0F766E;">🛒 Start Shopping</h3>
         <p>Enjoy premium quality products with fast delivery across Pakistan.</p>
         
-        <a href="https://www.mahaonehypermaket.com" style="display: inline-block; background: #0F766E; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 10px 0;">
+        <a href="${window.location.origin}/shop" style="display: inline-block; background: #0F766E; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 10px 0;">
           Start Shopping Now
         </a>
         
@@ -216,7 +222,7 @@ export const sendWelcomeEmail = async (data: {
     subject,
     message,
     html
-  });
+  }, WELCOME_TEMPLATE_ID);
 };
 
 // ✅ Send Password Reset Email
@@ -271,7 +277,7 @@ export const sendPasswordResetEmail = async (data: {
     subject,
     message,
     html
-  });
+  }, import.meta.env.VITE_EMAILJS_TEMPLATE_RESET || WELCOME_TEMPLATE_ID);
 };
 
 // ✅ Send Order Status Update Email
@@ -290,7 +296,7 @@ export const sendOrderStatusEmail = async (data: {
 
     ${data.trackingNumber ? `📦 Tracking Number: ${data.trackingNumber}` : ''}
 
-    Track your order: https://www.mahaonehypermaket.com
+    Track your order: ${window.location.origin}/dashboard?tab=orders
 
     Thanks,
     Maha One Hypermart Team
@@ -301,7 +307,7 @@ export const sendOrderStatusEmail = async (data: {
     name: data.name,
     subject,
     message
-  });
+  }, ORDER_TEMPLATE_ID);
 };
 
 export default {
