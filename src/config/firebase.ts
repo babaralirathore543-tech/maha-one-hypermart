@@ -33,6 +33,7 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  updateProfile,  // ✅ ADD THIS
 } from "firebase/auth";
 
 import type {
@@ -65,6 +66,7 @@ export {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  updateProfile,  // ✅ EXPORT THIS
   db,
   collection,
   addDoc,
