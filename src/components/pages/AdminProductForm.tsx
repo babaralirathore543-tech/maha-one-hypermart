@@ -7,14 +7,14 @@ import {
   FaLink, FaCloudUploadAlt,
   FaChevronRight, FaCircle
 } from 'react-icons/fa';
-import { db, storage } from '../../config/firebase';
+import { db } from '../../config/firebase';
 import { 
   collection, addDoc, getDoc, doc, updateDoc,
   query, where, getDocs
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-// ✅ Product Interface - Final Structure
+import CloudinaryUpload from '../common/CloudinaryUpload';
+
 interface ProductFormData {
   name: string;
   brand: string;
@@ -48,7 +48,6 @@ interface ProductFormData {
   reviewCount: number;
 }
 
-// ✅ Type Definitions for Category Data
 interface SubCategoryItem {
   label: string;
   styles: string[];
@@ -83,7 +82,6 @@ interface CategoryData {
   [key: string]: CategoryItem;
 }
 
-// ✅ COMPLETE CATEGORY DATA WITH SIZES
 const categoryData: CategoryData = {
   'fashion': {
     label: 'Fashion',
@@ -331,7 +329,6 @@ const categoryData: CategoryData = {
   }
 };
 
-// ✅ Colour Options
 const colourOptions = [
   'Black', 'White', 'Red', 'Blue', 'Green', 'Yellow', 'Pink',
   'Purple', 'Orange', 'Brown', 'Grey', 'Navy', 'Teal', 'Maroon',
@@ -340,22 +337,16 @@ const colourOptions = [
   'Charcoal', 'Burgundy', 'Mustard', 'Emerald', 'Ruby', 'Sapphire', 'Cobalt', 'Indigo', 'Magenta', 'Fuchsia', 'Lime',
 ];
 
-// ✅ Size Options - Complete with US Sizes (No Duplicates)
 const sizeOptions = [
-  // 👕 Clothing Sizes
   'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL',
   'One Size', 'Free Size',
-  // 👟 Women Footwear Sizes (US)
   '5(US)', '5.5(US)', '6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)',
-  // 👞 Men Footwear Sizes (US)
   '6(US)', '6.5(US)', '7(US)', '7.5(US)', '8(US)', '8.5(US)', '9(US)', '9.5(US)', '10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)',
-  // 👶 Kids Sizes
   'XS(4-5)', 'S(6-7)', 'M(8-10)', 'L(12-14)', 'XL(16)',
   '0-3M', '3-6M', '6-9M', '9-12M', '12-18M', '18-24M',
   '10(US)', '10.5(US)', '11(US)', '11.5(US)', '12(US)', '12.5(US)', '13(US)', '13.5(US)', '1(US)', '1.5(US)', '2(US)', '2.5(US)', '3(US)'
 ];
 
-// ✅ Main Categories
 const mainCategories = Object.keys(categoryData);
 
 const AdminProductForm: React.FC = () => {
@@ -411,56 +402,46 @@ const AdminProductForm: React.FC = () => {
   const [newSize, setNewSize] = useState('');
   const [usedProductIds, setUsedProductIds] = useState<string[]>([]);
 
-  // ✅ Get current category data with proper typing
   const currentCategory = formData.category ? categoryData[formData.category] : null;
   const categoryPrefix = currentCategory?.prefix || '';
 
-  // ✅ Get current gender data with proper typing
   const currentGender = formData.gender && currentCategory 
     ? currentCategory.genders[formData.gender] 
     : null;
 
-  // ✅ Get current product type data with proper typing
   const currentProductType = formData.productType && currentGender
     ? currentGender.productTypes[formData.productType]
     : null;
 
-  // ✅ Get current subcategory data with proper typing
   const currentSubCategory = formData.subCategory && currentProductType
     ? currentProductType.subCategories[formData.subCategory]
     : null;
 
-  // ✅ Get genders for selected category
   const getGenders = () => {
     if (!formData.category || !currentCategory) return {};
     return currentCategory.genders;
   };
 
-  // ✅ Get product types for selected gender
   const getProductTypes = () => {
     if (!formData.category || !formData.gender || !currentGender) return {};
     return currentGender.productTypes;
   };
 
-  // ✅ Get subcategories for selected product type
   const getSubCategories = () => {
     if (!formData.category || !formData.gender || !formData.productType || !currentProductType) return {};
     return currentProductType.subCategories;
   };
 
-  // ✅ Get styles for selected subcategory
   const getStyles = (): string[] => {
     if (!formData.category || !formData.gender || !formData.productType || !formData.subCategory || !currentSubCategory) return [];
     return currentSubCategory.styles || [];
   };
 
-  // ✅ Get sizes for selected product type
   const getSizes = (): string[] => {
     if (!formData.category || !formData.gender || !formData.productType || !currentProductType) return [];
     return currentProductType.sizes || sizeOptions;
   };
 
-  // ✅ Generate Product IDs
   const generateProductIds = (prefix: string) => {
     const ids: string[] = [];
     for (let i = 1; i <= 100; i++) {
@@ -469,7 +450,6 @@ const AdminProductForm: React.FC = () => {
     return ids;
   };
 
-  // ✅ Fetch used product IDs
   const fetchUsedProductIds = async (prefix: string) => {
     try {
       const q = query(
@@ -485,7 +465,6 @@ const AdminProductForm: React.FC = () => {
     }
   };
 
-  // ✅ When category changes, update product IDs
   useEffect(() => {
     if (formData.category && categoryPrefix) {
       fetchUsedProductIds(categoryPrefix);
@@ -499,7 +478,6 @@ const AdminProductForm: React.FC = () => {
     }
   }, [formData.category, categoryPrefix]);
 
-  // ✅ Fetch product if edit mode
   useEffect(() => {
     if (isEditMode && id) {
       fetchProduct(id);
@@ -553,27 +531,43 @@ const AdminProductForm: React.FC = () => {
     }
   };
 
-  const uploadImage = async (file: File): Promise<string> => {
-    const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
+  const handleMainImageUploadSuccess = (url: string) => {
+    setFormData(prev => ({ ...prev, image: url }));
+    console.log('✅ Main image uploaded:', url);
   };
 
-  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleGalleryImageUploadSuccess = (urls: string) => {
+    const parsed = JSON.parse(urls);
+    setFormData(prev => ({ 
+      ...prev, 
+      images: [...prev.images, ...parsed] 
+    }));
+    console.log('✅ Gallery images uploaded:', parsed);
+  };
 
-    setUploading(true);
-    try {
-      const url = await uploadImage(file);
-      setFormData(prev => ({ ...prev, image: url }));
-      setImageUrlInput('');
-    } catch (error) {
-      console.error('Error uploading main image:', error);
-      alert('Failed to upload main image');
-    } finally {
-      setUploading(false);
+  const handleColorImageUploadSuccess = (urls: string) => {
+    console.log('🔵 Color images received:', urls);
+    
+    if (!selectedColor) {
+      alert('Please select a colour first');
+      return;
     }
+    
+    let imageUrls: string[] = [];
+    try {
+      const parsed = JSON.parse(urls);
+      if (Array.isArray(parsed)) {
+        imageUrls = parsed;
+      } else {
+        imageUrls = [parsed];
+      }
+    } catch {
+      imageUrls = [urls];
+    }
+    
+    console.log('📸 Image URLs to add:', imageUrls);
+    setNewColorImages(prev => [...prev, ...imageUrls]);
+    console.log('✅ Color images added:', imageUrls);
   };
 
   const handleMainImageUrl = () => {
@@ -584,29 +578,6 @@ const AdminProductForm: React.FC = () => {
     setFormData(prev => ({ ...prev, image: imageUrlInput }));
     setImageUrlInput('');
     setShowUrlInput(false);
-  };
-
-  const handleGalleryImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    setUploading(true);
-    try {
-      const urls: string[] = [];
-      for (const file of Array.from(files)) {
-        const url = await uploadImage(file);
-        urls.push(url);
-      }
-      setFormData(prev => ({ 
-        ...prev, 
-        images: [...prev.images, ...urls] 
-      }));
-    } catch (error) {
-      console.error('Error uploading gallery images:', error);
-      alert('Failed to upload gallery images');
-    } finally {
-      setUploading(false);
-    }
   };
 
   const handleGalleryImageUrl = () => {
@@ -620,29 +591,6 @@ const AdminProductForm: React.FC = () => {
     }));
     setImageUrlInput('');
     setShowUrlInput(false);
-  };
-
-  const handleColorImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || !selectedColor) {
-      alert('Please select a colour first');
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const urls: string[] = [];
-      for (const file of Array.from(files)) {
-        const url = await uploadImage(file);
-        urls.push(url);
-      }
-      setNewColorImages(prev => [...prev, ...urls]);
-    } catch (error) {
-      console.error('Error uploading colour images:', error);
-      alert('Failed to upload colour images');
-    } finally {
-      setUploading(false);
-    }
   };
 
   const handleColorImageUrl = () => {
@@ -664,6 +612,10 @@ const AdminProductForm: React.FC = () => {
       alert('Please select a colour');
       return;
     }
+    if (newColorImages.length === 0) {
+      alert('⚠️ Please upload at least one image for this colour');
+      return;
+    }
     if (formData.colors.includes(selectedColor)) {
       alert('This colour already exists');
       return;
@@ -672,11 +624,14 @@ const AdminProductForm: React.FC = () => {
     setFormData(prev => ({
       ...prev,
       colors: [...prev.colors, selectedColor],
-      colorImages: { ...prev.colorImages, [selectedColor]: newColorImages }
+      colorImages: { 
+        ...prev.colorImages, 
+        [selectedColor]: newColorImages 
+      }
     }));
+    
     setSelectedColor('');
     setNewColorImages([]);
-    setNewColorUrlInput('');
   };
 
   const removeColor = (color: string) => {
@@ -742,7 +697,6 @@ const AdminProductForm: React.FC = () => {
     }));
   };
 
-  // ✅ Handle Category Change
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({
@@ -756,7 +710,6 @@ const AdminProductForm: React.FC = () => {
     }));
   };
 
-  // ✅ Handle Gender Change
   const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({
@@ -768,7 +721,6 @@ const AdminProductForm: React.FC = () => {
     }));
   };
 
-  // ✅ Handle Product Type Change
   const handleProductTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({
@@ -779,7 +731,6 @@ const AdminProductForm: React.FC = () => {
     }));
   };
 
-  // ✅ Handle Subcategory Change
   const handleSubCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({
@@ -789,12 +740,10 @@ const AdminProductForm: React.FC = () => {
     }));
   };
 
-  // ✅ Check if SKU is used
   const isSkuUsed = (sku: string) => {
     return usedProductIds.includes(sku);
   };
 
-  // ✅ Get status color for SKU
   const getSkuStatus = (sku: string) => {
     if (isSkuUsed(sku)) {
       return 'bg-red-100 text-red-700 border-red-300';
@@ -802,15 +751,9 @@ const AdminProductForm: React.FC = () => {
     return 'bg-green-100 text-green-700 border-green-300';
   };
 
-  // ✅ FIXED: REMOVED auto-discount calculation
-  // The discount should be manually set by the admin
-  // Previously this useEffect was auto-calculating discount from oldPrice - price
-  // Now removed to prevent unwanted discount application
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!formData.name) { alert('Please enter product name'); return; }
     if (!formData.price) { alert('Please enter price'); return; }
     if (!formData.category) { alert('Please select category'); return; }
@@ -835,7 +778,7 @@ const AdminProductForm: React.FC = () => {
         style: formData.style || '',
         price: formData.price,
         oldPrice: formData.oldPrice || 0,
-        discount: formData.discount || 0, // ✅ Use manual discount only
+        discount: formData.discount || 0,
         costPrice: formData.costPrice || 0,
         stock: formData.stock || 0,
         lowStockAlert: formData.lowStockAlert || 5,
@@ -888,7 +831,6 @@ const AdminProductForm: React.FC = () => {
     );
   }
 
-  // ✅ Get all select options with proper typing
   const genders = getGenders();
   const productTypes = getProductTypes();
   const subCategories = getSubCategories();
@@ -930,9 +872,7 @@ const AdminProductForm: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* ============================================================
-        1. BASIC INFORMATION
-        ============================================================ */}
+        {/* 1. BASIC INFORMATION */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">📋 1. Basic Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1000,9 +940,7 @@ const AdminProductForm: React.FC = () => {
           </div>
         </div>
 
-        {/* ============================================================
-        2. CATEGORY
-        ============================================================ */}
+        {/* 2. CATEGORY */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">🏷️ 2. Category</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1099,7 +1037,6 @@ const AdminProductForm: React.FC = () => {
               </select>
             </div>
 
-            {/* Category Path Display */}
             {formData.category && (
               <div className="md:col-span-2">
                 <div className="bg-[#F8FAFC] p-3 rounded-lg border border-gray-200 flex items-center gap-2 text-sm text-gray-600 flex-wrap">
@@ -1143,9 +1080,7 @@ const AdminProductForm: React.FC = () => {
           </div>
         </div>
 
-        {/* ============================================================
-        3. PRICING - FIXED: Manual Discount Field Added
-        ============================================================ */}
+        {/* 3. PRICING */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">💰 3. Pricing</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1171,10 +1106,9 @@ const AdminProductForm: React.FC = () => {
                 placeholder="7500"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
-              <p className="text-xs text-gray-400 mt-1">Optional - for comparison</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Discount % (Manual)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Discount %</label>
               <input
                 type="number"
                 name="discount"
@@ -1183,7 +1117,6 @@ const AdminProductForm: React.FC = () => {
                 placeholder="0"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
-              <p className="text-xs text-gray-400 mt-1">Set 0 for no discount</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (Admin)</label>
@@ -1199,9 +1132,7 @@ const AdminProductForm: React.FC = () => {
           </div>
         </div>
 
-        {/* ============================================================
-        4. INVENTORY
-        ============================================================ */}
+        {/* 4. INVENTORY */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">📦 4. Inventory</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1231,67 +1162,20 @@ const AdminProductForm: React.FC = () => {
           </div>
         </div>
 
-        {/* ============================================================
-        5. IMAGES
-        ============================================================ */}
+        {/* 5. IMAGES */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">🖼️ 5. Images</h3>
           
-          {/* Main Image */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Main Product Image *</label>
-            <div className="flex items-center gap-4 mb-2">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleMainImageUpload}
-                className="hidden"
-                id="mainImageUpload"
-                disabled={uploading}
-              />
-              <label
-                htmlFor="mainImageUpload"
-                className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition cursor-pointer text-sm flex items-center gap-2"
-              >
-                {uploading ? <FaSpinner className="animate-spin" /> : <FaCloudUploadAlt />}
-                {uploading ? 'Uploading...' : 'Upload Image'}
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowUrlInput(!showUrlInput)}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
-              >
-                <FaLink /> Add URL
-              </button>
-            </div>
-            {showUrlInput && (
-              <div className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
-                  placeholder="https://example.com/image.jpg"
-                  value={imageUrlInput}
-                  onChange={(e) => setImageUrlInput(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={handleMainImageUrl}
-                  className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowUrlInput(false); setImageUrlInput(''); }}
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
+            <CloudinaryUpload
+              onUploadSuccess={handleMainImageUploadSuccess}
+              buttonText="Upload Main Image"
+              folder="maha-one/products/main"
+            />
             {formData.image && (
               <div className="relative inline-block mt-2">
-                <img src={formData.image} alt="Main" className="w-24 h-24 object-cover rounded-lg border" />
+                <img src={formData.image} alt="Main" className="w-24 h-24 object-cover rounded-lg border-2 border-[#D4AF37]" />
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
@@ -1303,63 +1187,19 @@ const AdminProductForm: React.FC = () => {
             )}
           </div>
 
-          {/* Additional Images */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Additional Product Images</label>
-            <div className="flex items-center gap-4 mb-2">
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleGalleryImagesUpload}
-                className="hidden"
-                id="galleryImagesUpload"
-                disabled={uploading}
-              />
-              <label
-                htmlFor="galleryImagesUpload"
-                className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition cursor-pointer text-sm flex items-center gap-2"
-              >
-                {uploading ? <FaSpinner className="animate-spin" /> : <FaCloudUploadAlt />}
-                {uploading ? 'Uploading...' : 'Upload Images'}
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowUrlInput(!showUrlInput)}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
-              >
-                <FaLink /> Add URL
-              </button>
-            </div>
-            {showUrlInput && (
-              <div className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
-                  placeholder="https://example.com/image.jpg"
-                  value={imageUrlInput}
-                  onChange={(e) => setImageUrlInput(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={handleGalleryImageUrl}
-                  className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowUrlInput(false); setImageUrlInput(''); }}
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
+            <CloudinaryUpload
+              onUploadSuccess={handleGalleryImageUploadSuccess}
+              buttonText="Upload Gallery Images"
+              folder="maha-one/products/gallery"
+              multiple={true}
+              maxFiles={10}
+            />
             <div className="flex flex-wrap gap-2 mt-2">
               {formData.images.map((img: string, index: number) => (
                 <div key={index} className="relative">
-                  <img src={img} alt={`Gallery ${index}`} className="w-20 h-20 object-cover rounded-lg border" />
+                  <img src={img} alt={`Gallery ${index}`} className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200" />
                   <button
                     type="button"
                     onClick={() => removeGalleryImage(index)}
@@ -1373,178 +1213,229 @@ const AdminProductForm: React.FC = () => {
           </div>
         </div>
 
+        {/* 6. VARIANTS */}
         {/* ============================================================
-        6. VARIANTS
-        ============================================================ */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🎨 6. Variants</h3>
-          
-          {/* Colors */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Colors</label>
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <select
-                  value={selectedColor}
-                  onChange={(e) => setSelectedColor(e.target.value)}
-                  className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-                >
-                  <option value="">Select Colour</option>
-                  {colourOptions.map((color) => (
-                    <option key={color} value={color}>{color}</option>
-                  ))}
-                </select>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleColorImagesUpload}
-                    className="hidden"
-                    id="colorImagesUpload"
-                    disabled={uploading}
-                  />
-                  <label
-                    htmlFor="colorImagesUpload"
-                    className="bg-[#0F766E] text-white px-3 py-2 rounded-lg hover:bg-[#065F46] transition cursor-pointer text-sm flex items-center gap-2"
-                  >
-                    {uploading ? <FaSpinner className="animate-spin" /> : <FaCloudUploadAlt />}
-                    {uploading ? 'Uploading...' : 'Upload Images'}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowColorUrlInput(!showColorUrlInput)}
-                    className="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
-                  >
-                    <FaLink /> Add URL
-                  </button>
-                </div>
+6. VARIANTS — FIXED LAYOUT
+============================================================ */}
+<div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+  <h3 className="text-lg font-semibold text-gray-800 mb-4">🎨 6. Variants</h3>
+  
+  {/* Colors */}
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-700 mb-2">Colors</label>
+    <div className="border rounded-lg p-4 bg-gray-50">
+      
+      {/* ✅ BUTTONS — SAME SIZE, PROPER LAYOUT */}
+      <div className="flex flex-wrap items-center gap-3">
+        
+        {/* Color Select Dropdown */}
+        <div className="flex-1 min-w-[140px]">
+          <select
+            value={selectedColor}
+            onChange={(e) => setSelectedColor(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm bg-white"
+          >
+            <option value="">Select Colour</option>
+            {colourOptions.map((color) => (
+              <option key={color} value={color}>{color}</option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Upload Button */}
+        <div className="flex-shrink-0">
+          <CloudinaryUpload
+            onUploadSuccess={handleColorImageUploadSuccess}
+            buttonText="📸 Upload Images"
+            folder="maha-one/products/colors"
+            multiple={true}
+            maxFiles={5}
+          />
+        </div>
+        
+        {/* Add URL Button */}
+        <button
+          type="button"
+          onClick={() => setShowColorUrlInput(!showColorUrlInput)}
+          className="flex-shrink-0 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
+        >
+          <FaLink className="text-xs" /> Add URL
+        </button>
+        
+        {/* ✅ Add Colour Button — SAME SIZE */}
+        <button
+          type="button"
+          onClick={addColor}
+          disabled={!selectedColor || newColorImages.length === 0}
+          className={`flex-shrink-0 px-4 py-2 rounded-lg transition text-sm flex items-center gap-2 ${
+            selectedColor && newColorImages.length > 0
+              ? 'bg-[#0F766E] text-white hover:bg-[#065F46] cursor-pointer'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          <FaPlus className="inline" /> Add Colour
+        </button>
+        
+      </div>
+      
+      {/* URL Input — Show/Hide */}
+      {showColorUrlInput && (
+        <div className="flex items-center gap-2 mt-3">
+          <input
+            type="text"
+            placeholder="https://example.com/colour-image.jpg"
+            value={newColorUrlInput}
+            onChange={(e) => setNewColorUrlInput(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
+          />
+          <button
+            type="button"
+            onClick={handleColorImageUrl}
+            className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm whitespace-nowrap"
+          >
+            Add URL
+          </button>
+          <button
+            type="button"
+            onClick={() => { setShowColorUrlInput(false); setNewColorUrlInput(''); }}
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+      
+      {/* Color Upload Preview */}
+      {newColorImages.length > 0 && selectedColor && (
+        <div className="mt-3 p-3 bg-white rounded-lg border border-[#D4AF37]">
+          <p className="text-sm font-medium text-gray-700 mb-2">
+            📸 Preview for <span className="text-[#D4AF37]">{selectedColor}</span>
+            <span className="ml-2 text-xs text-gray-400">({newColorImages.length} images)</span>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {newColorImages.map((img: string, i: number) => (
+              <div key={i} className="relative">
+                <img 
+                  src={img} 
+                  className="w-16 h-16 object-cover rounded-lg border-2 border-[#D4AF37]" 
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/64x64/D4AF37/FFFFFF?text=Error';
+                  }}
+                />
                 <button
                   type="button"
-                  onClick={addColor}
-                  className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
+                  onClick={() => setNewColorImages(prev => prev.filter((_, idx) => idx !== i))}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
                 >
-                  <FaPlus className="inline mr-1" /> Add Colour
+                  ×
                 </button>
               </div>
-              {showColorUrlInput && (
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="text"
-                    placeholder="https://example.com/colour-image.jpg"
-                    value={newColorUrlInput}
-                    onChange={(e) => setNewColorUrlInput(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleColorImageUrl}
-                    className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
-                  >
-                    Add URL
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setShowColorUrlInput(false); setNewColorUrlInput(''); }}
-                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-              {newColorImages.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {newColorImages.map((img: string, i: number) => (
-                    <img key={i} src={img} className="w-12 h-12 object-cover rounded border" />
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {formData.colors.map((color: string) => (
-                <div key={color} className="border rounded-lg p-2 bg-white shadow-sm flex items-center gap-2">
-                  <div>
-                    <span className="font-medium text-gray-800">{color}</span>
-                    {formData.colorImages[color]?.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {formData.colorImages[color].map((img: string, index: number) => (
-                          <div key={index} className="relative">
-                            <img src={img} alt={`${color} ${index + 1}`} className="w-12 h-12 object-cover rounded border" />
-                            <button
-                              type="button"
-                              onClick={() => removeColorImage(color, index)}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeColor(color)}
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              {formData.colors.length === 0 && (
-                <span className="text-sm text-gray-400">No colors added yet</span>
-              )}
-            </div>
-          </div>
-
-          {/* Sizes - ✅ Dynamic Sizes based on Product Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Sizes</label>
-            <div className="flex flex-wrap gap-3">
-              <select
-                value={newSize}
-                onChange={(e) => setNewSize(e.target.value)}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-              >
-                <option value="">Select Size</option>
-                {availableSizes.map((s: string) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={addSize}
-                className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
-              >
-                <FaPlus className="inline mr-1" /> Add Size
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {formData.sizes.map((size: string) => (
-                <span
-                  key={size}
-                  className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                >
-                  {size}
-                  <button
-                    type="button"
-                    onClick={() => removeSize(size)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-              {formData.sizes.length === 0 && (
-                <span className="text-sm text-gray-400">No sizes added yet</span>
-              )}
-            </div>
+            ))}
           </div>
         </div>
+      )}
+      
+      {/* Validation Message */}
+      {selectedColor && newColorImages.length === 0 && (
+        <p className="text-xs text-amber-600 mt-2">
+          ⚠️ Please upload at least one image for this colour before adding
+        </p>
+      )}
+    </div>
+    
+    {/* Added Colors Display */}
+    <div className="flex flex-wrap gap-2 mt-2">
+      {formData.colors.map((color: string) => (
+        <div key={color} className="border rounded-lg p-2 bg-white shadow-sm flex items-center gap-2">
+          <div>
+            <span className="font-medium text-gray-800">{color}</span>
+            {formData.colorImages[color]?.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {formData.colorImages[color].map((img: string, index: number) => (
+                  <div key={index} className="relative">
+                    <img src={img} alt={`${color} ${index + 1}`} className="w-12 h-12 object-cover rounded border" />
+                    <button
+                      type="button"
+                      onClick={() => removeColorImage(color, index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => removeColor(color)}
+            className="text-red-500 hover:text-red-700 text-sm"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      {formData.colors.length === 0 && (
+        <span className="text-sm text-gray-400">No colors added yet</span>
+      )}
+    </div>
+  </div>
 
-        {/* ============================================================
-        7. DETAILS
-        ============================================================ */}
+  {/* Sizes */}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-2">Sizes</label>
+    <div className="flex flex-wrap items-center gap-3">
+      
+      {/* Size Select Dropdown */}
+      <div className="flex-1 min-w-[140px]">
+        <select
+          value={newSize}
+          onChange={(e) => setNewSize(e.target.value)}
+          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm bg-white"
+        >
+          <option value="">Select Size</option>
+          {availableSizes.map((s: string) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </div>
+      
+      {/* ✅ Add Size Button — SAME SIZE */}
+      <button
+        type="button"
+        onClick={addSize}
+        className="flex-shrink-0 bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm flex items-center gap-2"
+      >
+        <FaPlus className="inline" /> Add Size
+      </button>
+      
+    </div>
+    
+    {/* Added Sizes Display */}
+    <div className="flex flex-wrap gap-2 mt-2">
+      {formData.sizes.map((size: string) => (
+        <span
+          key={size}
+          className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+        >
+          {size}
+          <button
+            type="button"
+            onClick={() => removeSize(size)}
+            className="text-red-500 hover:text-red-700"
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      {formData.sizes.length === 0 && (
+        <span className="text-sm text-gray-400">No sizes added yet</span>
+      )}
+    </div>
+  </div>
+</div>
+
+        {/* 7. DETAILS */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">📝 7. Product Details</h3>
           <div className="space-y-4">
@@ -1595,9 +1486,7 @@ const AdminProductForm: React.FC = () => {
           </div>
         </div>
 
-        {/* ============================================================
-        8. LABELS
-        ============================================================ */}
+        {/* 8. LABELS */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">🏷️ 8. Product Labels</h3>
           <div className="flex flex-wrap items-center gap-6">
@@ -1644,9 +1533,7 @@ const AdminProductForm: React.FC = () => {
           </div>
         </div>
 
-        {/* ============================================================
-        9. SUBMIT
-        ============================================================ */}
+        {/* 9. SUBMIT */}
         <div className="flex justify-end gap-3">
           <button
             type="button"
