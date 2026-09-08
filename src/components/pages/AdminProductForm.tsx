@@ -391,8 +391,12 @@ const AdminProductForm: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // ✅ URL Input States
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [galleryUrlInput, setGalleryUrlInput] = useState('');
+  const [showGalleryUrlInput, setShowGalleryUrlInput] = useState(false);
   
   const [selectedColor, setSelectedColor] = useState('');
   const [newColorImages, setNewColorImages] = useState<string[]>([]);
@@ -570,6 +574,7 @@ const AdminProductForm: React.FC = () => {
     console.log('✅ Color images added:', imageUrls);
   };
 
+  // ✅ HANDLE MAIN IMAGE URL
   const handleMainImageUrl = () => {
     if (!imageUrlInput.trim()) {
       alert('Please enter a valid image URL');
@@ -580,19 +585,21 @@ const AdminProductForm: React.FC = () => {
     setShowUrlInput(false);
   };
 
+  // ✅ HANDLE GALLERY IMAGE URL
   const handleGalleryImageUrl = () => {
-    if (!imageUrlInput.trim()) {
+    if (!galleryUrlInput.trim()) {
       alert('Please enter a valid image URL');
       return;
     }
     setFormData(prev => ({ 
       ...prev, 
-      images: [...prev.images, imageUrlInput] 
+      images: [...prev.images, galleryUrlInput] 
     }));
-    setImageUrlInput('');
-    setShowUrlInput(false);
+    setGalleryUrlInput('');
+    setShowGalleryUrlInput(false);
   };
 
+  // ✅ HANDLE COLOR IMAGE URL
   const handleColorImageUrl = () => {
     if (!newColorUrlInput.trim()) {
       alert('Please enter a valid image URL');
@@ -1162,17 +1169,57 @@ const AdminProductForm: React.FC = () => {
           </div>
         </div>
 
-        {/* 5. IMAGES */}
+        {/* 5. IMAGES — ✅ CLOUDINARY + URL ADD (BOTH OPTIONS) */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">🖼️ 5. Images</h3>
           
+          {/* ============================================================
+          MAIN IMAGE — ✅ Cloudinary + URL
+          ============================================================ */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Main Product Image *</label>
-            <CloudinaryUpload
-              onUploadSuccess={handleMainImageUploadSuccess}
-              buttonText="Upload Main Image"
-              folder="maha-one/products/main"
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <CloudinaryUpload
+                onUploadSuccess={handleMainImageUploadSuccess}
+                buttonText="📤 Upload from Cloudinary"
+                folder="maha-one/products/main"
+              />
+              <button
+                type="button"
+                onClick={() => setShowUrlInput(!showUrlInput)}
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
+              >
+                <FaLink className="text-xs" /> Add URL
+              </button>
+            </div>
+            
+            {/* URL Input */}
+            {showUrlInput && (
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="text"
+                  placeholder="https://example.com/image.jpg"
+                  value={imageUrlInput}
+                  onChange={(e) => setImageUrlInput(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={handleMainImageUrl}
+                  className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
+                >
+                  Add URL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowUrlInput(false); setImageUrlInput(''); }}
+                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+            
             {formData.image && (
               <div className="relative inline-block mt-2">
                 <img src={formData.image} alt="Main" className="w-24 h-24 object-cover rounded-lg border-2 border-[#D4AF37]" />
@@ -1187,15 +1234,55 @@ const AdminProductForm: React.FC = () => {
             )}
           </div>
 
+          {/* ============================================================
+          GALLERY IMAGES — ✅ Cloudinary + URL
+          ============================================================ */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Additional Product Images</label>
-            <CloudinaryUpload
-              onUploadSuccess={handleGalleryImageUploadSuccess}
-              buttonText="Upload Gallery Images"
-              folder="maha-one/products/gallery"
-              multiple={true}
-              maxFiles={10}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <CloudinaryUpload
+                onUploadSuccess={handleGalleryImageUploadSuccess}
+                buttonText="📤 Upload from Cloudinary"
+                folder="maha-one/products/gallery"
+                multiple={true}
+                maxFiles={10}
+              />
+              <button
+                type="button"
+                onClick={() => setShowGalleryUrlInput(!showGalleryUrlInput)}
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
+              >
+                <FaLink className="text-xs" /> Add URL
+              </button>
+            </div>
+            
+            {/* Gallery URL Input */}
+            {showGalleryUrlInput && (
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="text"
+                  placeholder="https://example.com/gallery-image.jpg"
+                  value={galleryUrlInput}
+                  onChange={(e) => setGalleryUrlInput(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={handleGalleryImageUrl}
+                  className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm"
+                >
+                  Add URL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowGalleryUrlInput(false); setGalleryUrlInput(''); }}
+                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+            
             <div className="flex flex-wrap gap-2 mt-2">
               {formData.images.map((img: string, index: number) => (
                 <div key={index} className="relative">
@@ -1214,226 +1301,199 @@ const AdminProductForm: React.FC = () => {
         </div>
 
         {/* 6. VARIANTS */}
-        {/* ============================================================
-6. VARIANTS — FIXED LAYOUT
-============================================================ */}
-<div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-  <h3 className="text-lg font-semibold text-gray-800 mb-4">🎨 6. Variants</h3>
-  
-  {/* Colors */}
-  <div className="mb-4">
-    <label className="block text-sm font-medium text-gray-700 mb-2">Colors</label>
-    <div className="border rounded-lg p-4 bg-gray-50">
-      
-      {/* ✅ BUTTONS — SAME SIZE, PROPER LAYOUT */}
-      <div className="flex flex-wrap items-center gap-3">
-        
-        {/* Color Select Dropdown */}
-        <div className="flex-1 min-w-[140px]">
-          <select
-            value={selectedColor}
-            onChange={(e) => setSelectedColor(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm bg-white"
-          >
-            <option value="">Select Colour</option>
-            {colourOptions.map((color) => (
-              <option key={color} value={color}>{color}</option>
-            ))}
-          </select>
-        </div>
-        
-        {/* Upload Button */}
-        <div className="flex-shrink-0">
-          <CloudinaryUpload
-            onUploadSuccess={handleColorImageUploadSuccess}
-            buttonText="📸 Upload Images"
-            folder="maha-one/products/colors"
-            multiple={true}
-            maxFiles={5}
-          />
-        </div>
-        
-        {/* Add URL Button */}
-        <button
-          type="button"
-          onClick={() => setShowColorUrlInput(!showColorUrlInput)}
-          className="flex-shrink-0 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
-        >
-          <FaLink className="text-xs" /> Add URL
-        </button>
-        
-        {/* ✅ Add Colour Button — SAME SIZE */}
-        <button
-          type="button"
-          onClick={addColor}
-          disabled={!selectedColor || newColorImages.length === 0}
-          className={`flex-shrink-0 px-4 py-2 rounded-lg transition text-sm flex items-center gap-2 ${
-            selectedColor && newColorImages.length > 0
-              ? 'bg-[#0F766E] text-white hover:bg-[#065F46] cursor-pointer'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          <FaPlus className="inline" /> Add Colour
-        </button>
-        
-      </div>
-      
-      {/* URL Input — Show/Hide */}
-      {showColorUrlInput && (
-        <div className="flex items-center gap-2 mt-3">
-          <input
-            type="text"
-            placeholder="https://example.com/colour-image.jpg"
-            value={newColorUrlInput}
-            onChange={(e) => setNewColorUrlInput(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
-          />
-          <button
-            type="button"
-            onClick={handleColorImageUrl}
-            className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm whitespace-nowrap"
-          >
-            Add URL
-          </button>
-          <button
-            type="button"
-            onClick={() => { setShowColorUrlInput(false); setNewColorUrlInput(''); }}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-      
-      {/* Color Upload Preview */}
-      {newColorImages.length > 0 && selectedColor && (
-        <div className="mt-3 p-3 bg-white rounded-lg border border-[#D4AF37]">
-          <p className="text-sm font-medium text-gray-700 mb-2">
-            📸 Preview for <span className="text-[#D4AF37]">{selectedColor}</span>
-            <span className="ml-2 text-xs text-gray-400">({newColorImages.length} images)</span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {newColorImages.map((img: string, i: number) => (
-              <div key={i} className="relative">
-                <img 
-                  src={img} 
-                  className="w-16 h-16 object-cover rounded-lg border-2 border-[#D4AF37]" 
-                  onError={(e) => {
-                    e.currentTarget.src = 'https://via.placeholder.com/64x64/D4AF37/FFFFFF?text=Error';
-                  }}
-                />
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🎨 6. Variants</h3>
+          
+          {/* ============================================================
+          COLORS — ✅ Cloudinary + URL
+          ============================================================ */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Colors</label>
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex-1 min-w-[140px]">
+                  <select
+                    value={selectedColor}
+                    onChange={(e) => setSelectedColor(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm bg-white"
+                  >
+                    <option value="">Select Colour</option>
+                    {colourOptions.map((color) => (
+                      <option key={color} value={color}>{color}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex-shrink-0">
+                  <CloudinaryUpload
+                    onUploadSuccess={handleColorImageUploadSuccess}
+                    buttonText="📸 Upload Images"
+                    folder="maha-one/products/colors"
+                    multiple={true}
+                    maxFiles={5}
+                  />
+                </div>
+                
                 <button
                   type="button"
-                  onClick={() => setNewColorImages(prev => prev.filter((_, idx) => idx !== i))}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                  onClick={() => setShowColorUrlInput(!showColorUrlInput)}
+                  className="flex-shrink-0 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
                 >
-                  ×
+                  <FaLink className="text-xs" /> Add URL
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={addColor}
+                  disabled={!selectedColor || newColorImages.length === 0}
+                  className={`flex-shrink-0 px-4 py-2 rounded-lg transition text-sm flex items-center gap-2 ${
+                    selectedColor && newColorImages.length > 0
+                      ? 'bg-[#0F766E] text-white hover:bg-[#065F46] cursor-pointer'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <FaPlus className="inline" /> Add Colour
                 </button>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Validation Message */}
-      {selectedColor && newColorImages.length === 0 && (
-        <p className="text-xs text-amber-600 mt-2">
-          ⚠️ Please upload at least one image for this colour before adding
-        </p>
-      )}
-    </div>
-    
-    {/* Added Colors Display */}
-    <div className="flex flex-wrap gap-2 mt-2">
-      {formData.colors.map((color: string) => (
-        <div key={color} className="border rounded-lg p-2 bg-white shadow-sm flex items-center gap-2">
-          <div>
-            <span className="font-medium text-gray-800">{color}</span>
-            {formData.colorImages[color]?.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.colorImages[color].map((img: string, index: number) => (
-                  <div key={index} className="relative">
-                    <img src={img} alt={`${color} ${index + 1}`} className="w-12 h-12 object-cover rounded border" />
-                    <button
-                      type="button"
-                      onClick={() => removeColorImage(color, index)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
-                    >
-                      ×
-                    </button>
+              
+              {/* Color URL Input */}
+              {showColorUrlInput && (
+                <div className="flex items-center gap-2 mt-3">
+                  <input
+                    type="text"
+                    placeholder="https://example.com/colour-image.jpg"
+                    value={newColorUrlInput}
+                    onChange={(e) => setNewColorUrlInput(e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleColorImageUrl}
+                    className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm whitespace-nowrap"
+                  >
+                    Add URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowColorUrlInput(false); setNewColorUrlInput(''); }}
+                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+              
+              {/* Color Preview */}
+              {newColorImages.length > 0 && selectedColor && (
+                <div className="mt-3 p-3 bg-white rounded-lg border border-[#D4AF37]">
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    📸 Preview for <span className="text-[#D4AF37]">{selectedColor}</span>
+                    <span className="ml-2 text-xs text-gray-400">({newColorImages.length} images)</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {newColorImages.map((img: string, i: number) => (
+                      <div key={i} className="relative">
+                        <img src={img} className="w-16 h-16 object-cover rounded-lg border-2 border-[#D4AF37]" />
+                        <button
+                          type="button"
+                          onClick={() => setNewColorImages(prev => prev.filter((_, idx) => idx !== i))}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
+            
+            {/* Added Colors */}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.colors.map((color: string) => (
+                <div key={color} className="border rounded-lg p-2 bg-white shadow-sm flex items-center gap-2">
+                  <div>
+                    <span className="font-medium text-gray-800">{color}</span>
+                    {formData.colorImages[color]?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {formData.colorImages[color].map((img: string, index: number) => (
+                          <div key={index} className="relative">
+                            <img src={img} alt={`${color} ${index + 1}`} className="w-12 h-12 object-cover rounded border" />
+                            <button
+                              type="button"
+                              onClick={() => removeColorImage(color, index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeColor(color)}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {formData.colors.length === 0 && (
+                <span className="text-sm text-gray-400">No colors added yet</span>
+              )}
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => removeColor(color)}
-            className="text-red-500 hover:text-red-700 text-sm"
-          >
-            ×
-          </button>
-        </div>
-      ))}
-      {formData.colors.length === 0 && (
-        <span className="text-sm text-gray-400">No colors added yet</span>
-      )}
-    </div>
-  </div>
 
-  {/* Sizes */}
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-2">Sizes</label>
-    <div className="flex flex-wrap items-center gap-3">
-      
-      {/* Size Select Dropdown */}
-      <div className="flex-1 min-w-[140px]">
-        <select
-          value={newSize}
-          onChange={(e) => setNewSize(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm bg-white"
-        >
-          <option value="">Select Size</option>
-          {availableSizes.map((s: string) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-      </div>
-      
-      {/* ✅ Add Size Button — SAME SIZE */}
-      <button
-        type="button"
-        onClick={addSize}
-        className="flex-shrink-0 bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm flex items-center gap-2"
-      >
-        <FaPlus className="inline" /> Add Size
-      </button>
-      
-    </div>
-    
-    {/* Added Sizes Display */}
-    <div className="flex flex-wrap gap-2 mt-2">
-      {formData.sizes.map((size: string) => (
-        <span
-          key={size}
-          className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
-        >
-          {size}
-          <button
-            type="button"
-            onClick={() => removeSize(size)}
-            className="text-red-500 hover:text-red-700"
-          >
-            ×
-          </button>
-        </span>
-      ))}
-      {formData.sizes.length === 0 && (
-        <span className="text-sm text-gray-400">No sizes added yet</span>
-      )}
-    </div>
-  </div>
-</div>
+          {/* ============================================================
+          SIZES
+          ============================================================ */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sizes</label>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex-1 min-w-[140px]">
+                <select
+                  value={newSize}
+                  onChange={(e) => setNewSize(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none text-sm bg-white"
+                >
+                  <option value="">Select Size</option>
+                  {availableSizes.map((s: string) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={addSize}
+                className="flex-shrink-0 bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm flex items-center gap-2"
+              >
+                <FaPlus className="inline" /> Add Size
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.sizes.map((size: string) => (
+                <span
+                  key={size}
+                  className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                >
+                  {size}
+                  <button
+                    type="button"
+                    onClick={() => removeSize(size)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              {formData.sizes.length === 0 && (
+                <span className="text-sm text-gray-400">No sizes added yet</span>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* 7. DETAILS */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">

@@ -166,40 +166,47 @@ const CheckoutPage = () => {
         clearCart();
         
         // ==========================================================
-        // ✅ SEND ORDER CONFIRMATION EMAIL
+        // ✅ SEND ORDER CONFIRMATION EMAIL — FIXED
         // ==========================================================
         try {
-          const emailResult = await sendOrderConfirmationEmail({
-            email: formData.email || auth.currentUser?.email || '',
-            name: `${formData.firstName} ${formData.lastName}`,
-            orderId: orderNumber,
-            orderDate: new Date().toLocaleDateString('en-PK', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric'
-            }),
-            paymentMethod: paymentMethod,
-            subtotal: subtotal,
-            shipping: shipping,
-            discount: discount,
-            total: total,
-            customerName: `${formData.firstName} ${formData.lastName}`,
-            address: formData.address,
-            city: formData.city,
-            province: formData.province || 'Punjab',
-            postalCode: formData.postalCode || '54000',
-            phone: formData.phone,
-            items: cart.map((item: any) => ({
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price * item.quantity  // ✅ FIXED: number
-            }))
-          });
+          // ✅ Ensure email is valid
+          const customerEmail = formData.email || auth.currentUser?.email || '';
           
-          if (emailResult.success) {
-            console.log('✅ Order confirmation email sent successfully');
+          if (customerEmail) {
+            const emailResult = await sendOrderConfirmationEmail({
+              email: customerEmail,
+              name: `${formData.firstName} ${formData.lastName}`,
+              orderId: orderNumber,
+              orderDate: new Date().toLocaleDateString('en-PK', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+              }),
+              paymentMethod: paymentMethod,
+              subtotal: subtotal,
+              shipping: shipping,
+              discount: discount,
+              total: total,
+              customerName: `${formData.firstName} ${formData.lastName}`,
+              address: formData.address,
+              city: formData.city,
+              province: formData.province || 'Punjab',
+              postalCode: formData.postalCode || '54000',
+              phone: formData.phone,
+              items: cart.map((item: any) => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price * item.quantity
+              }))
+            });
+            
+            if (emailResult.success) {
+              console.log('✅ Order confirmation email sent successfully to:', customerEmail);
+            } else {
+              console.warn('⚠️ Email failed but order placed:', emailResult.error);
+            }
           } else {
-            console.warn('⚠️ Email failed but order placed:', emailResult.error);
+            console.warn('⚠️ No email provided, skipping email');
           }
         } catch (emailError) {
           console.error('❌ Email error:', emailError);
@@ -224,7 +231,7 @@ const CheckoutPage = () => {
               `${formData.address}, ${formData.city}, ${formData.province}`,
               '2-3 business days'
             );
-            console.log('');
+            console.log('✅ WhatsApp notification sent');
           } catch (whatsappError) {
             console.error('❌ WhatsApp error:', whatsappError);
           }
@@ -516,9 +523,9 @@ const CheckoutPage = () => {
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('jazzcash')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
+                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${(
                         paymentMethod === 'jazzcash' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      }`}
+                      )}`}
                     >
                       <FaMobileAlt className={`text-2xl ${paymentMethod === 'jazzcash' ? 'text-[#0F766E]' : 'text-gray-400'}`} />
                       <div className="flex-1 text-left">
@@ -532,9 +539,9 @@ const CheckoutPage = () => {
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('qr')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
+                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${(
                         paymentMethod === 'qr' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      }`}
+                      )}`}
                     >
                       <FaQrcode className={`text-2xl ${paymentMethod === 'qr' ? 'text-[#0F766E]' : 'text-gray-400'}`} />
                       <div className="flex-1 text-left">
@@ -548,9 +555,9 @@ const CheckoutPage = () => {
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('whatsapp')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
+                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${(
                         paymentMethod === 'whatsapp' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      }`}
+                      )}`}
                     >
                       <FaWhatsapp className={`text-2xl ${paymentMethod === 'whatsapp' ? 'text-[#25D366]' : 'text-gray-400'}`} />
                       <div className="flex-1 text-left">
@@ -564,9 +571,9 @@ const CheckoutPage = () => {
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('bank')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${
+                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${(
                         paymentMethod === 'bank' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      }`}
+                      )}`}
                     >
                       <FaBuilding className={`text-2xl ${paymentMethod === 'bank' ? 'text-[#0F766E]' : 'text-gray-400'}`} />
                       <div className="flex-1 text-left">

@@ -1,35 +1,28 @@
 // src/services/emailService.ts
 import emailjs from '@emailjs/browser';
 
-// ✅ EmailJS Config
-const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-const ORDER_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ORDER;
-const WELCOME_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_WELCOME;
+// ✅ EmailJS Config — With Fallback
+const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_zwll8wh';
+const ORDER_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ORDER || 'template_4i8ppe6';
+const WELCOME_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_WELCOME || 'template_w5dmzad';
 
-// ✅ Send Order Confirmation Email — DIRECT TEMPLATE PARAMS
-export const sendOrderConfirmationEmail = async (orderData: {
-  email: string;
-  name: string;
-  orderId: string;
-  orderDate?: string;
-  paymentMethod: string;
-  subtotal: number;
-  shipping: number;
-  discount: number;
-  total: number;
-  customerName: string;
-  address: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  phone: string;
-  items: Array<{ name: string; quantity: number; price: number }>;
-}) => {
+// ✅ FALLBACK: Agar .env se na aaye toh hardcode
+let PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+if (!PUBLIC_KEY) {
+  console.warn('⚠️ PUBLIC_KEY not found in .env, using fallback');
+  PUBLIC_KEY = 'user_IfuhzLqqlVD9OUYra';
+}
+
+console.log('📧 EmailJS Config:');
+console.log('✅ SERVICE_ID:', SERVICE_ID);
+console.log('✅ PUBLIC_KEY:', PUBLIC_KEY ? 'Set ✅' : 'Missing ❌');
+console.log('✅ ORDER_TEMPLATE_ID:', ORDER_TEMPLATE_ID);
+console.log('✅ WELCOME_TEMPLATE_ID:', WELCOME_TEMPLATE_ID);
+
+export const sendOrderConfirmationEmail = async (orderData: any) => {
   try {
     console.log('📧 Sending order confirmation email to:', orderData.email);
 
-    // ✅ DIRECT TEMPLATE PARAMS — SAME AS EMAILJS TEMPLATE
     const templateParams = {
       to_name: orderData.name,
       order_id: orderData.orderId,
@@ -45,7 +38,7 @@ export const sendOrderConfirmationEmail = async (orderData: {
       province: orderData.province,
       postal_code: orderData.postalCode,
       phone: orderData.phone,
-      items: orderData.items.map(item => ({
+      items: orderData.items.map((item: any) => ({
         name: item.name,
         quantity: item.quantity,
         price: item.price.toLocaleString()
@@ -71,11 +64,7 @@ export const sendOrderConfirmationEmail = async (orderData: {
   }
 };
 
-// ✅ Send Welcome Email — DIRECT TEMPLATE PARAMS
-export const sendWelcomeEmail = async (data: {
-  email: string;
-  name: string;
-}) => {
+export const sendWelcomeEmail = async (data: any) => {
   try {
     console.log('📧 Sending welcome email to:', data.email);
 
@@ -83,8 +72,6 @@ export const sendWelcomeEmail = async (data: {
       to_name: data.name,
       shop_url: window.location.origin + '/shop'
     };
-
-    console.log('📧 Template Params:', templateParams);
 
     const response = await emailjs.send(
       SERVICE_ID,
