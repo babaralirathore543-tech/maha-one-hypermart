@@ -35,6 +35,9 @@ const Navbar = () => {
   const isAdmin = user?.role === 'admin';
   const userId = localStorage.getItem('userId') || 'guest';
 
+  // ✅ Check if on admin page
+  const isAdminPage = location.pathname.startsWith('/admin');
+
   // Navigation Links for Mobile Menu
   const links = [
     { name: 'Home', path: '/' },
@@ -289,20 +292,16 @@ const Navbar = () => {
   const scrollToCategories = () => {
     console.log('🔄 Scrolling to categories...');
     
-    // 🔥 TRY 1: Direct ID from HomePage
     let targetElement = document.getElementById('shop-by-category');
     
-    // 🔥 TRY 2: If not found, try section with grid-cols-4
     if (!targetElement) {
       targetElement = document.querySelector('section:has(.grid-cols-4)');
     }
     
-    // 🔥 TRY 3: If still not found, try by class
     if (!targetElement) {
       targetElement = document.querySelector('[class*="ShopByCategory"]');
     }
     
-    // 🔥 TRY 4: Last resort — find by text
     if (!targetElement) {
       const allSections = document.querySelectorAll('section');
       for (const section of allSections) {
@@ -316,15 +315,12 @@ const Navbar = () => {
     if (targetElement) {
       console.log('✅ Categories section found:', targetElement);
       
-      // Get header height for offset
       const navElement = document.querySelector('nav') as HTMLElement | null;
       const headerHeight = navElement?.offsetHeight || 80;
       
-      // Calculate scroll position
       const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
       const offsetPosition = elementPosition - headerHeight - 20;
       
-      // Smooth scroll
       window.scrollTo({
         top: offsetPosition,
         behavior: 'smooth'
@@ -332,10 +328,8 @@ const Navbar = () => {
     } else {
       console.warn('⚠️ Categories section not found, navigating to home...');
       
-      // If not on home page, go to home first
       if (window.location.pathname !== '/') {
         navigate('/');
-        // Wait for page to load then scroll
         setTimeout(() => {
           const retryElement = document.getElementById('shop-by-category') || 
                              document.querySelector('section:has(.grid-cols-4)');
@@ -349,7 +343,6 @@ const Navbar = () => {
           }
         }, 500);
       } else {
-        // If on home page but still not found, scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
@@ -376,7 +369,7 @@ const Navbar = () => {
             isCompact ? 'h-[52px] sm:h-[56px]' : 'h-[56px] sm:h-[64px] md:h-[72px]'
           }`}>
             
-            {/* LEFT: Hamburger Menu — 🔥 ALWAYS VISIBLE */}
+            {/* LEFT: Hamburger Menu */}
             <button 
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -390,7 +383,7 @@ const Navbar = () => {
               }
             </button>
 
-            {/* CENTER: Logo + Name — 🔥 SHRINK ON COMPACT */}
+            {/* CENTER: Logo + Name */}
             <Link to="/" className="flex items-center gap-2 sm:gap-3 group flex-shrink-0 transition-all duration-300">
               <div className="relative">
                 <img 
@@ -422,10 +415,10 @@ const Navbar = () => {
               </div>
             </Link>
 
-            {/* RIGHT: Icons — 🔥 SEARCH + CART ALWAYS VISIBLE, OTHERS HIDE ON COMPACT */}
+            {/* RIGHT: Icons */}
             <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
               
-              {/* 🔥 SEARCH ICON — ALWAYS VISIBLE */}
+              {/* SEARCH ICON */}
               <button 
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 onClick={openSearchOverlay}
@@ -436,11 +429,10 @@ const Navbar = () => {
                 }`} />
               </button>
 
-              {/* 🔥 ALL OTHER ICONS — HIDE ON COMPACT */}
+              {/* ALL OTHER ICONS — HIDE ON COMPACT */}
               <div className={`flex items-center gap-1 sm:gap-2 md:gap-3 transition-all duration-300 ${
                 isCompact ? 'opacity-0 scale-95 pointer-events-none w-0 overflow-hidden' : 'opacity-100 scale-100 pointer-events-auto'
               }`}>
-                {/* Wishlist */}
                 <Link to="/wishlist" className="hidden sm:flex p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 relative group">
                   <FaHeart className="text-lg text-gray-600 dark:text-gray-300 group-hover:text-[#D4AF37] transition-colors" />
                   {wishlistCount > 0 && (
@@ -470,7 +462,7 @@ const Navbar = () => {
                 )}
               </div>
 
-              {/* 🔥 CART ICON — ALWAYS VISIBLE */}
+              {/* CART ICON — ALWAYS VISIBLE */}
               <Link to="/cart" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 relative group">
                 <FaShoppingBag className={`text-lg text-gray-600 dark:text-gray-300 group-hover:text-[#D4AF37] transition-colors ${
                   isCompact ? 'text-[#D4AF37]' : ''
@@ -483,7 +475,7 @@ const Navbar = () => {
           </div>
 
           {/* ==========================================================
-              SEARCH BAR — 🔥 SHOW/HIDE ON SCROLL
+              SEARCH BAR
               ========================================================== */}
           <div className={`transition-all duration-300 overflow-hidden ${
             showFullSearch ? 'max-h-20 opacity-100 pb-2 sm:pb-3' : 'max-h-0 opacity-0 py-0'
@@ -526,7 +518,6 @@ const Navbar = () => {
               </div>
             </form>
 
-            {/* Search Suggestions */}
             {searchSuggestions.length > 0 && !isVoiceListening && (
               <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
                 {searchSuggestions.map((suggestion, index) => (
@@ -549,14 +540,16 @@ const Navbar = () => {
           </div>
 
           {/* ==========================================================
-              CATEGORIES SLIDER — Search Bar ke Neeche
+              CATEGORIES SLIDER — ✅ HIDE ON ADMIN PAGES
               ========================================================== */}
-          <div className="pb-1">
-            <CategoriesSlider 
-              isCompact={isCompact}
-              isSticky={isCompact}
-            />
-          </div>
+          {!isAdminPage && (
+            <div className="pb-1">
+              <CategoriesSlider 
+                isCompact={isCompact}
+                isSticky={isCompact}
+              />
+            </div>
+          )}
 
           {/* ==========================================================
               MOBILE MENU
@@ -752,7 +745,7 @@ const Navbar = () => {
               <span className="text-[9px] sm:text-[10px] font-medium">Theme</span>
             </div>
 
-            {/* 3. CATEGORIES - Center — 🔥 FIXED */}
+            {/* 3. CATEGORIES */}
             <button
               onClick={scrollToCategories}
               className="flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative text-[#D4AF37]"
