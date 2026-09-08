@@ -8,12 +8,38 @@ import {
   FaSeedling, FaWeightHanging,
   FaBox, FaTag, FaList
 } from 'react-icons/fa';
-import { db, storage } from '../../config/firebase';
+import { db } from '../../config/firebase';
 import { 
   collection, addDoc, getDoc, doc, updateDoc,
   query, where, getDocs
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+// ✅ Cloudinary Upload Function
+const CLOUDINARY_UPLOAD_PRESET = 'maha_one_uploads';
+const CLOUDINARY_CLOUD_NAME = 'kw3pdwrb';
+
+const uploadToCloudinary = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('folder', 'dryfruits');
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    {
+      method: 'POST',
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to upload image to Cloudinary');
+  }
+
+  const data = await response.json();
+  return data.secure_url;
+};
 
 // ✅ Dry Fruits Product Interface
 interface DryFruitsProductData {
@@ -23,16 +49,13 @@ interface DryFruitsProductData {
   category: string;
   subCategory: string;
   productType: string;
-  // ✅ Base price (default)
   price: number;
   oldPrice: number;
   discount: number;
   costPrice: number;
   stock: number;
   lowStockAlert: number;
-  // ✅ Weight Variants
   weightVariants: WeightVariant[];
-  // Other fields
   weight: string;
   weightUnit: string;
   origin: string;
@@ -57,7 +80,6 @@ interface DryFruitsProductData {
   reviewCount: number;
 }
 
-// ✅ Weight Variant Interface
 interface WeightVariant {
   id: string;
   weight: string;
@@ -69,7 +91,6 @@ interface WeightVariant {
   sku: string;
 }
 
-// ✅ Dry Fruits Categories
 const dryFruitsCategories = [
   { id: 'almonds', label: 'Almonds (Badam)', icon: '🥜' },
   { id: 'cashews', label: 'Cashews (Kaju)', icon: '🥜' },
@@ -85,7 +106,6 @@ const dryFruitsCategories = [
   { id: 'coconut', label: 'Coconut Products', icon: '🥥' },
 ];
 
-// ✅ Weight Units
 const weightUnits = [
   { value: 'g', label: 'Grams (g)' },
   { value: 'kg', label: 'Kilograms (kg)' },
@@ -93,40 +113,34 @@ const weightUnits = [
   { value: 'oz', label: 'Ounces (oz)' },
 ];
 
-// ✅ Common Weight Options
 const weightOptions = [
   '50', '100', '150', '200', '250', '300', '400', '500',
   '750', '1000', '1500', '2000', '2500', '3000', '5000'
 ];
 
-// ✅ Origins
 const origins = [
   'Pakistan', 'India', 'China', 'Turkey', 'Iran', 'Afghanistan',
   'USA', 'California', 'Chile', 'Australia', 'Spain', 'Italy',
   'Greece', 'Middle East', 'Central Asia', 'South America'
 ];
 
-// ✅ Packaging Types
 const packagingTypes = [
   'Plastic Pouch', 'Stand-up Pouch', 'Glass Jar', 'Tin Can',
   'Cardboard Box', 'Gift Box', 'Vacuum Pack', 'Bulk Pack',
   'Resealable Bag', 'Premium Tin', 'Eco-friendly Pack'
 ];
 
-// ✅ Shelf Life Options
 const shelfLifeOptions = [
   '6 Months', '12 Months', '18 Months', '24 Months',
   '36 Months', '5 Years'
 ];
 
-// ✅ Product Types
 const productTypes = [
   'Raw', 'Roasted', 'Salted', 'Unsalted',
   'Honey Roasted', 'Chocolate Coated', 'Spiced',
   'Organic', 'Premium', 'Jumbo', 'Premium Quality'
 ];
 
-// ✅ Benefits
 const benefitOptions = [
   'Rich in Antioxidants', 'Heart Healthy', 'Brain Food',
   'High in Protein', 'Good for Skin', 'Boosts Immunity',
@@ -134,14 +148,12 @@ const benefitOptions = [
   'Bone Health', 'Digestive Health', 'Diabetes Friendly'
 ];
 
-// ✅ Generate SKU
 const generateSku = (category: string, index: number) => {
   const prefix = 'MDF';
   const catCode = category.substring(0, 3).toUpperCase();
   return `${prefix}-${catCode}-${String(index).padStart(3, '0')}`;
 };
 
-// ✅ Generate Variant SKU
 const generateVariantSku = (baseSku: string, weight: string) => {
   return `${baseSku}-${weight}`;
 };
@@ -197,7 +209,6 @@ const AdminDryFruitsForm: React.FC = () => {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [usedSkus, setUsedSkus] = useState<string[]>([]);
 
-  // ✅ New Variant State
   const [newVariant, setNewVariant] = useState<WeightVariant>({
     id: '',
     weight: '',
@@ -209,7 +220,6 @@ const AdminDryFruitsForm: React.FC = () => {
     sku: ''
   });
 
-  // ✅ Generate SKU on category change
   useEffect(() => {
     if (formData.category && formData.sku === '') {
       const count = usedSkus.length + 1;
@@ -218,7 +228,6 @@ const AdminDryFruitsForm: React.FC = () => {
     }
   }, [formData.category, usedSkus]);
 
-  // ✅ Fetch used SKUs
   useEffect(() => {
     const fetchUsedSkus = async () => {
       try {
@@ -236,7 +245,6 @@ const AdminDryFruitsForm: React.FC = () => {
     fetchUsedSkus();
   }, []);
 
-  // ✅ Fetch product if edit mode
   useEffect(() => {
     if (isEditMode && id) {
       fetchProduct(id);
@@ -295,10 +303,9 @@ const AdminDryFruitsForm: React.FC = () => {
     }
   };
 
+  // ✅ Cloudinary Upload Function
   const uploadImage = async (file: File): Promise<string> => {
-    const storageRef = ref(storage, `dryfruits/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
+    return await uploadToCloudinary(file);
   };
 
   const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -378,12 +385,10 @@ const AdminDryFruitsForm: React.FC = () => {
     }));
   };
 
-  // ✅ Check if SKU is used
   const isSkuUsed = (sku: string) => {
     return usedSkus.includes(sku) && sku !== formData.sku;
   };
 
-  // ✅ Add Variant
   const addVariant = () => {
     if (!newVariant.weight) {
       alert('Please select weight');
@@ -394,7 +399,6 @@ const AdminDryFruitsForm: React.FC = () => {
       return;
     }
     
-    // Check if weight already exists
     if (formData.weightVariants.some(v => v.weight === newVariant.weight && v.weightUnit === newVariant.weightUnit)) {
       alert('This weight variant already exists');
       return;
@@ -412,7 +416,6 @@ const AdminDryFruitsForm: React.FC = () => {
       }]
     }));
 
-    // Reset new variant form
     setNewVariant({
       id: '',
       weight: '',
@@ -425,7 +428,6 @@ const AdminDryFruitsForm: React.FC = () => {
     });
   };
 
-  // ✅ Remove Variant
   const removeVariant = (id: string) => {
     if (!confirm('Remove this weight variant?')) return;
     setFormData(prev => ({
@@ -434,7 +436,6 @@ const AdminDryFruitsForm: React.FC = () => {
     }));
   };
 
-  // ✅ Update Variant
   const updateVariant = (id: string, field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -447,7 +448,6 @@ const AdminDryFruitsForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!formData.name) { alert('Please enter product name'); return; }
     if (!formData.category) { alert('Please select category'); return; }
     if (!formData.image) { alert('Please upload or add main image URL'); return; }
@@ -467,14 +467,12 @@ const AdminDryFruitsForm: React.FC = () => {
         category: 'dryfruits',
         subCategory: formData.category,
         productType: formData.productType || '',
-        // ✅ Base price (default - use first variant price if available)
         price: formData.weightVariants.length > 0 ? formData.weightVariants[0].price : formData.price,
         oldPrice: formData.weightVariants.length > 0 ? formData.weightVariants[0].oldPrice : formData.oldPrice,
         discount: formData.discount || 0,
         costPrice: formData.costPrice || 0,
         stock: formData.stock || 0,
         lowStockAlert: formData.lowStockAlert || 5,
-        // ✅ Weight Variants
         weightVariants: formData.weightVariants,
         weight: formData.weight || '',
         weightUnit: formData.weightUnit || 'g',
@@ -668,14 +666,13 @@ const AdminDryFruitsForm: React.FC = () => {
         </div>
 
         {/* ============================================================
-        2. WEIGHT VARIANTS - Multiple Prices
+        2. WEIGHT VARIANTS
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <FaList className="text-[#D4AF37]" /> 2. Weight Variants (Different Prices)
+            <FaList className="text-[#D4AF37]" /> 2. Weight Variants
           </h3>
           
-          {/* Add Variant Form */}
           <div className="bg-[#F8FAFC] p-4 rounded-lg border border-gray-200 mb-4">
             <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               <div>
@@ -745,7 +742,6 @@ const AdminDryFruitsForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Variants List */}
           {formData.weightVariants.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -812,11 +808,11 @@ const AdminDryFruitsForm: React.FC = () => {
         </div>
 
         {/* ============================================================
-        3. WEIGHT & PACKAGING (Base)
+        3. WEIGHT & PACKAGING
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <FaWeightHanging className="text-[#D4AF37]" /> 3. Weight & Packaging (Base Info)
+            <FaWeightHanging className="text-[#D4AF37]" /> 3. Weight & Packaging
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -929,7 +925,6 @@ const AdminDryFruitsForm: React.FC = () => {
             <FaCloudUploadAlt className="text-[#D4AF37]" /> 5. Images
           </h3>
           
-          {/* Main Image */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Main Product Image *</label>
             <div className="flex items-center gap-4 mb-2">
@@ -995,9 +990,8 @@ const AdminDryFruitsForm: React.FC = () => {
             )}
           </div>
 
-          {/* Additional Images */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Additional Product Images</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Additional Images</label>
             <div className="flex items-center gap-4 mb-2">
               <input
                 type="file"
@@ -1015,13 +1009,6 @@ const AdminDryFruitsForm: React.FC = () => {
                 {uploading ? <FaSpinner className="animate-spin" /> : <FaCloudUploadAlt />}
                 {uploading ? 'Uploading...' : 'Upload Images'}
               </label>
-              <button
-                type="button"
-                onClick={() => setShowUrlInput(!showUrlInput)}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm flex items-center gap-2"
-              >
-                <FaLink /> Add URL
-              </button>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
               {formData.images.map((img: string, index: number) => (
@@ -1041,11 +1028,11 @@ const AdminDryFruitsForm: React.FC = () => {
         </div>
 
         {/* ============================================================
-        6. DESCRIPTION & DETAILS
+        6. DESCRIPTION
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <FaTag className="text-[#D4AF37]" /> 6. Description & Details
+            <FaTag className="text-[#D4AF37]" /> 6. Description
           </h3>
           <div className="space-y-4">
             <div>
@@ -1088,7 +1075,7 @@ const AdminDryFruitsForm: React.FC = () => {
                 name="storageInstructions"
                 value={formData.storageInstructions}
                 onChange={handleInputChange}
-                placeholder="e.g., Store in a cool, dry place away from direct sunlight"
+                placeholder="e.g., Store in a cool, dry place"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F766E] outline-none"
               />
             </div>
@@ -1118,15 +1105,10 @@ const AdminDryFruitsForm: React.FC = () => {
               </button>
             ))}
           </div>
-          {formData.benefits.length > 0 && (
-            <div className="mt-3 p-3 bg-[#F8FAFC] rounded-lg">
-              <p className="text-sm text-gray-600">Selected Benefits: {formData.benefits.join(', ')}</p>
-            </div>
-          )}
         </div>
 
         {/* ============================================================
-        8. LABELS & TAGS
+        8. LABELS
         ============================================================ */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -1151,7 +1133,7 @@ const AdminDryFruitsForm: React.FC = () => {
                 onChange={handleInputChange}
                 className="w-4 h-4 text-[#0F766E] rounded focus:ring-[#0F766E]"
               />
-              ⭐ Featured Product
+              ⭐ Featured
             </label>
             <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
               <input
@@ -1191,7 +1173,7 @@ const AdminDryFruitsForm: React.FC = () => {
                 onChange={handleInputChange}
                 className="w-4 h-4 text-[#0F766E] rounded focus:ring-[#0F766E]"
               />
-              💎 Premium Quality
+              💎 Premium
             </label>
           </div>
         </div>
