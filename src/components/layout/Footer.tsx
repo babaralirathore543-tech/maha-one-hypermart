@@ -1,10 +1,12 @@
+// src/components/layout/Footer.tsx
 import { Link } from 'react-router-dom';
 import {
   FaFacebook,
   FaInstagram,
   FaWhatsapp,
   FaYoutube,
-  FaTiktok
+  FaTiktok,
+  FaStore // ✅ ADDED for seller icon
 } from 'react-icons/fa';
 
 // Logo Import
@@ -37,7 +39,6 @@ const Footer = () => {
               </div>
             </Link>
 
-            {/* Updated Description */}
             <p className="text-sm text-gray-500 mt-3">
               Pakistan's premier hypermart offering premium dry fruits, 
               delicious sweets, stylish fashion, and freshly baked cakes. 
@@ -46,8 +47,6 @@ const Footer = () => {
 
             {/* Social Media Links */}
             <div className="flex gap-4 mt-4 text-xl">
-
-              {/* Facebook */}
               <a
                 href="https://www.facebook.com/share/1CS3PhXJh9/"
                 target="_blank"
@@ -58,7 +57,6 @@ const Footer = () => {
                 <FaFacebook />
               </a>
 
-              {/* Instagram */}
               <a
                 href="https://www.instagram.com/mahaonehypermarket?utm_source=qr&igsh=cDd4OHAxb20yMm1q&igsi=cDd4OHAxb20yMm1q"
                 target="_blank"
@@ -69,7 +67,6 @@ const Footer = () => {
                 <FaInstagram />
               </a>
 
-              {/* WhatsApp */}
               <a
                 href="https://wa.me/923033169725"
                 target="_blank"
@@ -80,7 +77,6 @@ const Footer = () => {
                 <FaWhatsapp />
               </a>
 
-              {/* TikTok */}
               <a
                 href="https://www.tiktok.com/@maha.one.hyper.ma?_r=1&_t=ZS-992Feajrx01"
                 target="_blank"
@@ -91,7 +87,6 @@ const Footer = () => {
                 <FaTiktok />
               </a>
 
-              {/* YouTube */}
               <a
                 href="https://www.youtube.com/@MahaOneHyperMarket"
                 target="_blank"
@@ -101,15 +96,14 @@ const Footer = () => {
               >
                 <FaYoutube />
               </a>
-
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* ============================================================
+              QUICK LINKS — ✅ BECOME A SELLER ADDED
+              ============================================================ */}
           <div>
-            <h5 className="text-white font-semibold mb-4">
-              Quick Links
-            </h5>
+            <h5 className="text-white font-semibold mb-4">Quick Links</h5>
 
             <ul className="space-y-2 text-sm">
               <li>
@@ -138,14 +132,24 @@ const Footer = () => {
                   Contact
                 </Link>
               </li>
+
+              {/* ✅ BECOME A SELLER — WITH ICON AND GOLD COLOR */}
+              <li>
+                <Link
+                  to="/seller/register"
+                  className="flex items-center gap-2 text-[#D4AF37] hover:text-[#c4a030] transition-colors font-medium"
+                >
+                  <FaStore size={14} />
+                  <span>Become a Seller</span>
+                  <span className="text-[10px] bg-[#D4AF37]/20 px-1.5 py-0.5 rounded-full">🚀</span>
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Support */}
           <div>
-            <h5 className="text-white font-semibold mb-4">
-              Support
-            </h5>
+            <h5 className="text-white font-semibold mb-4">Support</h5>
 
             <ul className="space-y-2 text-sm">
               <li>
@@ -188,15 +192,12 @@ const Footer = () => {
 
           {/* Newsletter */}
           <div>
-            <h5 className="text-white font-semibold mb-4">
-              Newsletter
-            </h5>
+            <h5 className="text-white font-semibold mb-4">Newsletter</h5>
 
             <p className="text-sm text-gray-500 mb-3">
               Subscribe for premium offers.
             </p>
 
-            {/* ✅ Mobile Fixed - Button Chota aur Responsive */}
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
               <input
                 type="email"

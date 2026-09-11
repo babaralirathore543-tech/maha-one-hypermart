@@ -2,11 +2,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  FaCheckCircle, 
-  FaBuilding,
-  FaUniversity, FaWhatsapp, FaMoneyBillWave,
-  FaArrowLeft, FaArrowRight, FaSpinner, FaMobileAlt,
-  FaQrcode
+  FaCheckCircle, FaBuilding, FaUniversity, FaWhatsapp, 
+  FaMoneyBillWave, FaArrowLeft, FaArrowRight, FaSpinner, 
+  FaMobileAlt, FaQrcode, FaCopy, FaCheck, FaClock
 } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { placeOrder } from '../../services/orderService';
@@ -15,15 +13,61 @@ import { sendOrderConfirmationWhatsApp } from '../../services/whatsappNotificati
 import { auth } from '../../config/firebase';
 import { sendOrderConfirmationEmail } from '../../services/emailService';
 
+// ✅ Payment Accounts with proper types
+interface PaymentAccount {
+  name: string;
+  icon: string;
+  number: string;
+  accountTitle: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  bankName?: string;
+  iban?: string;
+}
+
+const PAYMENT_ACCOUNTS: Record<string, PaymentAccount> = {
+  jazzcash: {
+    name: 'JazzCash',
+    icon: '📱',
+    number: '0329-3296822',
+    accountTitle: 'Maha One Hypermart',
+    color: 'from-red-500 to-pink-500',
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-200'
+  },
+  easypaisa: {
+    name: 'EasyPaisa',
+    icon: '💳',
+    number: '0329-3296822',
+    accountTitle: 'Maha One Hypermart',
+    color: 'from-green-500 to-emerald-500',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-200'
+  },
+  bank: {
+    name: 'Bank Transfer',
+    icon: '🏦',
+    number: '697022930571414343438',
+    accountTitle: 'MAHNOOR',
+    bankName: 'HABIBMETRO BANK',
+    iban: 'PK05MPBL9702347140143438',
+    color: 'from-blue-500 to-indigo-500',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200'
+  }
+};
+
 const CheckoutPage = () => {
   const { cart, getCartTotal, clearCart } = useCart();
   const [step, setStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState('jazzcash');
+  const [paymentMethod, setPaymentMethod] = useState<string>('jazzcash');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrAmount, setQrAmount] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -34,10 +78,13 @@ const CheckoutPage = () => {
     city: 'Karachi',
     province: 'Punjab',
     postalCode: '',
-    notes: ''
+    notes: '',
+    transactionId: '',
+    paymentDate: '',
+    senderName: '',
+    senderPhone: ''
   });
 
-  // ✅ Pakistan Cities
   const cities = [
     'Karachi', 'Hyderabad', 'Sukkur', 'Larkana', 'Nawabshah', 'Mirpur Khas',
     'Jacobabad', 'Shikarpur', 'Khairpur', 'Dadu', 'Badin', 'Thatta',
@@ -62,25 +109,8 @@ const CheckoutPage = () => {
     'Astore', 'Diamer', 'Shigar', 'Kharmang',
   ];
 
-  // ✅ Bank Details
-  const BANK_DETAILS = {
-    accountTitle: 'MAHNOOR',
-    bankName: 'HABIBMETRO BANK',
-    accountNumber: '697022930571414343438',
-    iban: 'PK05MPBL9702347140143438',
-    branch: 'Main Branch'
-  };
-
-  const JAZZCASH_DETAILS = {
-    number: '03293296822',
-    formatted: '0329-3296822'
-  };
-
-  // ✅ SHIPPING: City-based
   const calculateShipping = (city: string) => {
-    if (city.toLowerCase() === 'karachi') {
-      return 250;
-    }
+    if (city.toLowerCase() === 'karachi') return 250;
     return 290;
   };
 
@@ -89,7 +119,6 @@ const CheckoutPage = () => {
   const discount = 0;
   const total = subtotal + shipping - discount;
 
-  // ✅ Firebase Auth se userId lein
   const getUserId = () => {
     const user = auth.currentUser;
     if (!user) {
@@ -100,17 +129,26 @@ const CheckoutPage = () => {
     return user.uid;
   };
 
-  // ✅ Place Order Function (Firebase + Email + WhatsApp)
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  };
+
+  // ✅ Place Order with Payment Verification
   const placeOrderToFirebase = async () => {
+    const userId = getUserId();
+    if (!userId) return;
+
+    if (!formData.transactionId || formData.transactionId.trim() === '') {
+      alert('⚠️ Please enter your transaction ID');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const userId = getUserId();
-      if (!userId) {
-        setIsSubmitting(false);
-        return;
-      }
-
+      // ✅ Fix: Use valid payment method types
       const validPaymentMethod = paymentMethod as 'jazzcash' | 'bank' | 'cod' | 'card';
       
       const orderData = {
@@ -136,11 +174,11 @@ const CheckoutPage = () => {
         discount: discount,
         total: total,
         paymentMethod: validPaymentMethod,
-        paymentStatus: (paymentMethod === 'cod' ? 'pending' : 'paid') as
-          | 'pending'
-          | 'paid'
-          | 'failed'
-          | 'refunded',
+        paymentStatus: 'pending_verification' as 'pending' | 'paid' | 'failed' | 'refunded',
+        transactionId: formData.transactionId,
+        paymentDate: formData.paymentDate || new Date().toISOString().split('T')[0],
+        senderName: formData.senderName || '',
+        senderPhone: formData.senderPhone || '',
         shippingAddress: {
           name: `${formData.firstName} ${formData.lastName}`,
           street: formData.address,
@@ -151,7 +189,10 @@ const CheckoutPage = () => {
           phone: formData.phone
         },
         notes: formData.notes || '',
-        orderDate: new Date().toISOString()
+        orderDate: new Date().toISOString(),
+        isVerified: false,
+        verifiedBy: null,
+        verifiedAt: null
       };
 
       console.log('📦 Order Data:', orderData);
@@ -165,15 +206,11 @@ const CheckoutPage = () => {
         setOrderPlaced(true);
         clearCart();
         
-        // ==========================================================
-        // ✅ SEND ORDER CONFIRMATION EMAIL — FIXED
-        // ==========================================================
+        // ✅ Send Order Confirmation Email
         try {
-          // ✅ Ensure email is valid
           const customerEmail = formData.email || auth.currentUser?.email || '';
-          
           if (customerEmail) {
-            const emailResult = await sendOrderConfirmationEmail({
+            await sendOrderConfirmationEmail({
               email: customerEmail,
               name: `${formData.firstName} ${formData.lastName}`,
               orderId: orderNumber,
@@ -199,23 +236,13 @@ const CheckoutPage = () => {
                 price: item.price * item.quantity
               }))
             });
-            
-            if (emailResult.success) {
-              console.log('✅ Order confirmation email sent successfully to:', customerEmail);
-            } else {
-              console.warn('⚠️ Email failed but order placed:', emailResult.error);
-            }
-          } else {
-            console.warn('⚠️ No email provided, skipping email');
+            console.log('✅ Order confirmation email sent');
           }
         } catch (emailError) {
           console.error('❌ Email error:', emailError);
-          // Email fail ho toh bhi order place ho chuka hai
         }
         
-        // ==========================================================
-        // ✅ SEND WHATSAPP ORDER CONFIRMATION
-        // ==========================================================
+        // ✅ Send WhatsApp
         if (formData.phone) {
           try {
             sendOrderConfirmationWhatsApp(
@@ -250,57 +277,11 @@ const CheckoutPage = () => {
     }
   };
 
-  // ✅ Handle QR Payment Success
   const handleQRPaymentSuccess = () => {
     setShowQRCode(false);
     placeOrderToFirebase();
   };
 
-  // ✅ Payment Functions
-  const payWithJazzCash = () => {
-    const amount = total;
-    const account = JAZZCASH_DETAILS.number.replace(/-/g, '');
-    
-    const confirmPayment = window.confirm(
-      `📱 JazzCash Payment\n\n` +
-      `💰 Amount: PKR ${amount.toLocaleString()}\n` +
-      `📱 Account: ${JAZZCASH_DETAILS.formatted}\n\n` +
-      `⚠️ Please open JazzCash app and send payment to the above number.\n\n` +
-      `✅ After payment, click OK to confirm your order.`
-    );
-    
-    if (confirmPayment) {
-      try {
-        window.location.href = `jazzcash://pay?amount=${amount}&account=${account}`;
-      } catch (e) {
-        window.open(`https://www.jazzcash.com.pk/`, '_blank');
-      }
-      setTimeout(() => {
-        placeOrderToFirebase();
-      }, 5000);
-    }
-  };
-
-  const sendWhatsAppPayment = () => {
-    const phone = JAZZCASH_DETAILS.number.replace(/-/g, '');
-    const message = encodeURIComponent(
-      `🛍️ *MAHA ONE HYPERMARKET - Order Confirmation*\n\n` +
-      `🧾 Order #: *MAHA-${Date.now().toString().slice(-6)}*\n` +
-      `👤 Customer: ${formData.firstName} ${formData.lastName}\n` +
-      `📱 Phone: ${formData.phone}\n` +
-      `💰 Amount: *PKR ${total.toLocaleString()}*\n\n` +
-      `📱 *Payment Options:*\n` +
-      `JazzCash: ${JAZZCASH_DETAILS.formatted}\n\n` +
-      `📸 Please send payment screenshot after transfer.\n\n` +
-      `📍 Address: ${formData.address}, ${formData.city}`
-    );
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
-    setTimeout(() => placeOrderToFirebase(), 3000);
-  };
-
-  // ============================================================
-  // HANDLERS
-  // ============================================================
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -325,50 +306,40 @@ const CheckoutPage = () => {
         return;
       }
 
-      if (paymentMethod === 'jazzcash') {
-        payWithJazzCash();
+      if (!formData.transactionId || formData.transactionId.trim() === '') {
+        alert('⚠️ Please enter your transaction ID for verification');
         return;
       }
-      if (paymentMethod === 'whatsapp') {
-        sendWhatsAppPayment();
-        return;
-      }
-      if (paymentMethod === 'qr') {
-        setShowQRCode(true);
-        setQrAmount(total);
-        return;
-      }
+
       placeOrderToFirebase();
     }
   };
 
-  // ============================================================
-  // ORDER PLACED VIEW
-  // ============================================================
+  // ✅ Order Placed View
   if (orderPlaced) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-[#FFFDF7]">
         <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 md:p-12 border border-[#E5E7EB] text-center">
-          <div className="text-7xl mb-6">🎉</div>
-          <h1 className="text-3xl md:text-4xl font-bold text-[#0F766E]">Order Placed!</h1>
-          <p className="text-gray-600 mt-2">Thank you for shopping with MAHA ONE HYPERMARKET</p>
+          <div className="text-7xl mb-6">⏳</div>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#D4AF37]">Payment Verification Pending!</h1>
+          <p className="text-gray-600 mt-2">Your order has been placed successfully.</p>
+          <p className="text-gray-500 text-sm mt-1">Please wait for admin to verify your payment.</p>
           
           <div className="mt-6 bg-[#F8FAFC] rounded-2xl p-6 text-left">
             <div className="flex items-center gap-3 mb-4">
-              <FaCheckCircle className="text-green-500 text-2xl" />
+              <FaClock className="text-[#D4AF37] text-2xl" />
               <span className="font-bold text-gray-800">Order #{orderId}</span>
+              <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full">Pending Verification</span>
             </div>
             <div className="space-y-2 text-sm text-gray-600">
+              <p>📱 Payment Method: <strong className="capitalize">{paymentMethod}</strong></p>
+              <p>🔑 Transaction ID: <strong className="font-mono">{formData.transactionId}</strong></p>
+              <p>💳 Amount: <strong className="text-[#D4AF37]">PKR {total.toLocaleString()}</strong></p>
               {formData.email && <p>📧 Confirmation sent to: <strong>{formData.email}</strong></p>}
-              <p>📱 Order tracking via SMS: <strong>{formData.phone}</strong></p>
-              <p>💬 WhatsApp confirmation sent to: <strong>{formData.phone}</strong></p>
               <div className="pt-3 border-t border-[#E5E7EB]">
-                <p className="font-medium text-gray-800">Payment Method:</p>
-                <p className="capitalize">
-                  {paymentMethod === 'jazzcash' && '📱 JazzCash'}
-                  {paymentMethod === 'whatsapp' && '💬 WhatsApp Payment'}
-                  {paymentMethod === 'bank' && '🏦 Bank Transfer'}
-                  {paymentMethod === 'qr' && '📱 QR Code Payment'}
+                <p className="text-sm text-amber-600 flex items-center gap-2">
+                  <span>⏳</span>
+                  <span>Your order will be confirmed after payment verification.</span>
                 </p>
               </div>
             </div>
@@ -379,7 +350,7 @@ const CheckoutPage = () => {
               Continue Shopping
             </Link>
             <Link to="/dashboard?tab=orders" className="bg-white border-2 border-[#0F766E] text-[#0F766E] px-8 py-3 rounded-full font-semibold hover:bg-[#F8FAFC] transition">
-              View Orders
+              Track Order
             </Link>
           </div>
         </div>
@@ -408,9 +379,6 @@ const CheckoutPage = () => {
     );
   }
 
-  // ============================================================
-  // MAIN CHECKOUT FORM
-  // ============================================================
   return (
     <div className="bg-[#FFFDF7] py-12 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -508,133 +476,186 @@ const CheckoutPage = () => {
                 </div>
               )}
 
-              {/* STEP 2: PAYMENT */}
+              {/* STEP 2: PAYMENT + VERIFICATION */}
               {step === 2 && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <button type="button" onClick={() => setStep(1)} className="text-gray-500 hover:text-[#0F766E] transition">
                       <FaArrowLeft />
                     </button>
-                    <h2 className="text-xl font-bold text-gray-800">💳 Payment Method</h2>
+                    <h2 className="text-xl font-bold text-gray-800">💳 Payment & Verification</h2>
                   </div>
 
-                  <div className="space-y-3">
-                    {/* JazzCash */}
-                    <button 
-                      type="button"
-                      onClick={() => setPaymentMethod('jazzcash')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${(
-                        paymentMethod === 'jazzcash' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      )}`}
-                    >
-                      <FaMobileAlt className={`text-2xl ${paymentMethod === 'jazzcash' ? 'text-[#0F766E]' : 'text-gray-400'}`} />
-                      <div className="flex-1 text-left">
-                        <p className="font-semibold text-gray-800">JazzCash</p>
-                        <p className="text-xs text-gray-500">{JAZZCASH_DETAILS.formatted}</p>
-                      </div>
-                      {paymentMethod === 'jazzcash' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
-                    </button>
-
-                    {/* QR Code */}
-                    <button 
-                      type="button"
-                      onClick={() => setPaymentMethod('qr')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${(
-                        paymentMethod === 'qr' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      )}`}
-                    >
-                      <FaQrcode className={`text-2xl ${paymentMethod === 'qr' ? 'text-[#0F766E]' : 'text-gray-400'}`} />
-                      <div className="flex-1 text-left">
-                        <p className="font-semibold text-gray-800">QR Code Payment</p>
-                        <p className="text-xs text-gray-500">Pay via JazzCash/EasyPaisa</p>
-                      </div>
-                      {paymentMethod === 'qr' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
-                    </button>
-
-                    {/* WhatsApp */}
-                    <button 
-                      type="button"
-                      onClick={() => setPaymentMethod('whatsapp')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${(
-                        paymentMethod === 'whatsapp' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      )}`}
-                    >
-                      <FaWhatsapp className={`text-2xl ${paymentMethod === 'whatsapp' ? 'text-[#25D366]' : 'text-gray-400'}`} />
-                      <div className="flex-1 text-left">
-                        <p className="font-semibold text-gray-800">WhatsApp Payment</p>
-                        <p className="text-xs text-gray-500">💬 Send payment request</p>
-                      </div>
-                      {paymentMethod === 'whatsapp' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
-                    </button>
-
-                    {/* Bank Transfer */}
-                    <button 
-                      type="button"
-                      onClick={() => setPaymentMethod('bank')}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${(
-                        paymentMethod === 'bank' ? 'border-[#0F766E] bg-[#F8FAF9] shadow-md' : 'border-[#E5E7EB] hover:border-[#0F766E]'
-                      )}`}
-                    >
-                      <FaBuilding className={`text-2xl ${paymentMethod === 'bank' ? 'text-[#0F766E]' : 'text-gray-400'}`} />
-                      <div className="flex-1 text-left">
-                        <p className="font-semibold text-gray-800">Bank Transfer</p>
-                        <p className="text-xs text-gray-500">HABIBMETRO BANK</p>
-                      </div>
-                      {paymentMethod === 'bank' && <FaCheckCircle className="text-[#0F766E] text-xl" />}
-                    </button>
+                  {/* Payment Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                    {Object.entries(PAYMENT_ACCOUNTS).map(([key, account]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setPaymentMethod(key)}
+                        className={`p-4 rounded-xl border-2 transition-all duration-300 text-center ${
+                          paymentMethod === key
+                            ? `border-[#0F766E] bg-[#F8FAF9] shadow-md`
+                            : 'border-[#E5E7EB] hover:border-[#0F766E]'
+                        }`}
+                      >
+                        <div className="text-3xl mb-1">{account.icon}</div>
+                        <p className="font-semibold text-gray-800 text-sm">{account.name}</p>
+                        {paymentMethod === key && (
+                          <FaCheckCircle className="text-[#0F766E] mx-auto mt-1" />
+                        )}
+                      </button>
+                    ))}
                   </div>
 
                   {/* Payment Details */}
-                  {paymentMethod === 'jazzcash' && (
-                    <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
-                      <p className="text-sm text-gray-700 flex items-center gap-2">
-                        <FaMobileAlt className="text-[#0F766E]" />
-                        <strong>JazzCash: {JAZZCASH_DETAILS.formatted}</strong>
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">📱 JazzCash App will open automatically</p>
-                    </div>
-                  )}
-
-                  {paymentMethod === 'qr' && (
-                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center gap-2">
-                        <FaQrcode className="text-blue-500 text-2xl" />
-                        <div>
-                          <p className="text-sm font-medium text-blue-700">QR Code Payment</p>
-                          <p className="text-xs text-blue-600">Pay using JazzCash or EasyPaisa app</p>
-                          <p className="text-xs text-blue-500 mt-1">💡 Amount: PKR {total.toLocaleString()}</p>
+                  {(() => {
+                    const account = PAYMENT_ACCOUNTS[paymentMethod as keyof typeof PAYMENT_ACCOUNTS];
+                    if (!account) return null;
+                    return (
+                      <div className={`${account.bgColor} border ${account.borderColor} rounded-xl p-4 mb-4`}>
+                        <h3 className="font-bold text-gray-800 mb-2">{account.icon} {account.name} Payment</h3>
+                        <div className="bg-white rounded-lg p-4 space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Account Number</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-[#0F766E] text-lg">{account.number}</span>
+                              <button 
+                                onClick={() => copyToClipboard(account.number.replace(/-/g, ''))} 
+                                className="text-gray-400 hover:text-[#0F766E] transition"
+                              >
+                                {copied ? <FaCheck className="text-green-500" /> : <FaCopy />}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Account Title</span>
+                            <span className="font-semibold">{account.accountTitle}</span>
+                          </div>
+                          {account.bankName && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Bank</span>
+                              <span className="font-semibold">{account.bankName}</span>
+                            </div>
+                          )}
+                          {account.iban && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">IBAN</span>
+                              <span className="font-mono text-xs text-[#0F766E]">{account.iban}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between pt-2 border-t">
+                            <span className="text-gray-600">Amount</span>
+                            <span className="font-bold text-[#D4AF37] text-lg">PKR {total.toLocaleString()}</span>
+                          </div>
                         </div>
+                        <p className="text-xs text-gray-500 mt-2">📝 Send payment and enter transaction details below</p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* PAYMENT VERIFICATION FORM */}
+                  <div className="border-t border-[#E5E7EB] pt-4 mt-4">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <FaCheckCircle className="text-[#0F766E]" /> Payment Verification
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-3">Enter your payment details for verification</p>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Transaction ID *</label>
+                        <input
+                          type="text"
+                          name="transactionId"
+                          value={formData.transactionId}
+                          onChange={handleChange}
+                          placeholder="Enter transaction ID"
+                          className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Sender Name</label>
+                        <input
+                          type="text"
+                          name="senderName"
+                          value={formData.senderName}
+                          onChange={handleChange}
+                          placeholder="Your name as per bank"
+                          className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                        <input
+                          type="date"
+                          name="paymentDate"
+                          value={formData.paymentDate}
+                          onChange={handleChange}
+                          className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Sender Phone</label>
+                        <input
+                          type="text"
+                          name="senderPhone"
+                          value={formData.senderPhone}
+                          onChange={handleChange}
+                          placeholder="03XX-XXXXXXX"
+                          className="w-full px-4 py-2.5 border-2 border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#0F766E] transition"
+                        />
                       </div>
                     </div>
-                  )}
 
-                  {paymentMethod === 'whatsapp' && (
-                    <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
-                      <p className="text-sm text-gray-700 flex items-center gap-2">
-                        <FaWhatsapp className="text-[#25D366]" />
-                        <strong>WhatsApp will open with payment details</strong>
+                    <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <p className="text-sm text-amber-700 flex items-center gap-2">
+                        <span className="text-lg">⏳</span>
+                        <span>
+                          <strong>Verification Required:</strong> Your order will be processed after admin verifies your payment.
+                        </span>
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">Send payment to JazzCash: {JAZZCASH_DETAILS.formatted}</p>
                     </div>
-                  )}
 
-                  {paymentMethod === 'bank' && (
-                    <div className="mt-4 p-4 bg-[#F8FAF9] rounded-lg border border-[#E5E7EB]">
-                      <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                        <FaUniversity className="text-[#0F766E]" /> Bank Transfer Details
-                      </h4>
-                      <div className="space-y-2 text-sm bg-white p-4 rounded-lg border border-[#E5E7EB]">
-                        <p><span className="font-medium">Account Title:</span> <span className="text-[#0F766E] font-bold">{BANK_DETAILS.accountTitle}</span></p>
-                        <p><span className="font-medium">Bank:</span> {BANK_DETAILS.bankName}</p>
-                        <p><span className="font-medium">IBAN:</span> <span className="font-mono text-sm font-bold text-[#0F766E]">{BANK_DETAILS.iban}</span></p>
-                        <p><span className="font-medium">Account #:</span> <span className="font-bold">{BANK_DETAILS.accountNumber}</span></p>
-                      </div>
-                      <p className="text-xs text-red-500 mt-2">⚠️ Use Order ID as reference when transferring</p>
+                    {/* WhatsApp Payment Option */}
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const account = PAYMENT_ACCOUNTS[paymentMethod as keyof typeof PAYMENT_ACCOUNTS];
+                          const message = encodeURIComponent(
+                            `🛍️ *MAHA ONE HYPERMARKET - Payment Details*\n\n` +
+                            `🧾 Order #: *MAHA-${Date.now().toString().slice(-6)}*\n` +
+                            `💰 Amount: *PKR ${total.toLocaleString()}*\n` +
+                            `📱 Payment Method: *${account.name}*\n` +
+                            `🔑 Transaction ID: *${formData.transactionId || 'Not entered yet'}*\n\n` +
+                            `👤 Customer: ${formData.firstName} ${formData.lastName}\n` +
+                            `📞 Phone: ${formData.phone}\n\n` +
+                            `📍 Address: ${formData.address}, ${formData.city}`
+                          );
+                          window.open(`https://wa.me/${account.number.replace(/-/g, '')}?text=${message}`, '_blank');
+                        }}
+                        className="w-full bg-[#25D366] hover:bg-[#1DA851] text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2"
+                      >
+                        <FaWhatsapp className="text-xl" />
+                        Send Payment Details via WhatsApp
+                      </button>
                     </div>
-                  )}
+                  </div>
 
-                  <button type="submit" disabled={isSubmitting} className={`w-full mt-6 bg-[#0F766E] text-white py-4 rounded-xl font-semibold transition-all duration-300 text-lg flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#065F46]'}`}>
-                    {isSubmitting ? <><FaSpinner className="animate-spin" /> Processing...</> : <>Place Order • PKR {total.toLocaleString()} <FaArrowRight /></>}
+                  {/* Place Order Button */}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`w-full mt-6 bg-[#0F766E] text-white py-4 rounded-xl font-semibold transition-all duration-300 text-lg flex items-center justify-center gap-2 ${
+                      isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#065F46]'
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <><FaSpinner className="animate-spin" /> Processing...</>
+                    ) : (
+                      <>Place Order • PKR {total.toLocaleString()} <FaArrowRight /></>
+                    )}
                   </button>
                 </div>
               )}
@@ -685,6 +706,13 @@ const CheckoutPage = () => {
                   ? '📍 Karachi: PKR 250 shipping' 
                   : '📍 Other Cities: PKR 290 shipping'}
               </p>
+
+              <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-700 flex items-center gap-1">
+                  <span>⏳</span>
+                  <span>Order will be confirmed after payment verification</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>

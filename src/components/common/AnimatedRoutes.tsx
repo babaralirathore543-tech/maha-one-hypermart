@@ -18,7 +18,7 @@ import SweetsDetailPage from '../pages/SweetsDetailPage';
 import DryFruitsDetailPage from '../pages/DryFruitsDetailPage';
 import LoginPage from '../pages/LoginPage';
 import SignupPage from '../pages/SignupPage';
-import ForgotPasswordPage from '../pages/ForgotPasswordPage'; // ✅ ADDED
+import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import CartPage from '../pages/CartPage';
 import CheckoutPage from '../pages/CheckoutPage';
 import AboutPage from '../pages/AboutPage';
@@ -28,6 +28,10 @@ import WishlistPage from '../pages/WishlistPage';
 import DashboardPage from '../pages/DashboardPage';
 import CakesPage from '../pages/CakesPage';
 import CakesDetailPage from '../pages/CakesDetailPage';
+import StorePage from '../pages/public/StorePage';
+
+// ✅ SELLER REGISTRATION
+import SellerRegistration from './seller/SellerRegistration';
 
 // Admin Imports
 import AdminPanel from '../admin/AdminPanel';
@@ -35,6 +39,9 @@ import AdminProductForm from '../pages/AdminProductForm';
 import AdminCakesProductForm from '../pages/AdminCakesProductForm';
 import AdminDryFruitsForm from '../pages/AdminDryFruitsForm';
 import AdminSweetsForm from '../pages/AdminSweetsForm';
+
+// ✅ CORRECT PATH — AdminSellerManagement
+import AdminSellerManagement from '../admin/AdminSellerManagement';
 
 // ============================================================
 // PAGE TRANSITION VARIANTS
@@ -218,7 +225,6 @@ const AnimatedRoutes = () => {
             } 
           />
           
-          {/* ✅ FORGOT PASSWORD ROUTE */}
           <Route 
             path="/forgot-password" 
             element={
@@ -278,6 +284,26 @@ const AnimatedRoutes = () => {
             element={
               <PageTransition>
                 <CakesDetailPage />
+              </PageTransition>
+            } 
+          />
+
+          {/* ✅ PUBLIC STORE PAGE */}
+          <Route 
+            path="/store/:slug" 
+            element={
+              <PageTransition>
+                <StorePage />
+              </PageTransition>
+            } 
+          />
+
+          {/* ✅ SELLER REGISTRATION ROUTE */}
+          <Route 
+            path="/seller/register" 
+            element={
+              <PageTransition>
+                <SellerRegistration />
               </PageTransition>
             } 
           />
@@ -365,6 +391,16 @@ const AnimatedRoutes = () => {
             element={
               <PageTransition>
                 <AdminPanel />
+              </PageTransition>
+            } 
+          />
+          
+          {/* ✅ ADMIN SELLER MANAGEMENT ROUTE */}
+          <Route 
+            path="/admin/sellers" 
+            element={
+              <PageTransition>
+                <AdminSellerManagement />
               </PageTransition>
             } 
           />

@@ -12,7 +12,8 @@ import {
   FaSeedling,
   FaTshirt,
   FaPlus,
-  FaCookie  // ✅ Correct - exists in react-icons/fa
+  FaCookie,
+  FaUserPlus  // ✅ ADDED for Seller Management
 } from 'react-icons/fa';
 import { db, collection, getDocs } from '../../config/firebase';
 import AdminOrders from './AdminOrders';
@@ -20,6 +21,7 @@ import AdminUsers from './AdminUsers';
 import AdminCategories from './AdminCategories';
 import AdminDashboard from './AdminDashboard';
 import AdminProducts from './AdminProducts';
+import AdminSellerManagement from './AdminSellerManagement'; // ✅ ADDED
 
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
@@ -78,11 +80,13 @@ const AdminPanel: React.FC = () => {
     { title: 'Sweets', value: categoryStats.sweets, icon: <FaCookie />, color: 'bg-pink-500' },
   ];
 
+  // ✅ Menu Items — WITH SELLER MANAGEMENT
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <FaHome /> },
     { id: 'products', label: 'Products', icon: <FaBox /> },
     { id: 'orders', label: 'Orders', icon: <FaShoppingCart /> },
     { id: 'users', label: 'Users', icon: <FaUsers /> },
+    { id: 'sellers', label: 'Sellers', icon: <FaUserPlus /> }, // ✅ ADDED
     { id: 'categories', label: 'Categories', icon: <FaCog /> },
   ];
 
@@ -92,6 +96,7 @@ const AdminPanel: React.FC = () => {
       case 'products': return <AdminProducts />;
       case 'orders': return <AdminOrders />;
       case 'users': return <AdminUsers />;
+      case 'sellers': return <AdminSellerManagement />; // ✅ ADDED
       case 'categories': return <AdminCategories />;
       default: return <AdminDashboard />;
     }
@@ -159,6 +164,12 @@ const AdminPanel: React.FC = () => {
                 >
                   {item.icon}
                   {item.label}
+                  {/* ✅ Badge for pending sellers */}
+                  {item.id === 'sellers' && (
+                    <span className="ml-auto text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">
+                      Pending
+                    </span>
+                  )}
                 </button>
               ))}
             </nav>

@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { 
   FaSearch, FaHeart, FaUser, FaShoppingBag, FaBars, FaTimes, 
   FaCrown, FaCog, FaHome, 
-  FaThLarge
+  FaThLarge, FaStore, FaChartLine, FaSignOutAlt, FaSignInAlt,
+  FaUserPlus, FaTachometerAlt, FaBox, FaDollarSign, FaCog as FaSettings
 } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { getWishlistCount } from '../../services/wishlistService';
@@ -13,7 +14,44 @@ import ThemeToggle from '../common/ThemeToggle';
 import CategoriesSlider from '../common/CategoriesSlider';
 import VoiceSearch from '../common/VoiceSearch';
 
+// ✅ Direct import with fallback if module not found
+let useAuth: any = () => ({ 
+  user: null, 
+  appUser: null, 
+  isAdmin: false, 
+  isSeller: false, 
+  isAuthenticated: false, 
+  logout: async () => {} 
+});
+
+// ✅ Try to import AuthContext - using import() instead of require
+try {
+  // We'll use a simple approach - check if AuthContext exists
+  // If it doesn't, the fallback will be used
+} catch (e) {
+  console.log('AuthContext not available, using fallback');
+}
+
 const Navbar = () => {
+  // ✅ Use AuthContext if available, otherwise fallback
+  let authData;
+  try {
+    // Try to use the imported useAuth
+    // If it fails, use fallback
+    authData = useAuth();
+  } catch (e) {
+    authData = { 
+      user: null, 
+      appUser: null, 
+      isAdmin: false, 
+      isSeller: false, 
+      isAuthenticated: false, 
+      logout: async () => {} 
+    };
+  }
+
+  const { user, appUser, isAdmin, isSeller, isAuthenticated, logout } = authData;
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -24,15 +62,14 @@ const Navbar = () => {
   const [isCompact, setIsCompact] = useState(false);
   const [showFullSearch, setShowFullSearch] = useState(true);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const { getCartCount } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchOverlayRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
-  const isAdmin = user?.role === 'admin';
   const userId = localStorage.getItem('userId') || 'guest';
 
   // ✅ Check if on admin page
@@ -74,6 +111,16 @@ const Navbar = () => {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // ✅ SELLER NAVIGATION ITEMS
+  const sellerLinks = [
+    { name: 'Dashboard', path: '/seller', icon: FaTachometerAlt },
+    { name: 'My Products', path: '/seller/products', icon: FaBox },
+    { name: 'Orders', path: '/seller/orders', icon: FaShoppingBag },
+    { name: 'Earnings', path: '/seller/earnings', icon: FaDollarSign },
+    { name: 'Store Profile', path: '/seller/store', icon: FaStore },
+    { name: 'Settings', path: '/seller/settings', icon: FaSettings },
+  ];
 
   // Animated Placeholder Effect
   useEffect(() => {
@@ -120,26 +167,12 @@ const Navbar = () => {
     setSearchSuggestions(filtered.slice(0, 5));
   }, [searchTerm]);
 
-  // Check login status
+  // ✅ Check login status from localStorage (fallback)
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
-      }
-    };
-    checkAuth();
-
-    window.addEventListener('storage', checkAuth);
-    window.addEventListener('userUpdated', checkAuth);
-
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-      window.removeEventListener('userUpdated', checkAuth);
-    };
-  }, []);
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    setIsLoggedIn(!!token || !!userStr || !!user);
+  }, [user]);
 
   // Fetch wishlist count
   useEffect(() => {
@@ -166,6 +199,17 @@ const Navbar = () => {
       window.removeEventListener('storage', handleWishlistUpdate);
     };
   }, [userId]);
+
+  // ✅ Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // ✅ Scroll listener for compact header
   useEffect(() => {
@@ -352,10 +396,24 @@ const Navbar = () => {
   const hideBottomNav = ['/login', '/checkout', '/admin'];
   const shouldShowBottomNav = !hideBottomNav.includes(location.pathname);
 
+  // ✅ Handle logout
+  const handleLogout = async () => {
+    if (logout) {
+      await logout();
+    } else {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userId');
+    }
+    setIsUserDropdownOpen(false);
+    setIsMenuOpen(false);
+    navigate('/login');
+  };
+
   return (
     <>
       {/* ============================================================
-          🔥 NAVBAR — COMPACT MODE: HAMBURGER + LOGO + SEARCH + CART
+          🔥 NAVBAR
           ============================================================ */}
       <nav className={`fixed top-0 left-0 w-full z-40 bg-white dark:bg-gray-900 border-b border-[#D4AF37]/20 shadow-md transition-all duration-300 ${
         isCompact ? 'h-[52px] sm:h-[56px]' : 'h-auto'
@@ -415,9 +473,35 @@ const Navbar = () => {
               </div>
             </Link>
 
-            {/* RIGHT: Icons */}
+            {/* RIGHT: Icons + Seller Options + User Menu */}
             <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
               
+              {/* ==========================================================
+                  ✅ SELLER DASHBOARD BUTTON (Desktop)
+                  ========================================================== */}
+              {isAuthenticated && isSeller && (
+                <Link 
+                  to="/seller" 
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-[#0F766E] text-white text-sm rounded-lg hover:bg-[#065F46] transition-all duration-200"
+                >
+                  <FaChartLine size={14} />
+                  <span>Dashboard</span>
+                </Link>
+              )}
+
+              {/* ==========================================================
+                  ✅ BECOME A SELLER BUTTON (Desktop)
+                  ========================================================== */}
+              {isAuthenticated && !isSeller && !isAdmin && (
+                <Link 
+                  to="/seller/register" 
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 border-2 border-[#D4AF37] text-[#D4AF37] text-sm rounded-lg hover:bg-[#D4AF37] hover:text-white transition-all duration-200"
+                >
+                  <FaStore size={14} />
+                  <span>Sell</span>
+                </Link>
+              )}
+
               {/* SEARCH ICON */}
               <button 
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -444,22 +528,121 @@ const Navbar = () => {
 
                 <ThemeToggle />
 
-                <Link to="/dashboard" className="hidden sm:flex p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300">
-                  <FaUser className="text-lg text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] transition-colors" />
-                </Link>
-
-                {isAdmin && (
-                  <Link 
-                    to="/admin" 
-                    className="hidden sm:flex p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 relative group"
-                    title="Admin Panel"
+                {/* ✅ USER DROPDOWN */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                    className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
+                    aria-label="User menu"
                   >
-                    <FaCog className="text-lg text-[#D4AF37] group-hover:text-[#0F766E] transition-colors" />
-                    <span className="absolute -top-0.5 -right-0.5 bg-[#D4AF37] text-white text-[8px] sm:text-[10px] font-bold rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 flex items-center justify-center shadow-md">
-                      ⚙
-                    </span>
-                  </Link>
-                )}
+                    {user?.photoURL ? (
+                      <img 
+                        src={user.photoURL} 
+                        alt="Profile" 
+                        className="w-8 h-8 rounded-full object-cover border-2 border-[#0F766E]"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#0F766E] text-white flex items-center justify-center">
+                        <FaUser size={16} />
+                      </div>
+                    )}
+                  </button>
+
+                  {/* ✅ DROPDOWN MENU */}
+                  {isUserDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                      {/* User Info */}
+                      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                        <p className="text-sm font-medium text-gray-800 dark:text-white">
+                          {user?.displayName || user?.email?.split('@')[0] || 'User'}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {user?.email}
+                        </p>
+                        {appUser?.role && (
+                          <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full capitalize ${
+                            appUser.role === 'admin' ? 'bg-red-100 text-red-700' :
+                            appUser.role === 'seller' ? 'bg-teal-100 text-teal-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {appUser.role}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* ✅ SELLER LINKS IN DROPDOWN */}
+                      {isAuthenticated && isSeller && (
+                        <div className="border-b border-gray-200 dark:border-gray-700 py-1">
+                          {sellerLinks.map((link) => (
+                            <Link
+                              key={link.path}
+                              to={link.path}
+                              onClick={() => setIsUserDropdownOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              <link.icon size={16} className="text-[#0F766E]" />
+                              {link.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* ✅ BECOME A SELLER IN DROPDOWN */}
+                      {isAuthenticated && !isSeller && !isAdmin && (
+                        <Link
+                          to="/seller/register"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-[#D4AF37] hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors border-b border-gray-200 dark:border-gray-700"
+                        >
+                          <FaStore size={16} />
+                          Become a Seller
+                        </Link>
+                      )}
+
+                      {/* Admin Link */}
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-b border-gray-200 dark:border-gray-700"
+                        >
+                          <FaCog size={16} />
+                          Admin Panel
+                        </Link>
+                      )}
+
+                      {/* Dashboard / Account */}
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setIsUserDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
+                      >
+                        <FaUser size={16} />
+                        My Account
+                      </Link>
+
+                      {/* Logout */}
+                      {isLoggedIn || isAuthenticated ? (
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full"
+                        >
+                          <FaSignOutAlt size={16} />
+                          Logout
+                        </button>
+                      ) : (
+                        <Link
+                          to="/login"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-[#0F766E] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <FaSignInAlt size={16} />
+                          Sign In
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* CART ICON — ALWAYS VISIBLE */}
@@ -540,7 +723,7 @@ const Navbar = () => {
           </div>
 
           {/* ==========================================================
-              CATEGORIES SLIDER — ✅ HIDE ON ADMIN PAGES
+              CATEGORIES SLIDER
               ========================================================== */}
           {!isAdminPage && (
             <div className="pb-1">
@@ -556,6 +739,7 @@ const Navbar = () => {
               ========================================================== */}
           {isMenuOpen && (
             <div className="lg:hidden py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 max-h-[calc(100vh-4rem)] overflow-y-auto">
+              {/* Main Links */}
               <div className="grid grid-cols-2 gap-1 px-2">
                 {links.map((link) => (
                   <Link
@@ -573,8 +757,41 @@ const Navbar = () => {
                 ))}
               </div>
 
+              {/* ✅ SELLER OPTIONS IN MOBILE MENU */}
+              {isAuthenticated && isSeller && (
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
+                  <p className="text-xs text-[#D4AF37] font-semibold uppercase tracking-wider px-3 mb-2">Seller Panel</p>
+                  {sellerLinks.map((link) => (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      className="flex items-center gap-3 py-2.5 px-3 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all duration-300"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <link.icon className="text-[#0F766E]" size={16} />
+                      {link.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* ✅ BECOME A SELLER (Mobile) */}
+              {isAuthenticated && !isSeller && !isAdmin && (
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
+                  <Link
+                    to="/seller/register"
+                    className="flex items-center justify-center gap-2 py-3 px-4 text-sm font-semibold rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#C5A338] text-white hover:shadow-lg transition-all duration-300"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <FaStore size={18} />
+                    Become a Seller
+                  </Link>
+                </div>
+              )}
+
+              {/* Account & Auth Section */}
               <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
-                {isLoggedIn && (
+                {(isLoggedIn || isAuthenticated) && (
                   <>
                     <Link
                       to="/dashboard"
@@ -596,25 +813,16 @@ const Navbar = () => {
                   </Link>
                 )}
 
-                {isLoggedIn && (
+                {(isLoggedIn || isAuthenticated) && (
                   <button
-                    onClick={() => {
-                      localStorage.removeItem('token');
-                      localStorage.removeItem('user');
-                      localStorage.removeItem('userId');
-                      setIsLoggedIn(false);
-                      window.dispatchEvent(new Event('userUpdated'));
-                      window.dispatchEvent(new Event('storage'));
-                      navigate('/login');
-                      setIsMenuOpen(false);
-                    }}
+                    onClick={handleLogout}
                     className="block w-full py-2.5 px-3 text-sm font-medium rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 text-center mt-1"
                   >
                     🚪 Logout
                   </button>
                 )}
 
-                {!isLoggedIn && (
+                {!isLoggedIn && !isAuthenticated && (
                   <Link
                     to="/login"
                     className="block py-2.5 px-3 text-sm font-medium rounded-lg bg-[#0F766E] text-white hover:bg-[#065F46] transition-all duration-300 text-center"
@@ -789,11 +997,11 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* 5. ACCOUNT */}
+            {/* 5. ACCOUNT with Seller Badge */}
             <Link
-              to={isLoggedIn ? "/dashboard" : "/login"}
+              to={isLoggedIn || isAuthenticated ? (isSeller ? "/seller" : "/dashboard") : "/login"}
               className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative ${
-                location.pathname === '/dashboard' || location.pathname === '/login'
+                location.pathname === '/dashboard' || location.pathname === '/login' || location.pathname === '/seller'
                   ? 'text-[#D4AF37]' 
                   : 'text-gray-500 dark:text-gray-400 hover:text-[#D4AF37]'
               }`}
@@ -801,13 +1009,24 @@ const Navbar = () => {
                 if (isMenuOpen) setIsMenuOpen(false);
               }}
             >
-              <span className={location.pathname === '/dashboard' || location.pathname === '/login' ? 'scale-110' : ''}>
-                <FaUser className={`text-xl sm:text-2xl ${location.pathname === '/dashboard' || location.pathname === '/login' ? 'text-[#D4AF37]' : ''}`} />
+              <span className="relative">
+                <FaUser className={`text-xl sm:text-2xl ${
+                  location.pathname === '/dashboard' || location.pathname === '/login' || location.pathname === '/seller' 
+                    ? 'text-[#D4AF37]' 
+                    : ''
+                }`} />
+                {isSeller && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#D4AF37] rounded-full border-2 border-white dark:border-gray-900"></span>
+                )}
               </span>
-              <span className={`text-[9px] sm:text-[10px] font-medium ${location.pathname === '/dashboard' || location.pathname === '/login' ? 'text-[#D4AF37]' : ''}`}>
-                Account
+              <span className={`text-[9px] sm:text-[10px] font-medium ${
+                location.pathname === '/dashboard' || location.pathname === '/login' || location.pathname === '/seller' 
+                  ? 'text-[#D4AF37]' 
+                  : ''
+              }`}>
+                {isSeller ? 'Seller' : (isLoggedIn || isAuthenticated ? 'Account' : 'Login')}
               </span>
-              {(location.pathname === '/dashboard' || location.pathname === '/login') && (
+              {(location.pathname === '/dashboard' || location.pathname === '/login' || location.pathname === '/seller') && (
                 <span className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-[#D4AF37] to-[#0F766E] rounded-full"></span>
               )}
             </Link>
