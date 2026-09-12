@@ -1,14 +1,14 @@
 // src/App.tsx
-
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
 
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
 
-import { auth, onAuthStateChanged } from './config/firebase';
+import { auth, onAuthStateChanged, db } from './config/firebase';
 
-// 🔥 IMPORT ANIMATED ROUTES
 import AnimatedRoutes from './components/common/AnimatedRoutes';
 
 import Navbar from './components/layout/Navbar';
@@ -16,10 +16,8 @@ import Footer from './components/layout/Footer';
 import WhatsAppButton from './components/common/WhatsAppButton';
 import Popup from './components/common/Popup';
 
-// 🔥 SIRF ADMIN PANEL IMPORT
 import AdminPanel from './components/admin/AdminPanel';
 
-// Eid Milad aur Maintenance pages
 import EidMiladPage from './components/pages/EidMiladPage';
 import MaintenancePage from './components/pages/MaintenancePage';
 import LoginPage from './components/pages/LoginPage';
@@ -27,7 +25,6 @@ import LoginPage from './components/pages/LoginPage';
 // ============================================================
 // ADMIN ROUTE
 // ============================================================
-
 const ADMIN_EMAIL = 'mahaonehypermarket@gmail.com';
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -36,10 +33,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      console.log('🔐 AdminRoute checking user:', firebaseUser?.email);
-
       if (!firebaseUser) {
-        console.log('❌ No Firebase user');
         setIsAdmin(false);
         setChecking(false);
         window.location.replace('/login');
@@ -47,10 +41,8 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       }
 
       if (firebaseUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-        console.log('👑 Admin authenticated');
         setIsAdmin(true);
       } else {
-        console.log('❌ User is not admin:', firebaseUser.email);
         setIsAdmin(false);
         window.location.replace('/');
       }
@@ -76,15 +68,69 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
-// ❌ PROTECTED ROUTE — AB USE NAHI HO RAHA, ISLIYE HATA DIYA
-// const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-//   ... code
-// };
+// ============================================================
+// ✅ SELLER ROUTE — Approved Seller Only
+// ============================================================
+const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [checking, setChecking] = useState(true);
+  const [isApprovedSeller, setIsApprovedSeller] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!firebaseUser) {
+        setIsApprovedSeller(false);
+        setChecking(false);
+        window.location.replace('/login');
+        return;
+      }
+
+      try {
+        const sellerDoc = await getDoc(doc(db, 'sellers', firebaseUser.uid));
+
+        if (sellerDoc.exists()) {
+          const data = sellerDoc.data();
+
+          if (data.verificationStatus === 'approved') {
+            setIsApprovedSeller(true);
+          } else {
+            setIsApprovedSeller(false);
+            alert(`⏳ Your seller account is ${data.verificationStatus}. Please wait for admin approval.`);
+            window.location.replace('/');
+          }
+        } else {
+          setIsApprovedSeller(false);
+          window.location.replace('/seller/register');
+        }
+      } catch (error) {
+        console.error('❌ Error checking seller status:', error);
+        setIsApprovedSeller(false);
+        window.location.replace('/');
+      } finally {
+        setChecking(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0F766E] mx-auto"></div>
+          <p className="mt-4 text-gray-500 text-sm">Checking seller access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isApprovedSeller) return null;
+  return <>{children}</>;
+};
 
 // ============================================================
 // MAIN APP
 // ============================================================
-
 function App() {
   const SHOW_EID_MILAD = false;
   const MAINTENANCE_MODE = false;
@@ -134,33 +180,34 @@ function App() {
   return (
     <ThemeProvider>
       <CartProvider>
-        <Router>
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F8FAFC] via-[#FFFDF7] to-[#F8FAFC] p-3 sm:p-4 md:p-6">
-            <div className="w-full max-w-7xl mx-auto bg-white dark:bg-[#1F2937] rounded-2xl sm:rounded-3xl shadow-2xl dark:shadow-gray-900/50 overflow-hidden border border-gray-200 dark:border-gray-700 transition-all duration-500 animate-float-box">
-              <div className="min-h-screen flex flex-col">
-                {/* NAVBAR */}
-                <Navbar />
+        <AuthProvider>
+          <Router>
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F8FAFC] via-[#FFFDF7] to-[#F8FAFC] p-3 sm:p-4 md:p-6">
+              <div className="w-full max-w-7xl mx-auto bg-white dark:bg-[#1F2937] rounded-2xl sm:rounded-3xl shadow-2xl dark:shadow-gray-900/50 overflow-hidden border border-gray-200 dark:border-gray-700 transition-all duration-500 animate-float-box">
+                <div className="min-h-screen flex flex-col">
+                  <Navbar />
 
-                {/* MAIN CONTENT — 🔥 ANIMATED ROUTES */}
-                <main className="flex-grow">
-                  <AnimatedRoutes />
-                </main>
+                  <main className="flex-grow">
+                    {/* ✅ PASS PROPS TO AnimatedRoutes */}
+                    <AnimatedRoutes
+                      AdminRoute={AdminRoute}
+                      SellerRoute={SellerRoute}
+                    />
+                  </main>
 
-                {/* FOOTER */}
-                <Footer />
+                  <Footer />
+                </div>
               </div>
+
+              <WhatsAppButton />
+
+              <Popup
+                image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
+                delay={2000}
+              />
             </div>
-
-            {/* FLOATING BUTTONS */}
-            <WhatsAppButton />
-
-            {/* POPUP */}
-            <Popup
-              image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
-              delay={2000}
-            />
-          </div>
-        </Router>
+          </Router>
+        </AuthProvider>
       </CartProvider>
     </ThemeProvider>
   );

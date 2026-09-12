@@ -74,7 +74,7 @@ const LoginPage: React.FC = () => {
       }
 
       // ==========================================
-      // 3. NORMAL USER
+      // 3. NORMAL USER — Fetch role from users collection
       // ==========================================
 
       let userData: any = {};
@@ -96,6 +96,9 @@ const LoginPage: React.FC = () => {
         );
       }
 
+      // ✅ Determine role from userData.role
+      const userRole = userData.role || 'customer';
+
       const user = {
         id: firebaseUser.uid,
         name:
@@ -103,7 +106,7 @@ const LoginPage: React.FC = () => {
           firebaseUser.displayName ||
           'User',
         email: firebaseUser.email || cleanEmail,
-        role: userData.role || 'customer',
+        role: userRole,
         isActive: userData.isActive !== false,
         phone: userData.phone || '',
         isVerified: userData.isVerified || false,
@@ -120,13 +123,50 @@ const LoginPage: React.FC = () => {
       window.dispatchEvent(new Event('storage'));
 
       // ==========================================
-      // 4. REDIRECT
+      // 4. REDIRECT — Based on Role
       // ==========================================
 
-      if (user.role === 'admin') {
+      // ✅ SELLER REDIRECT
+      if (userRole === 'seller') {
+        try {
+          // Check if seller is approved
+          const sellerDocRef = doc(db, 'sellers', firebaseUser.uid);
+          const sellerDocSnap = await getDoc(sellerDocRef);
+
+          if (sellerDocSnap.exists()) {
+            const sellerData = sellerDocSnap.data();
+            console.log('🏪 Seller data:', sellerData);
+
+            if (sellerData.verificationStatus === 'approved') {
+              console.log('✅ APPROVED SELLER → /seller');
+              navigate('/seller', { replace: true });
+            } else if (sellerData.verificationStatus === 'pending') {
+              console.log('⏳ PENDING SELLER → /');
+              alert('⏳ Your seller account is pending approval. Please wait for admin approval.');
+              navigate('/', { replace: true });
+            } else if (sellerData.verificationStatus === 'rejected') {
+              console.log('❌ REJECTED SELLER → /');
+              alert('❌ Your seller application was rejected. Please contact support.');
+              navigate('/', { replace: true });
+            } else {
+              navigate('/', { replace: true });
+            }
+          } else {
+            console.log('⚠️ No seller doc found → /');
+            navigate('/', { replace: true });
+          }
+        } catch (sellerError) {
+          console.warn('⚠️ Could not read seller document:', sellerError);
+          navigate('/', { replace: true });
+        }
+      } 
+      // ✅ ADMIN REDIRECT (from users collection)
+      else if (userRole === 'admin') {
         console.log('👑 ADMIN ROLE → /admin');
         navigate('/admin', { replace: true });
-      } else {
+      } 
+      // ✅ CUSTOMER REDIRECT
+      else {
         console.log('👤 CUSTOMER → /');
         navigate('/', { replace: true });
       }
@@ -273,7 +313,7 @@ const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          {/* ✅ FORGOT PASSWORD LINK - ADDED */}
+          {/* FORGOT PASSWORD */}
           <div className="flex items-center justify-end">
             <Link
               to="/forgot-password"

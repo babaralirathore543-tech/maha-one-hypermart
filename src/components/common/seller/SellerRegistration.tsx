@@ -6,21 +6,9 @@ import { FaStore, FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCity, FaCheckCi
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 
-// ✅ Safe Auth import with fallback
-import { useAuth } from '../../../context/AuthContext';
-
 const SellerRegistration = () => {
   const navigate = useNavigate();
-  let authData;
   
-  try {
-    authData = useAuth();
-  } catch (e) {
-    console.warn('AuthContext not available, using fallback');
-    authData = { user: null };
-  }
-  
-  const { user } = authData || { user: null };
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,24 +24,26 @@ const SellerRegistration = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
-      alert('Please login first to become a seller');
-      navigate('/login');
-      return;
-    }
+    // ❌ LOGIN CHECK REMOVED — ab bina login bhi submit ho sakta hai
 
     setLoading(true);
     
     try {
-      console.log('📝 Submitting seller application for user:', user.uid);
+      console.log('📝 Submitting seller application');
       console.log('📝 Form data:', formData);
 
-      const sellerRef = doc(db, 'sellers', user.uid);
+      // ✅ Generate unique ID from email or timestamp
+      const sellerId = `SELLER-${Date.now().toString().slice(-6)}`;
+      const docId = formData.email.replace(/[^a-zA-Z0-9]/g, '_') || sellerId;
+      
+      // ✅ SAVE TO 'sellers' COLLECTION
+      const sellerRef = doc(db, 'sellers', docId);
       
       await setDoc(sellerRef, {
-        userId: user.uid,
+        userId: docId,
+        sellerId: sellerId,
         fullName: formData.fullName,
-        email: formData.email || user.email,
+        email: formData.email,
         phone: formData.phone,
         storeName: formData.storeName,
         storeDescription: formData.storeDescription,
@@ -62,9 +52,12 @@ const SellerRegistration = () => {
         verificationStatus: 'pending',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      }, { merge: true });
 
       console.log('✅ Seller application saved to Firestore!');
+      console.log('📁 Collection: sellers');
+      console.log('📁 Document ID:', docId);
+      
       setSubmitted(true);
 
     } catch (error) {
@@ -106,18 +99,16 @@ const SellerRegistration = () => {
             <p className="text-sm text-yellow-800">
               ⏳ <span className="font-semibold">Pending Approval</span><br />
               Our admin team will review your application within 24-48 hours.
-              You will receive a notification once your account is approved.
+              You will be notified at <strong>{formData.email}</strong> once approved.
             </p>
           </div>
 
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate('/')}
-              className="w-full bg-[#0F766E] text-white py-3 rounded-lg font-semibold hover:bg-[#065F46] transition-colors"
-            >
-              Go to Homepage
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('/')}
+            className="w-full bg-[#0F766E] text-white py-3 rounded-lg font-semibold hover:bg-[#065F46] transition-colors"
+          >
+            Go to Homepage
+          </button>
         </motion.div>
       </div>
     );
@@ -140,22 +131,21 @@ const SellerRegistration = () => {
               <p className="text-teal-100 text-sm">Start selling your products on MAHA ONE</p>
             </div>
           </div>
-          {user && (
-            <p className="text-teal-200 text-xs mt-2">
-              Logged in as: {user.email}
-            </p>
-          )}
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Personal Information */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">Personal Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">
+              Personal Information
+            </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Full Name *</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Full Name *
+                </label>
                 <div className="relative">
                   <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
@@ -165,12 +155,14 @@ const SellerRegistration = () => {
                     value={formData.fullName}
                     onChange={handleChange}
                     className="pl-10 mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#0F766E] focus:border-[#0F766E]"
-                    placeholder="John Doe"
+                    placeholder="Hassan Ali"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email *</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email *
+                </label>
                 <div className="relative">
                   <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
@@ -180,14 +172,16 @@ const SellerRegistration = () => {
                     value={formData.email}
                     onChange={handleChange}
                     className="pl-10 mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#0F766E] focus:border-[#0F766E]"
-                    placeholder="john@example.com"
+                    placeholder="hassan@example.com"
                   />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Phone Number *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Phone Number *
+              </label>
               <div className="relative">
                 <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -205,10 +199,14 @@ const SellerRegistration = () => {
 
           {/* Store Information */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">Store Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">
+              Store Information
+            </h2>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700">Store Name *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Store Name *
+              </label>
               <div className="relative">
                 <FaStore className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -224,7 +222,9 @@ const SellerRegistration = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Store Description *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Store Description *
+              </label>
               <textarea
                 name="storeDescription"
                 required
@@ -239,10 +239,14 @@ const SellerRegistration = () => {
 
           {/* Address */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">Store Address</h2>
+            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">
+              Store Address
+            </h2>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700">Full Address *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Full Address *
+              </label>
               <div className="relative">
                 <FaMapMarkerAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -258,7 +262,9 @@ const SellerRegistration = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">City *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                City *
+              </label>
               <div className="relative">
                 <FaCity className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -274,7 +280,7 @@ const SellerRegistration = () => {
             </div>
           </div>
 
-          {/* Terms & Submit */}
+          {/* Terms */}
           <div className="flex items-start">
             <input
               type="checkbox"
@@ -283,7 +289,10 @@ const SellerRegistration = () => {
               className="mt-1 h-4 w-4 text-[#0F766E] focus:ring-[#0F766E] border-gray-300 rounded"
             />
             <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
-              I agree to the <a href="#" className="text-[#0F766E] hover:underline">Seller Terms & Conditions</a>
+              I agree to the{' '}
+              <a href="#" className="text-[#0F766E] hover:underline">
+                Seller Terms & Conditions
+              </a>
             </label>
           </div>
 
@@ -293,17 +302,7 @@ const SellerRegistration = () => {
               disabled={loading}
               className="flex-1 bg-gradient-to-r from-[#0F766E] to-[#065F46] text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50"
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Submitting...
-                </span>
-              ) : (
-                'Submit Application'
-              )}
+              {loading ? 'Submitting...' : 'Submit Application'}
             </button>
             <button
               type="button"

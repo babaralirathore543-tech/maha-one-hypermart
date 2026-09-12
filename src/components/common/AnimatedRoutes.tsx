@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import LoadingScreen from './LoadingScreen';
 
 // ============================================================
-// PAGE IMPORTS — SAB IMPORTS KAREIN
+// PAGE IMPORTS
 // ============================================================
 import HomePage from '../pages/HomePage';
 import DryFruitsPage from '../pages/DryFruitsPage';
@@ -33,15 +33,32 @@ import StorePage from '../pages/public/StorePage';
 // ✅ SELLER REGISTRATION
 import SellerRegistration from './seller/SellerRegistration';
 
+// ============================================================
+// ✅ SELLER COMPONENTS — CORRECT PATHS
+// ============================================================
+import SellerLayout from '../seller/SellerLayout';
+import SellerDashboard from '../seller/SellerDashboard';
+import SellerProducts from '../seller/SellerProducts';
+import SellerOrders from '../seller/SellerOrders';
+import SellerEarnings from '../seller/SellerEarnings';
+import SellerStore from '../seller/SellerStore';
+import SellerSettings from '../seller/SellerSettings';
+
 // Admin Imports
 import AdminPanel from '../admin/AdminPanel';
 import AdminProductForm from '../pages/AdminProductForm';
 import AdminCakesProductForm from '../pages/AdminCakesProductForm';
 import AdminDryFruitsForm from '../pages/AdminDryFruitsForm';
 import AdminSweetsForm from '../pages/AdminSweetsForm';
-
-// ✅ CORRECT PATH — AdminSellerManagement
 import AdminSellerManagement from '../admin/AdminSellerManagement';
+
+// ============================================================
+// ✅ PROPS INTERFACE
+// ============================================================
+interface AnimatedRoutesProps {
+  AdminRoute: React.FC<{ children: React.ReactNode }>;
+  SellerRoute: React.FC<{ children: React.ReactNode }>;
+}
 
 // ============================================================
 // PAGE TRANSITION VARIANTS
@@ -91,7 +108,7 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
 // ============================================================
 // MAIN ANIMATED ROUTES WITH LOADER
 // ============================================================
-const AnimatedRoutes = () => {
+const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [prevPath, setPrevPath] = useState(location.pathname);
@@ -125,7 +142,7 @@ const AnimatedRoutes = () => {
     }
   }, [location.pathname, prevPath]);
 
-  // 🔥 EMERGENCY TIMEOUT — If loading stuck for more than 5 seconds
+  // 🔥 EMERGENCY TIMEOUT
   useEffect(() => {
     if (isLoading) {
       const emergencyTimer = setTimeout(() => {
@@ -147,158 +164,31 @@ const AnimatedRoutes = () => {
       {/* 🔥 LOADING SCREEN */}
       {isLoading && <LoadingScreen />}
       
-      {/* 🔥 PAGE CONTENT — LOADING COMPLETE HONE PAR SHOW HO */}
+      {/* 🔥 PAGE CONTENT */}
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
+          
           {/* ==================================================
               PUBLIC ROUTES
           ================================================== */}
-          <Route 
-            path="/" 
-            element={
-              <PageTransition>
-                <HomePage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/shop" 
-            element={
-              <PageTransition>
-                <DryFruitsPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/sweets" 
-            element={
-              <PageTransition>
-                <SweetsPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/fashion" 
-            element={
-              <PageTransition>
-                <FashionPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/fashion/:id" 
-            element={
-              <PageTransition>
-                <FashionDetailPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/sweet-product/:id" 
-            element={
-              <PageTransition>
-                <SweetsDetailPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/dry-product/:id" 
-            element={
-              <PageTransition>
-                <DryFruitsDetailPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/login" 
-            element={
-              <PageTransition>
-                <LoginPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/forgot-password" 
-            element={
-              <PageTransition>
-                <ForgotPasswordPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/signup" 
-            element={
-              <PageTransition>
-                <SignupPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/about" 
-            element={
-              <PageTransition>
-                <AboutPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/contact" 
-            element={
-              <PageTransition>
-                <ContactPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/category/:categoryName" 
-            element={
-              <PageTransition>
-                <CategoryPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/cakes" 
-            element={
-              <PageTransition>
-                <CakesPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/cakes/:id" 
-            element={
-              <PageTransition>
-                <CakesDetailPage />
-              </PageTransition>
-            } 
-          />
+          <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+          <Route path="/shop" element={<PageTransition><DryFruitsPage /></PageTransition>} />
+          <Route path="/sweets" element={<PageTransition><SweetsPage /></PageTransition>} />
+          <Route path="/fashion" element={<PageTransition><FashionPage /></PageTransition>} />
+          <Route path="/fashion/:id" element={<PageTransition><FashionDetailPage /></PageTransition>} />
+          <Route path="/sweet-product/:id" element={<PageTransition><SweetsDetailPage /></PageTransition>} />
+          <Route path="/dry-product/:id" element={<PageTransition><DryFruitsDetailPage /></PageTransition>} />
+          <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
+          <Route path="/signup" element={<PageTransition><SignupPage /></PageTransition>} />
+          <Route path="/forgot-password" element={<PageTransition><ForgotPasswordPage /></PageTransition>} />
+          <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
+          <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
+          <Route path="/category/:categoryName" element={<PageTransition><CategoryPage /></PageTransition>} />
+          <Route path="/cakes" element={<PageTransition><CakesPage /></PageTransition>} />
+          <Route path="/cakes/:id" element={<PageTransition><CakesDetailPage /></PageTransition>} />
+          <Route path="/store/:slug" element={<PageTransition><StorePage /></PageTransition>} />
 
-          {/* ✅ PUBLIC STORE PAGE */}
-          <Route 
-            path="/store/:slug" 
-            element={
-              <PageTransition>
-                <StorePage />
-              </PageTransition>
-            } 
-          />
-
-          {/* ✅ SELLER REGISTRATION ROUTE */}
+          {/* ✅ SELLER REGISTRATION */}
           <Route 
             path="/seller/register" 
             element={
@@ -309,171 +199,188 @@ const AnimatedRoutes = () => {
           />
 
           {/* ==================================================
-              PROTECTED ROUTES
+              ✅ SELLER ROUTES — PROTECTED BY SellerRoute
           ================================================== */}
           <Route 
-            path="/cart" 
+            path="/seller" 
             element={
-              <PageTransition>
-                <CartPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/checkout" 
-            element={
-              <PageTransition>
-                <CheckoutPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/wishlist" 
-            element={
-              <PageTransition>
-                <WishlistPage />
-              </PageTransition>
-            } 
-          />
-          
-          <Route 
-            path="/dashboard" 
-            element={
-              <PageTransition>
-                <DashboardPage />
-              </PageTransition>
-            } 
-          />
+              <SellerRoute>
+                <PageTransition>
+                  <SellerLayout />
+                </PageTransition>
+              </SellerRoute>
+            }
+          >
+            <Route index element={<SellerDashboard />} />
+            <Route path="products" element={<SellerProducts />} />
+            <Route path="orders" element={<SellerOrders />} />
+            <Route path="earnings" element={<SellerEarnings />} />
+            <Route path="store" element={<SellerStore />} />
+            <Route path="settings" element={<SellerSettings />} />
+          </Route>
 
           {/* ==================================================
-              ADMIN ROUTES
+              PROTECTED ROUTES
+          ================================================== */}
+          <Route path="/cart" element={<PageTransition><CartPage /></PageTransition>} />
+          <Route path="/checkout" element={<PageTransition><CheckoutPage /></PageTransition>} />
+          <Route path="/wishlist" element={<PageTransition><WishlistPage /></PageTransition>} />
+          <Route path="/dashboard" element={<PageTransition><DashboardPage /></PageTransition>} />
+
+          {/* ==================================================
+              ✅ ADMIN ROUTES — PROTECTED BY AdminRoute
           ================================================== */}
           <Route 
             path="/admin" 
             element={
-              <PageTransition>
-                <AdminPanel />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminPanel />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/products" 
             element={
-              <PageTransition>
-                <AdminPanel />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminPanel />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/orders" 
             element={
-              <PageTransition>
-                <AdminPanel />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminPanel />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/users" 
             element={
-              <PageTransition>
-                <AdminPanel />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminPanel />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/categories" 
             element={
-              <PageTransition>
-                <AdminPanel />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminPanel />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
-          {/* ✅ ADMIN SELLER MANAGEMENT ROUTE */}
           <Route 
             path="/admin/sellers" 
             element={
-              <PageTransition>
-                <AdminSellerManagement />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminSellerManagement />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/products/add" 
             element={
-              <PageTransition>
-                <AdminProductForm />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminProductForm />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/products/edit/:id" 
             element={
-              <PageTransition>
-                <AdminProductForm />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminProductForm />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/dryfruits/add" 
             element={
-              <PageTransition>
-                <AdminDryFruitsForm />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminDryFruitsForm />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/dryfruits/edit/:id" 
             element={
-              <PageTransition>
-                <AdminDryFruitsForm />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminDryFruitsForm />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/sweets/add" 
             element={
-              <PageTransition>
-                <AdminSweetsForm />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminSweetsForm />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/sweets/edit/:id" 
             element={
-              <PageTransition>
-                <AdminSweetsForm />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminSweetsForm />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/cakes/add" 
             element={
-              <PageTransition>
-                <AdminCakesProductForm />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminCakesProductForm />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
           
           <Route 
             path="/admin/cakes/edit/:id" 
             element={
-              <PageTransition>
-                <AdminCakesProductForm />
-              </PageTransition>
+              <AdminRoute>
+                <PageTransition>
+                  <AdminCakesProductForm />
+                </PageTransition>
+              </AdminRoute>
             } 
           />
 

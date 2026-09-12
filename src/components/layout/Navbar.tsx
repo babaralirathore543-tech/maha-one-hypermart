@@ -1,11 +1,12 @@
 // src/components/layout/Navbar.tsx
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   FaSearch, FaHeart, FaUser, FaShoppingBag, FaBars, FaTimes, 
   FaCrown, FaCog, FaHome, 
   FaThLarge, FaStore, FaChartLine, FaSignOutAlt, FaSignInAlt,
-  FaUserPlus, FaTachometerAlt, FaBox, FaDollarSign, FaCog as FaSettings
+  FaTachometerAlt, FaBox, FaDollarSign, FaCog as FaSettings
 } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { getWishlistCount } from '../../services/wishlistService';
@@ -14,7 +15,7 @@ import ThemeToggle from '../common/ThemeToggle';
 import CategoriesSlider from '../common/CategoriesSlider';
 import VoiceSearch from '../common/VoiceSearch';
 
-// ✅ Direct import with fallback if module not found
+// ✅ AuthContext with fallback
 let useAuth: any = () => ({ 
   user: null, 
   appUser: null, 
@@ -24,20 +25,10 @@ let useAuth: any = () => ({
   logout: async () => {} 
 });
 
-// ✅ Try to import AuthContext - using import() instead of require
-try {
-  // We'll use a simple approach - check if AuthContext exists
-  // If it doesn't, the fallback will be used
-} catch (e) {
-  console.log('AuthContext not available, using fallback');
-}
-
 const Navbar = () => {
-  // ✅ Use AuthContext if available, otherwise fallback
+  // ✅ Use AuthContext if available
   let authData;
   try {
-    // Try to use the imported useAuth
-    // If it fails, use fallback
     authData = useAuth();
   } catch (e) {
     authData = { 
@@ -63,19 +54,18 @@ const Navbar = () => {
   const [showFullSearch, setShowFullSearch] = useState(true);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const { getCartCount } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchOverlayRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const userButtonRef = useRef<HTMLButtonElement>(null);
 
   const userId = localStorage.getItem('userId') || 'guest';
-
-  // ✅ Check if on admin page
   const isAdminPage = location.pathname.startsWith('/admin');
 
-  // Navigation Links for Mobile Menu
+  // Navigation Links
   const links = [
     { name: 'Home', path: '/' },
     { name: 'Dry Fruits', path: '/shop' },
@@ -112,7 +102,7 @@ const Navbar = () => {
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // ✅ SELLER NAVIGATION ITEMS
+  // Seller Navigation Items
   const sellerLinks = [
     { name: 'Dashboard', path: '/seller', icon: FaTachometerAlt },
     { name: 'My Products', path: '/seller/products', icon: FaBox },
@@ -167,12 +157,23 @@ const Navbar = () => {
     setSearchSuggestions(filtered.slice(0, 5));
   }, [searchTerm]);
 
-  // ✅ Check login status from localStorage (fallback)
+  // Check login status
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     setIsLoggedIn(!!token || !!userStr || !!user);
   }, [user]);
+
+  // ✅ Calculate dropdown position when opened
+  useEffect(() => {
+    if (isUserDropdownOpen && userButtonRef.current) {
+      const rect = userButtonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [isUserDropdownOpen]);
 
   // Fetch wishlist count
   useEffect(() => {
@@ -200,10 +201,15 @@ const Navbar = () => {
     };
   }, [userId]);
 
-  // ✅ Close dropdown on click outside
+  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (userButtonRef.current && !userButtonRef.current.contains(event.target as Node)) {
+        // Check if click is inside dropdown
+        const dropdown = document.getElementById('user-dropdown-menu');
+        if (dropdown && dropdown.contains(event.target as Node)) {
+          return;
+        }
         setIsUserDropdownOpen(false);
       }
     };
@@ -211,7 +217,7 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ✅ Scroll listener for compact header
+  // Scroll listener for compact header
   useEffect(() => {
     let ticking = false;
     const scrollThreshold = 40;
@@ -247,18 +253,19 @@ const Navbar = () => {
     };
   }, []);
 
-  // ✅ Close search overlay on escape
+  // Close search overlay on escape
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsSearchOverlayOpen(false);
+        setIsUserDropdownOpen(false);
       }
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
 
-  // ✅ Prevent body scroll when search overlay is open
+  // Prevent body scroll when search overlay is open
   useEffect(() => {
     if (isSearchOverlayOpen) {
       document.body.style.overflow = 'hidden';
@@ -302,7 +309,6 @@ const Navbar = () => {
     }
   };
 
-  // Voice Search Handler
   const handleVoiceTranscript = (text: string) => {
     setSearchTerm(text);
     setIsVoiceListening(false);
@@ -322,7 +328,6 @@ const Navbar = () => {
     }
   };
 
-  // Open search overlay
   const openSearchOverlay = () => {
     setIsSearchOverlayOpen(true);
     setTimeout(() => {
@@ -332,19 +337,10 @@ const Navbar = () => {
     }, 100);
   };
 
-  // ✅ Scroll to categories section on Home page
   const scrollToCategories = () => {
-    console.log('🔄 Scrolling to categories...');
-    
     let targetElement = document.getElementById('shop-by-category');
-    
-    if (!targetElement) {
-      targetElement = document.querySelector('section:has(.grid-cols-4)');
-    }
-    
-    if (!targetElement) {
-      targetElement = document.querySelector('[class*="ShopByCategory"]');
-    }
+    if (!targetElement) targetElement = document.querySelector('section:has(.grid-cols-4)');
+    if (!targetElement) targetElement = document.querySelector('[class*="ShopByCategory"]');
     
     if (!targetElement) {
       const allSections = document.querySelectorAll('section');
@@ -357,46 +353,22 @@ const Navbar = () => {
     }
     
     if (targetElement) {
-      console.log('✅ Categories section found:', targetElement);
-      
       const navElement = document.querySelector('nav') as HTMLElement | null;
       const headerHeight = navElement?.offsetHeight || 80;
-      
       const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
-      const offsetPosition = elementPosition - headerHeight - 20;
-      
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: elementPosition - headerHeight - 20, behavior: 'smooth' });
     } else {
-      console.warn('⚠️ Categories section not found, navigating to home...');
-      
       if (window.location.pathname !== '/') {
         navigate('/');
-        setTimeout(() => {
-          const retryElement = document.getElementById('shop-by-category') || 
-                             document.querySelector('section:has(.grid-cols-4)');
-          if (retryElement) {
-            const headerHeight = document.querySelector('nav')?.offsetHeight || 80;
-            const elementPosition = retryElement.getBoundingClientRect().top + window.pageYOffset;
-            window.scrollTo({
-              top: elementPosition - headerHeight - 20,
-              behavior: 'smooth'
-            });
-          }
-        }, 500);
       } else {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   };
 
-  // Hide bottom nav on these pages
   const hideBottomNav = ['/login', '/checkout', '/admin'];
   const shouldShowBottomNav = !hideBottomNav.includes(location.pathname);
 
-  // ✅ Handle logout
   const handleLogout = async () => {
     if (logout) {
       await logout();
@@ -410,19 +382,112 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  // ✅ Dropdown Menu Content (Reusable)
+  const dropdownContent = (
+    <>
+      {/* User Info */}
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+        <p className="text-sm font-medium text-gray-800 dark:text-white">
+          {user?.displayName || user?.email?.split('@')[0] || 'User'}
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+          {user?.email}
+        </p>
+        {appUser?.role && (
+          <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full capitalize ${
+            appUser.role === 'admin' ? 'bg-red-100 text-red-700' :
+            appUser.role === 'seller' ? 'bg-teal-100 text-teal-700' :
+            'bg-gray-100 text-gray-600'
+          }`}>
+            {appUser.role}
+          </span>
+        )}
+      </div>
+
+      {/* Seller Links */}
+      {isAuthenticated && isSeller && (
+        <div className="border-b border-gray-200 dark:border-gray-700 py-1">
+          {sellerLinks.map((link) => (
+            <Link
+              key={link.path}
+              to={link.path}
+              onClick={() => setIsUserDropdownOpen(false)}
+              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <link.icon size={16} className="text-[#0F766E]" />
+              {link.name}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Become Seller */}
+      {isAuthenticated && !isSeller && !isAdmin && (
+        <Link
+          to="/seller/register"
+          onClick={() => setIsUserDropdownOpen(false)}
+          className="flex items-center gap-3 px-4 py-2 text-sm text-[#D4AF37] hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors border-b border-gray-200 dark:border-gray-700"
+        >
+          <FaStore size={16} />
+          Become a Seller
+        </Link>
+      )}
+
+      {/* Admin */}
+      {isAdmin && (
+        <Link
+          to="/admin"
+          onClick={() => setIsUserDropdownOpen(false)}
+          className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-b border-gray-200 dark:border-gray-700"
+        >
+          <FaCog size={16} />
+          Admin Panel
+        </Link>
+      )}
+
+      {/* My Account */}
+      <Link
+        to="/dashboard"
+        onClick={() => setIsUserDropdownOpen(false)}
+        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
+      >
+        <FaUser size={16} />
+        My Account
+      </Link>
+
+      {/* Logout / Sign In */}
+      {isLoggedIn || isAuthenticated ? (
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full"
+        >
+          <FaSignOutAlt size={16} />
+          Logout
+        </button>
+      ) : (
+        <Link
+          to="/login"
+          onClick={() => setIsUserDropdownOpen(false)}
+          className="flex items-center gap-3 px-4 py-2 text-sm text-[#0F766E] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          <FaSignInAlt size={16} />
+          Sign In
+        </Link>
+      )}
+    </>
+  );
+
   return (
     <>
       {/* ============================================================
-          🔥 NAVBAR
+          🔥 NAVBAR — z-[100]
           ============================================================ */}
-      <nav className={`fixed top-0 left-0 w-full z-40 bg-white dark:bg-gray-900 border-b border-[#D4AF37]/20 shadow-md transition-all duration-300 ${
+      <nav className={`fixed top-0 left-0 w-full z-[100] bg-white dark:bg-gray-900 border-b border-[#D4AF37]/20 shadow-md transition-all duration-300 ${
         isCompact ? 'h-[52px] sm:h-[56px]' : 'h-auto'
       }`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           
-          {/* ==========================================================
-              TOP ROW — Hamburger + Logo + Icons
-              ========================================================== */}
+          {/* TOP ROW — Hamburger + Logo + Icons */}
           <div className={`flex items-center justify-between gap-2 sm:gap-3 transition-all duration-300 ${
             isCompact ? 'h-[52px] sm:h-[56px]' : 'h-[56px] sm:h-[64px] md:h-[72px]'
           }`}>
@@ -476,9 +541,7 @@ const Navbar = () => {
             {/* RIGHT: Icons + Seller Options + User Menu */}
             <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
               
-              {/* ==========================================================
-                  ✅ SELLER DASHBOARD BUTTON (Desktop)
-                  ========================================================== */}
+              {/* Seller Dashboard Button */}
               {isAuthenticated && isSeller && (
                 <Link 
                   to="/seller" 
@@ -489,9 +552,7 @@ const Navbar = () => {
                 </Link>
               )}
 
-              {/* ==========================================================
-                  ✅ BECOME A SELLER BUTTON (Desktop)
-                  ========================================================== */}
+              {/* Become a Seller Button */}
               {isAuthenticated && !isSeller && !isAdmin && (
                 <Link 
                   to="/seller/register" 
@@ -502,7 +563,7 @@ const Navbar = () => {
                 </Link>
               )}
 
-              {/* SEARCH ICON */}
+              {/* Search Icon */}
               <button 
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 onClick={openSearchOverlay}
@@ -513,10 +574,11 @@ const Navbar = () => {
                 }`} />
               </button>
 
-              {/* ALL OTHER ICONS — HIDE ON COMPACT */}
+              {/* Other Icons — Hide on Compact */}
               <div className={`flex items-center gap-1 sm:gap-2 md:gap-3 transition-all duration-300 ${
                 isCompact ? 'opacity-0 scale-95 pointer-events-none w-0 overflow-hidden' : 'opacity-100 scale-100 pointer-events-auto'
               }`}>
+                {/* Wishlist */}
                 <Link to="/wishlist" className="hidden sm:flex p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 relative group">
                   <FaHeart className="text-lg text-gray-600 dark:text-gray-300 group-hover:text-[#D4AF37] transition-colors" />
                   {wishlistCount > 0 && (
@@ -528,124 +590,28 @@ const Navbar = () => {
 
                 <ThemeToggle />
 
-                {/* ✅ USER DROPDOWN */}
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                    className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
-                    aria-label="User menu"
-                  >
-                    {user?.photoURL ? (
-                      <img 
-                        src={user.photoURL} 
-                        alt="Profile" 
-                        className="w-8 h-8 rounded-full object-cover border-2 border-[#0F766E]"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#0F766E] text-white flex items-center justify-center">
-                        <FaUser size={16} />
-                      </div>
-                    )}
-                  </button>
-
-                  {/* ✅ DROPDOWN MENU */}
-                  {isUserDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 z-50">
-                      {/* User Info */}
-                      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                        <p className="text-sm font-medium text-gray-800 dark:text-white">
-                          {user?.displayName || user?.email?.split('@')[0] || 'User'}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {user?.email}
-                        </p>
-                        {appUser?.role && (
-                          <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full capitalize ${
-                            appUser.role === 'admin' ? 'bg-red-100 text-red-700' :
-                            appUser.role === 'seller' ? 'bg-teal-100 text-teal-700' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            {appUser.role}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* ✅ SELLER LINKS IN DROPDOWN */}
-                      {isAuthenticated && isSeller && (
-                        <div className="border-b border-gray-200 dark:border-gray-700 py-1">
-                          {sellerLinks.map((link) => (
-                            <Link
-                              key={link.path}
-                              to={link.path}
-                              onClick={() => setIsUserDropdownOpen(false)}
-                              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            >
-                              <link.icon size={16} className="text-[#0F766E]" />
-                              {link.name}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* ✅ BECOME A SELLER IN DROPDOWN */}
-                      {isAuthenticated && !isSeller && !isAdmin && (
-                        <Link
-                          to="/seller/register"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2 text-sm text-[#D4AF37] hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors border-b border-gray-200 dark:border-gray-700"
-                        >
-                          <FaStore size={16} />
-                          Become a Seller
-                        </Link>
-                      )}
-
-                      {/* Admin Link */}
-                      {isAdmin && (
-                        <Link
-                          to="/admin"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-b border-gray-200 dark:border-gray-700"
-                        >
-                          <FaCog size={16} />
-                          Admin Panel
-                        </Link>
-                      )}
-
-                      {/* Dashboard / Account */}
-                      <Link
-                        to="/dashboard"
-                        onClick={() => setIsUserDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
-                      >
-                        <FaUser size={16} />
-                        My Account
-                      </Link>
-
-                      {/* Logout */}
-                      {isLoggedIn || isAuthenticated ? (
-                        <button
-                          onClick={handleLogout}
-                          className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full"
-                        >
-                          <FaSignOutAlt size={16} />
-                          Logout
-                        </button>
-                      ) : (
-                        <Link
-                          to="/login"
-                          onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2 text-sm text-[#0F766E] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                          <FaSignInAlt size={16} />
-                          Sign In
-                        </Link>
-                      )}
+                {/* ✅ USER BUTTON — With Ref for Position */}
+                <button
+                  ref={userButtonRef}
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                  className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300"
+                  aria-label="User menu"
+                >
+                  {user?.photoURL ? (
+                    <img 
+                      src={user.photoURL} 
+                      alt="Profile" 
+                      className="w-8 h-8 rounded-full object-cover border-2 border-[#0F766E]"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-[#0F766E] text-white flex items-center justify-center">
+                      <FaUser size={16} />
                     </div>
                   )}
-                </div>
+                </button>
               </div>
 
-              {/* CART ICON — ALWAYS VISIBLE */}
+              {/* Cart Icon */}
               <Link to="/cart" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 relative group">
                 <FaShoppingBag className={`text-lg text-gray-600 dark:text-gray-300 group-hover:text-[#D4AF37] transition-colors ${
                   isCompact ? 'text-[#D4AF37]' : ''
@@ -657,9 +623,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* ==========================================================
-              SEARCH BAR
-              ========================================================== */}
+          {/* SEARCH BAR */}
           <div className={`transition-all duration-300 overflow-hidden ${
             showFullSearch ? 'max-h-20 opacity-100 pb-2 sm:pb-3' : 'max-h-0 opacity-0 py-0'
           }`}>
@@ -722,11 +686,9 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* ==========================================================
-              CATEGORIES SLIDER
-              ========================================================== */}
+          {/* CATEGORIES SLIDER — z-10 (Lower) */}
           {!isAdminPage && (
-            <div className="pb-1">
+            <div className="pb-1 relative z-10">
               <CategoriesSlider 
                 isCompact={isCompact}
                 isSticky={isCompact}
@@ -734,11 +696,9 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* ==========================================================
-              MOBILE MENU
-              ========================================================== */}
+          {/* MOBILE MENU */}
           {isMenuOpen && (
-            <div className="lg:hidden py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="lg:hidden py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 max-h-[calc(100vh-4rem)] overflow-y-auto relative z-10">
               {/* Main Links */}
               <div className="grid grid-cols-2 gap-1 px-2">
                 {links.map((link) => (
@@ -757,7 +717,7 @@ const Navbar = () => {
                 ))}
               </div>
 
-              {/* ✅ SELLER OPTIONS IN MOBILE MENU */}
+              {/* Seller Panel */}
               {isAuthenticated && isSeller && (
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
                   <p className="text-xs text-[#D4AF37] font-semibold uppercase tracking-wider px-3 mb-2">Seller Panel</p>
@@ -775,7 +735,7 @@ const Navbar = () => {
                 </div>
               )}
 
-              {/* ✅ BECOME A SELLER (Mobile) */}
+              {/* Become Seller */}
               {isAuthenticated && !isSeller && !isAdmin && (
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
                   <Link
@@ -789,18 +749,16 @@ const Navbar = () => {
                 </div>
               )}
 
-              {/* Account & Auth Section */}
+              {/* Account & Auth */}
               <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 px-2">
                 {(isLoggedIn || isAuthenticated) && (
-                  <>
-                    <Link
-                      to="/dashboard"
-                      className="block py-2.5 px-3 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 text-center"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      👤 My Account
-                    </Link>
-                  </>
+                  <Link
+                    to="/dashboard"
+                    className="block py-2.5 px-3 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 hover:text-[#D4AF37] hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 text-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    👤 My Account
+                  </Link>
                 )}
                 
                 {isAdmin && (
@@ -837,13 +795,37 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* ==========================================================
-          SEARCH OVERLAY — Mobile
-          ========================================================== */}
+      {/* ============================================================
+          ✅ USER DROPDOWN — PORTAL (Above everything!)
+          ============================================================ */}
+      {isUserDropdownOpen && createPortal(
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-[9998]" 
+            onClick={() => setIsUserDropdownOpen(false)}
+          />
+          
+          {/* Dropdown Menu */}
+          <div 
+            id="user-dropdown-menu"
+            className="fixed w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 z-[9999]"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              right: `${dropdownPosition.right}px`,
+            }}
+          >
+            {dropdownContent}
+          </div>
+        </>,
+        document.body
+      )}
+
+      {/* SEARCH OVERLAY */}
       {isSearchOverlayOpen && (
         <div 
           ref={searchOverlayRef}
-          className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-[300] bg-black/50 backdrop-blur-sm md:hidden"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setIsSearchOverlayOpen(false);
@@ -893,38 +875,16 @@ const Navbar = () => {
                 )}
               </div>
             </form>
-
-            {searchSuggestions.length > 0 && !isVoiceListening && (
-              <div className="mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                {searchSuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/20 transition flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
-                  >
-                    <FaSearch className="text-[#D4AF37] text-xs" />
-                    <span dangerouslySetInnerHTML={{
-                      __html: suggestion.replace(
-                        new RegExp(searchTerm, 'gi'),
-                        (match) => `<strong class="text-[#D4AF37]">${match}</strong>`
-                      )
-                    }} />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      {/* ==========================================================
-          MOBILE BOTTOM NAVIGATION
-          ========================================================== */}
+      {/* MOBILE BOTTOM NAVIGATION */}
       {shouldShowBottomNav && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white dark:bg-gray-900 border-t border-[#D4AF37]/20 shadow-2xl safe-area-bottom">
+        <div className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden bg-white dark:bg-gray-900 border-t border-[#D4AF37]/20 shadow-2xl safe-area-bottom">
           <div className="grid grid-cols-5 max-w-md mx-auto px-1">
             
-            {/* 1. HOME */}
+            {/* Home */}
             <Link
               to="/"
               className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative ${
@@ -947,13 +907,13 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* 2. DARK MODE */}
+            {/* Theme */}
             <div className="flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 text-gray-500 dark:text-gray-400">
               <ThemeToggle />
               <span className="text-[9px] sm:text-[10px] font-medium">Theme</span>
             </div>
 
-            {/* 3. CATEGORIES */}
+            {/* Categories */}
             <button
               onClick={scrollToCategories}
               className="flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative text-[#D4AF37]"
@@ -967,7 +927,7 @@ const Navbar = () => {
               <span className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-gradient-to-r from-[#D4AF37] to-[#0F766E] rounded-full"></span>
             </button>
 
-            {/* 4. CART */}
+            {/* Cart */}
             <Link
               to="/cart"
               className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative ${
@@ -997,7 +957,7 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* 5. ACCOUNT with Seller Badge */}
+            {/* Account */}
             <Link
               to={isLoggedIn || isAuthenticated ? (isSeller ? "/seller" : "/dashboard") : "/login"}
               className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl transition-all duration-300 relative ${
@@ -1034,7 +994,7 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* SPACER FOR MOBILE BOTTOM NAV */}
+      {/* Spacer */}
       {shouldShowBottomNav && (
         <div className="lg:hidden h-[60px] sm:h-[68px]"></div>
       )}

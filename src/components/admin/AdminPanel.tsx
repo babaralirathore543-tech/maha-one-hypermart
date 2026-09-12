@@ -13,7 +13,9 @@ import {
   FaTshirt,
   FaPlus,
   FaCookie,
-  FaUserPlus  // ✅ ADDED for Seller Management
+  FaUserPlus,
+  FaBars,
+  FaTimes
 } from 'react-icons/fa';
 import { db, collection, getDocs } from '../../config/firebase';
 import AdminOrders from './AdminOrders';
@@ -21,13 +23,14 @@ import AdminUsers from './AdminUsers';
 import AdminCategories from './AdminCategories';
 import AdminDashboard from './AdminDashboard';
 import AdminProducts from './AdminProducts';
-import AdminSellerManagement from './AdminSellerManagement'; // ✅ ADDED
+import AdminSellerManagement from './AdminSellerManagement';
 
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState<any[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
@@ -86,7 +89,7 @@ const AdminPanel: React.FC = () => {
     { id: 'products', label: 'Products', icon: <FaBox /> },
     { id: 'orders', label: 'Orders', icon: <FaShoppingCart /> },
     { id: 'users', label: 'Users', icon: <FaUsers /> },
-    { id: 'sellers', label: 'Sellers', icon: <FaUserPlus /> }, // ✅ ADDED
+    { id: 'sellers', label: 'Sellers', icon: <FaUserPlus /> }, // ✅ SELLER MANAGEMENT
     { id: 'categories', label: 'Categories', icon: <FaCog /> },
   ];
 
@@ -96,7 +99,7 @@ const AdminPanel: React.FC = () => {
       case 'products': return <AdminProducts />;
       case 'orders': return <AdminOrders />;
       case 'users': return <AdminUsers />;
-      case 'sellers': return <AdminSellerManagement />; // ✅ ADDED
+      case 'sellers': return <AdminSellerManagement />; // ✅ SELLER MANAGEMENT
       case 'categories': return <AdminCategories />;
       default: return <AdminDashboard />;
     }
@@ -106,10 +109,22 @@ const AdminPanel: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-[#0F0A1A]">
-      {/* Header */}
+      {/* ============================================================
+      HEADER
+      ============================================================ */}
       <header className="bg-[#0F766E] dark:bg-[#181028] text-white p-4 shadow-lg border-b border-[#D4AF37]/20">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          
+          {/* Left — Logo + Title */}
           <div className="flex items-center gap-2">
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition"
+            >
+              {isSidebarOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+            </button>
+            
             <FaStore className="text-2xl" />
             <h1 className="text-xl font-bold">Maha One Admin</h1>
             <span className="text-xs bg-[#D4AF37]/20 px-2 py-0.5 rounded-full text-[#D4AF37] ml-2">
@@ -117,7 +132,7 @@ const AdminPanel: React.FC = () => {
             </span>
           </div>
           
-          {/* ✅ Quick Add Buttons */}
+          {/* Right — Quick Add Buttons + Logout */}
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to="/admin/products/add"
@@ -147,15 +162,32 @@ const AdminPanel: React.FC = () => {
         </div>
       </header>
 
+      {/* ============================================================
+      MAIN CONTENT
+      ============================================================ */}
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar */}
-          <div className="lg:w-64 bg-white dark:bg-[#1F2937] rounded-xl shadow-sm p-4 h-fit border border-gray-200 dark:border-gray-700">
+          
+          {/* ============================================================
+          SIDEBAR
+          ============================================================ */}
+          <div className={`
+            lg:w-64 
+            bg-white dark:bg-[#1F2937] 
+            rounded-xl shadow-sm p-4 
+            h-fit 
+            border border-gray-200 dark:border-gray-700
+            lg:block
+            ${isSidebarOpen ? 'block' : 'hidden'}
+          `}>
             <nav className="space-y-1">
               {menuItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setIsSidebarOpen(false); // Close mobile menu
+                  }}
                   className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm transition ${
                     activeTab === item.id
                       ? 'bg-[#0F766E] dark:bg-[#7C3AED] text-white shadow-md'
@@ -164,10 +196,11 @@ const AdminPanel: React.FC = () => {
                 >
                   {item.icon}
                   {item.label}
-                  {/* ✅ Badge for pending sellers */}
+                  
+                  {/* ✅ Badge for Sellers */}
                   {item.id === 'sellers' && (
                     <span className="ml-auto text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">
-                      Pending
+                      New
                     </span>
                   )}
                 </button>
@@ -176,7 +209,9 @@ const AdminPanel: React.FC = () => {
             
             {/* ✅ Category Quick Links */}
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Quick Add</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                Quick Add
+              </p>
               <div className="grid grid-cols-3 gap-1.5">
                 <Link
                   to="/admin/products/add"
@@ -200,14 +235,24 @@ const AdminPanel: React.FC = () => {
             </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1">
+          {/* ============================================================
+          CONTENT AREA
+          ============================================================ */}
+          <div className="flex-1 min-w-0">
+            
             {/* Stats Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
               {stats.map((stat, index) => (
-                <div key={index} className="bg-white dark:bg-[#1F2937] rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{stat.title}</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mt-1">{stat.value}</p>
+                <div 
+                  key={index} 
+                  className="bg-white dark:bg-[#1F2937] rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700"
+                >
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                    {stat.title}
+                  </p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mt-1">
+                    {stat.value}
+                  </p>
                   <div className={`${stat.color} text-white w-8 h-8 rounded-lg flex items-center justify-center mt-2 text-sm`}>
                     {stat.icon}
                   </div>
