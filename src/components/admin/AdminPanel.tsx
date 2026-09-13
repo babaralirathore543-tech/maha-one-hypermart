@@ -15,7 +15,8 @@ import {
   FaCookie,
   FaUserPlus,
   FaBars,
-  FaTimes
+  FaTimes,
+  FaLeaf  // ✅ ADDED
 } from 'react-icons/fa';
 import { db, collection, getDocs } from '../../config/firebase';
 import AdminOrders from './AdminOrders';
@@ -65,31 +66,33 @@ const AdminPanel: React.FC = () => {
     navigate('/login');
   };
 
-  // ✅ Category Statistics
+  // ✅ Category Statistics — WITH HERBAL
   const getCategoryStats = () => {
     const fashion = products.filter(p => p.category === 'fashion').length;
     const dryFruits = products.filter(p => p.category === 'dryfruits' || p.category === 'dry-fruits').length;
     const sweets = products.filter(p => p.category === 'sweets').length;
-    const other = products.filter(p => p.category !== 'fashion' && p.category !== 'dryfruits' && p.category !== 'dry-fruits' && p.category !== 'sweets').length;
-    return { fashion, dryFruits, sweets, other };
+    const herbal = products.filter(p => p.category === 'herbal').length; // ✅ ADDED
+    return { fashion, dryFruits, sweets, herbal };
   };
 
   const categoryStats = getCategoryStats();
 
+  // ✅ Stats Cards — WITH HERBAL
   const stats = [
     { title: 'Total Products', value: products.length, icon: <FaBox />, color: 'bg-blue-500' },
     { title: 'Fashion', value: categoryStats.fashion, icon: <FaTshirt />, color: 'bg-purple-500' },
     { title: 'Dry Fruits', value: categoryStats.dryFruits, icon: <FaSeedling />, color: 'bg-green-500' },
     { title: 'Sweets', value: categoryStats.sweets, icon: <FaCookie />, color: 'bg-pink-500' },
+    { title: 'Herbal', value: categoryStats.herbal, icon: <FaLeaf />, color: 'bg-emerald-500' }, // ✅ ADDED
   ];
 
-  // ✅ Menu Items — WITH SELLER MANAGEMENT
+  // ✅ Menu Items
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <FaHome /> },
     { id: 'products', label: 'Products', icon: <FaBox /> },
     { id: 'orders', label: 'Orders', icon: <FaShoppingCart /> },
     { id: 'users', label: 'Users', icon: <FaUsers /> },
-    { id: 'sellers', label: 'Sellers', icon: <FaUserPlus /> }, // ✅ SELLER MANAGEMENT
+    { id: 'sellers', label: 'Sellers', icon: <FaUserPlus /> },
     { id: 'categories', label: 'Categories', icon: <FaCog /> },
   ];
 
@@ -99,7 +102,7 @@ const AdminPanel: React.FC = () => {
       case 'products': return <AdminProducts />;
       case 'orders': return <AdminOrders />;
       case 'users': return <AdminUsers />;
-      case 'sellers': return <AdminSellerManagement />; // ✅ SELLER MANAGEMENT
+      case 'sellers': return <AdminSellerManagement />;
       case 'categories': return <AdminCategories />;
       default: return <AdminDashboard />;
     }
@@ -117,7 +120,6 @@ const AdminPanel: React.FC = () => {
           
           {/* Left — Logo + Title */}
           <div className="flex items-center gap-2">
-            {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition"
@@ -151,6 +153,13 @@ const AdminPanel: React.FC = () => {
               className="bg-pink-600 hover:bg-pink-700 px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5"
             >
               <FaPlus /> Sweets
+            </Link>
+            {/* ✅ HERBAL BUTTON */}
+            <Link
+              to="/admin/herbal/add"
+              className="bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5"
+            >
+              <FaLeaf /> Herbal
             </Link>
             <button
               onClick={handleLogout}
@@ -186,7 +195,7 @@ const AdminPanel: React.FC = () => {
                   key={item.id}
                   onClick={() => {
                     setActiveTab(item.id);
-                    setIsSidebarOpen(false); // Close mobile menu
+                    setIsSidebarOpen(false);
                   }}
                   className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm transition ${
                     activeTab === item.id
@@ -197,7 +206,6 @@ const AdminPanel: React.FC = () => {
                   {item.icon}
                   {item.label}
                   
-                  {/* ✅ Badge for Sellers */}
                   {item.id === 'sellers' && (
                     <span className="ml-auto text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">
                       New
@@ -207,12 +215,12 @@ const AdminPanel: React.FC = () => {
               ))}
             </nav>
             
-            {/* ✅ Category Quick Links */}
+            {/* ✅ Category Quick Links — WITH HERBAL */}
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                 Quick Add
               </p>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 <Link
                   to="/admin/products/add"
                   className="text-center p-2 rounded-lg bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/40 transition text-xs"
@@ -231,6 +239,13 @@ const AdminPanel: React.FC = () => {
                 >
                   🍬 Sweets
                 </Link>
+                {/* ✅ HERBAL QUICK ADD */}
+                <Link
+                  to="/admin/herbal/add"
+                  className="text-center p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/40 transition text-xs"
+                >
+                  🌿 Herbal
+                </Link>
               </div>
             </div>
           </div>
@@ -240,8 +255,8 @@ const AdminPanel: React.FC = () => {
           ============================================================ */}
           <div className="flex-1 min-w-0">
             
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            {/* Stats Cards — WITH HERBAL */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-6">
               {stats.map((stat, index) => (
                 <div 
                   key={index} 

@@ -4,12 +4,12 @@ import { Link } from 'react-router-dom';
 import { 
   FaStar, FaHeart, FaShoppingCart, FaArrowRight, FaSpinner,
   FaAppleAlt, FaMale, FaFemale, FaChild, FaCookie, 
-  FaShoePrints, FaShoppingBag, FaGem
+  FaShoePrints, FaShoppingBag, FaGem, FaLeaf  // ✅ ADDED FaLeaf
 } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { db, collection, getDocs, query, where, limit } from '../../config/firebase';
 
-// ✅ Category Banner Component - Clean Image Only (No Text Overlay)
+// ✅ Category Banner Component
 interface CategoryHeroBannerProps {
   image: string;
   alt: string;
@@ -41,22 +41,16 @@ const CategoryHeroBanner: React.FC<CategoryHeroBannerProps> = ({
   );
 };
 
-// ✅ Product Card Component - Like Fashion Page
+// ✅ Product Card Component
 const ProductCard = ({ product, addToCart }: { product: any; addToCart: (product: any) => void }) => {
   const isInStock = product.stock > 0;
   const [imageError, setImageError] = useState(false);
   
   const getDetailLink = () => {
     if (product.category === 'sweets') return `/sweet-product/${product.id}`;
-    if (product.category === 'fashion') {
-      if (product.gender === 'men') return `/fashion/${product.id}`;
-      if (product.gender === 'women') return `/fashion/${product.id}`;
-      if (product.gender === 'kids') return `/fashion/${product.id}`;
-      return `/fashion/${product.id}`;
-    }
-    if (product.category === 'dryfruits' || product.category === 'dry-fruits') {
-      return `/dry-product/${product.id}`;
-    }
+    if (product.category === 'fashion') return `/fashion/${product.id}`;
+    if (product.category === 'dryfruits' || product.category === 'dry-fruits') return `/dry-product/${product.id}`;
+    if (product.category === 'herbal') return `/herbal/${product.id}`; // ✅ ADDED
     return `/product/${product.id}`;
   };
 
@@ -105,7 +99,8 @@ const ProductCard = ({ product, addToCart }: { product: any; addToCart: (product
               <span className="text-[8px] sm:text-[10px] bg-black/60 backdrop-blur text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full capitalize border border-purple-300/30">
                 {product.category === 'dryfruits' ? '🥜' : 
                  product.category === 'sweets' ? '🍬' : 
-                 product.category === 'fashion' ? '👗' : '📦'} {product.category}
+                 product.category === 'fashion' ? '👗' : 
+                 product.category === 'herbal' ? '🌿' : '📦'} {product.category}
               </span>
             </div>
           )}
@@ -180,7 +175,7 @@ const ProductCard = ({ product, addToCart }: { product: any; addToCart: (product
   );
 };
 
-// ✅ Category Product Section Component
+// ✅ Category Product Section
 interface CategoryProductSectionProps {
   title: string;
   emoji: string;
@@ -237,9 +232,8 @@ const CategoryProductSection: React.FC<CategoryProductSectionProps> = ({
   );
 };
 
-// ✅ Shop by Category Component - Premium Design with Vector Icons (White Fill + Green Border)
+// ✅ Shop by Category — WITH HERBAL
 const ShopByCategory = () => {
-  // ✅ Categories with Vector Icons (White Fill + Green Border Style)
   const categories = [
     { 
       id: 'dryfruits', 
@@ -248,6 +242,15 @@ const ShopByCategory = () => {
       link: '/shop', 
       color: 'from-amber-600 to-amber-800', 
       bg: 'bg-amber-50 dark:bg-amber-900/20' 
+    },
+    // ✅ HERBAL ADDED
+    { 
+      id: 'herbal', 
+      name: 'Herbal & Natural', 
+      icon: <FaLeaf className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#0F766E] group-hover:text-white transition-colors" />,
+      link: '/herbal', 
+      color: 'from-emerald-600 to-emerald-800', 
+      bg: 'bg-emerald-50 dark:bg-emerald-900/20' 
     },
     { 
       id: 'mens-fashion', 
@@ -320,7 +323,7 @@ const ShopByCategory = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-5">
+        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-2 sm:gap-3 md:gap-4 lg:gap-5">
           {categories.map((category) => (
             <Link
               key={category.id}
@@ -330,7 +333,6 @@ const ShopByCategory = () => {
               <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-90 transition-all duration-500`}></div>
               
               <div className="relative z-10">
-                {/* ✅ Vector Icon with White Fill + Green Border Circle */}
                 <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-white border-2 border-[#0F766E] flex items-center justify-center mx-auto mb-1 sm:mb-2 shadow-sm transition-all duration-300 group-hover:border-[#D4AF37] group-hover:shadow-md">
                   {category.icon}
                 </div>
@@ -360,6 +362,7 @@ const HomePage = () => {
   const [womensFashionProducts, setWomensFashionProducts] = useState<any[]>([]);
   const [kidsFashionProducts, setKidsFashionProducts] = useState<any[]>([]);
   const [sweetsProducts, setSweetsProducts] = useState<any[]>([]);
+  const [herbalProducts, setHerbalProducts] = useState<any[]>([]); // ✅ ADDED
 
   // ✅ Loading states
   const [loadingDryFruits, setLoadingDryFruits] = useState(true);
@@ -367,10 +370,8 @@ const HomePage = () => {
   const [loadingWomens, setLoadingWomens] = useState(true);
   const [loadingKids, setLoadingKids] = useState(true);
   const [loadingSweets, setLoadingSweets] = useState(true);
+  const [loadingHerbal, setLoadingHerbal] = useState(true); // ✅ ADDED
 
-  // ============================================================
-  // ✅ HERO SLIDES - MOBILE RESPONSIVE WITH BORDER
-  // ============================================================
   const slides = [
     {
       id: 0,
@@ -417,8 +418,7 @@ const HomePage = () => {
           limit(8)
         );
         const snapshot = await getDocs(q);
-        const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setDryFruitsProducts(products);
+        setDryFruitsProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error('Error fetching dry fruits:', error);
       } finally {
@@ -426,6 +426,28 @@ const HomePage = () => {
       }
     };
     fetchDryFruits();
+  }, []);
+
+  // ✅ Fetch Herbal — ADDED
+  useEffect(() => {
+    const fetchHerbal = async () => {
+      try {
+        setLoadingHerbal(true);
+        const q = query(
+          collection(db, 'products'),
+          where('category', '==', 'herbal'),
+          where('status', '==', 'active'),
+          limit(8)
+        );
+        const snapshot = await getDocs(q);
+        setHerbalProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error('Error fetching herbal:', error);
+      } finally {
+        setLoadingHerbal(false);
+      }
+    };
+    fetchHerbal();
   }, []);
 
   // Fetch Men's Fashion
@@ -441,8 +463,7 @@ const HomePage = () => {
           limit(8)
         );
         const snapshot = await getDocs(q);
-        const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setMensFashionProducts(products);
+        setMensFashionProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error('Error fetching men\'s fashion:', error);
       } finally {
@@ -465,8 +486,7 @@ const HomePage = () => {
           limit(8)
         );
         const snapshot = await getDocs(q);
-        const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setWomensFashionProducts(products);
+        setWomensFashionProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error('Error fetching women\'s fashion:', error);
       } finally {
@@ -489,8 +509,7 @@ const HomePage = () => {
           limit(8)
         );
         const snapshot = await getDocs(q);
-        const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setKidsFashionProducts(products);
+        setKidsFashionProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error('Error fetching kids fashion:', error);
       } finally {
@@ -512,8 +531,7 @@ const HomePage = () => {
           limit(8)
         );
         const snapshot = await getDocs(q);
-        const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setSweetsProducts(products);
+        setSweetsProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error('Error fetching sweets:', error);
       } finally {
@@ -532,6 +550,13 @@ const HomePage = () => {
       image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787928030/1787927127977_tfpbae.jpg',
       alt: 'Premium Dry Fruits Collection',
       link: '/shop'
+    },
+    // ✅ HERBAL BANNER — ADD YOUR IMAGE URL
+    {
+      id: 'herbal',
+      image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787928030/1787927127977_tfpbae.jpg', // Replace with your herbal banner
+      alt: 'Herbal & Natural Collection',
+      link: '/herbal'
     },
     {
       id: 'mens-fashion',
@@ -559,7 +584,7 @@ const HomePage = () => {
     }
   ];
 
-  // Banner + Product Section Mappings with Section IDs
+  // ✅ Section Configs — WITH HERBAL
   const sectionConfigs = [
     {
       id: 'dryfruits-section',
@@ -570,9 +595,19 @@ const HomePage = () => {
       loading: loadingDryFruits,
       viewAllLink: '/shop'
     },
+    // ✅ HERBAL SECTION — ADDED
+    {
+      id: 'herbal-section',
+      banner: bannerImages[1],
+      title: 'Herbal & Natural',
+      emoji: '🌿',
+      products: herbalProducts,
+      loading: loadingHerbal,
+      viewAllLink: '/herbal'
+    },
     {
       id: 'mens-fashion-section',
-      banner: bannerImages[1],
+      banner: bannerImages[2],
       title: "Men's Fashion",
       emoji: '👔',
       products: mensFashionProducts,
@@ -581,7 +616,7 @@ const HomePage = () => {
     },
     {
       id: 'womens-fashion-section',
-      banner: bannerImages[2],
+      banner: bannerImages[3],
       title: "Women's Fashion",
       emoji: '👗',
       products: womensFashionProducts,
@@ -590,7 +625,7 @@ const HomePage = () => {
     },
     {
       id: 'kids-fashion-section',
-      banner: bannerImages[3],
+      banner: bannerImages[4],
       title: "Kids Fashion",
       emoji: '👶',
       products: kidsFashionProducts,
@@ -599,7 +634,7 @@ const HomePage = () => {
     },
     {
       id: 'sweets-section',
-      banner: bannerImages[4],
+      banner: bannerImages[5],
       title: 'Sweets & Chocolates',
       emoji: '🍬',
       products: sweetsProducts,
@@ -611,14 +646,11 @@ const HomePage = () => {
   return (
     <div className="bg-[#FFFDF7] dark:bg-[#111827] min-h-screen">
       
-      {/* ============================================================
-      HERO SECTION
-      ============================================================ */}
+      {/* HERO SECTION */}
       <section 
         id="hero-section"
         className="relative w-full overflow-hidden bg-[#FFFDF7] dark:bg-[#111827] pt-16 sm:pt-20 md:pt-24 lg:pt-28 scroll-mt-[120px] sm:scroll-mt-[140px] md:scroll-mt-[160px]"
       >
-        
         <div className="relative w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-4 md:py-6">
           <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl bg-[#F5F3FF] dark:bg-[#1F2937] border-2 sm:border-4 border-purple-500 shadow-purple-500/20">
             
@@ -672,14 +704,10 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ============================================================
-      SHOP BY CATEGORY SECTION — ✅ UPDATED WITH VECTOR ICONS
-      ============================================================ */}
+      {/* SHOP BY CATEGORY */}
       <ShopByCategory />
 
-      {/* ============================================================
-      CATEGORY SECTIONS
-      ============================================================ */}
+      {/* CATEGORY SECTIONS */}
       {sectionConfigs.map((section, index) => (
         <div 
           key={section.banner.id}
@@ -705,9 +733,7 @@ const HomePage = () => {
         </div>
       ))}
 
-      {/* ============================================================
-      REVIEWS SECTION
-      ============================================================ */}
+      {/* REVIEWS SECTION */}
       <section className="py-12 sm:py-16 md:py-20 bg-[#FFFDF7] dark:bg-[#111827]">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="text-center mb-8 sm:mb-10 md:mb-14">

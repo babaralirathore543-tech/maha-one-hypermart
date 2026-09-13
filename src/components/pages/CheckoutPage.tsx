@@ -31,7 +31,7 @@ const PAYMENT_ACCOUNTS: Record<string, PaymentAccount> = {
     name: 'JazzCash',
     icon: '📱',
     number: '0329-3296822',
-    accountTitle: 'Maha One Hypermart',
+    accountTitle: 'Mahnoor Naseeb',
     color: 'from-red-500 to-pink-500',
     bgColor: 'bg-red-50',
     borderColor: 'border-red-200'
@@ -40,7 +40,7 @@ const PAYMENT_ACCOUNTS: Record<string, PaymentAccount> = {
     name: 'EasyPaisa',
     icon: '💳',
     number: '0329-3296822',
-    accountTitle: 'Maha One Hypermart',
+    accountTitle: 'Mahnoor Naseeb',
     color: 'from-green-500 to-emerald-500',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-200'

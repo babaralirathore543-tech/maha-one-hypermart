@@ -9,7 +9,8 @@ import {
   FaCog,
   FaSignOutAlt,
   FaStore,
-  FaUserPlus  // ✅ ADDED for Seller Management
+  FaUserPlus,
+  FaLeaf  // ✅ ADDED for Herbal
 } from 'react-icons/fa';
 
 interface AdminSidebarProps {
@@ -22,8 +23,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onLogout }) => {
     { path: '/admin/products', label: 'Products', icon: <FaBox /> },
     { path: '/admin/orders', label: 'Orders', icon: <FaShoppingCart /> },
     { path: '/admin/users', label: 'Users', icon: <FaUsers /> },
-    // ✅ SELLER MANAGEMENT — ADDED
+    // ✅ SELLER MANAGEMENT
     { path: '/admin/sellers', label: 'Sellers', icon: <FaUserPlus /> },
+    // ✅ HERBAL MANAGEMENT — ADDED
+    { path: '/admin/herbal/add', label: 'Herbal', icon: <FaLeaf /> },
     { path: '/admin/analytics', label: 'Analytics', icon: <FaChartLine /> },
     { path: '/admin/settings', label: 'Settings', icon: <FaCog /> },
   ];

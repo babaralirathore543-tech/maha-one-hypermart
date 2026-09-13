@@ -30,11 +30,19 @@ import CakesPage from '../pages/CakesPage';
 import CakesDetailPage from '../pages/CakesDetailPage';
 import StorePage from '../pages/public/StorePage';
 
+// ============================================================
+// ✅ HERBAL PAGES — CORRECT PATHS
+// ============================================================
+import HerbalPage from '../pages/HerbalPage';
+import HerbalDetailPage from '../pages/HerbalDetailPage';
+
+// ============================================================
 // ✅ SELLER REGISTRATION
+// ============================================================
 import SellerRegistration from './seller/SellerRegistration';
 
 // ============================================================
-// ✅ SELLER COMPONENTS — CORRECT PATHS
+// ✅ SELLER COMPONENTS
 // ============================================================
 import SellerLayout from '../seller/SellerLayout';
 import SellerDashboard from '../seller/SellerDashboard';
@@ -44,12 +52,15 @@ import SellerEarnings from '../seller/SellerEarnings';
 import SellerStore from '../seller/SellerStore';
 import SellerSettings from '../seller/SellerSettings';
 
-// Admin Imports
+// ============================================================
+// ✅ ADMIN IMPORTS
+// ============================================================
 import AdminPanel from '../admin/AdminPanel';
 import AdminProductForm from '../pages/AdminProductForm';
 import AdminCakesProductForm from '../pages/AdminCakesProductForm';
 import AdminDryFruitsForm from '../pages/AdminDryFruitsForm';
 import AdminSweetsForm from '../pages/AdminSweetsForm';
+import AdminHerbalForm from '../pages/AdminHerbalForm';
 import AdminSellerManagement from '../admin/AdminSellerManagement';
 
 // ============================================================
@@ -188,6 +199,24 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
           <Route path="/cakes/:id" element={<PageTransition><CakesDetailPage /></PageTransition>} />
           <Route path="/store/:slug" element={<PageTransition><StorePage /></PageTransition>} />
 
+          {/* ✅ HERBAL PAGES */}
+          <Route 
+            path="/herbal" 
+            element={
+              <PageTransition>
+                <HerbalPage />
+              </PageTransition>
+            } 
+          />
+          <Route 
+            path="/herbal/:id" 
+            element={
+              <PageTransition>
+                <HerbalDetailPage />
+              </PageTransition>
+            } 
+          />
+
           {/* ✅ SELLER REGISTRATION */}
           <Route 
             path="/seller/register" 
@@ -295,7 +324,8 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
               </AdminRoute>
             } 
           />
-          
+
+          {/* ✅ ADMIN PRODUCT FORMS */}
           <Route 
             path="/admin/products/add" 
             element={
@@ -379,6 +409,29 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
               <AdminRoute>
                 <PageTransition>
                   <AdminCakesProductForm />
+                </PageTransition>
+              </AdminRoute>
+            } 
+          />
+
+          {/* ✅ ADMIN HERBAL FORM — CORRECT PATH */}
+          <Route 
+            path="/admin/herbal/add" 
+            element={
+              <AdminRoute>
+                <PageTransition>
+                  <AdminHerbalForm />
+                </PageTransition>
+              </AdminRoute>
+            } 
+          />
+          
+          <Route 
+            path="/admin/herbal/edit/:id" 
+            element={
+              <AdminRoute>
+                <PageTransition>
+                  <AdminHerbalForm />
                 </PageTransition>
               </AdminRoute>
             } 

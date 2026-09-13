@@ -13,7 +13,8 @@ import {
   FaUtensils,
   FaShoePrints,
   FaShoppingBag,
-  FaGem
+  FaGem,
+  FaLeaf  // ✅ ADDED
 } from 'react-icons/fa';
 
 interface Category {
@@ -46,7 +47,7 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
   const [scrollLeft, setScrollLeft] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string>('dry-fruits');
 
-  // ✅ Categories Data with CORRECT links
+  // ✅ Categories Data — WITH HERBAL
   const categories: Category[] = [
     {
       id: 'dry-fruits',
@@ -57,6 +58,16 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
       color: 'text-amber-600',
       bgColor: 'bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40',
       activeBgColor: 'bg-amber-500 dark:bg-amber-600 text-white shadow-lg shadow-amber-500/30'
+    },
+    {
+      id: 'herbal',
+      name: 'Herbal & Natural',
+      icon: <FaLeaf className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-[#0F766E] group-hover:text-[#D4AF37] transition-colors" />,
+      link: '/herbal',
+      sectionId: 'herbal-section',
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40',
+      activeBgColor: 'bg-emerald-500 dark:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
     },
     {
       id: 'mens-fashion',
@@ -223,16 +234,14 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
     });
   };
 
-  // Handle category click — 🔥 Navigate to correct page
+  // Handle category click
   const handleCategoryClick = (e: React.MouseEvent, sectionId: string, link: string) => {
     e.preventDefault();
     
     console.log('🖱️ Category clicked:', link);
     
-    // ✅ ALWAYS NAVIGATE TO THE LINK
     navigate(link);
     
-    // If on home page, also scroll to section
     if (window.location.pathname === '/') {
       const targetElement = document.getElementById(sectionId);
       if (targetElement) {
@@ -279,7 +288,7 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
     setIsDragging(false);
   };
 
-  // Touch drag scrolling for mobile
+  // Touch drag scrolling
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsDragging(true);
     setStartX(e.touches[0].pageX - (scrollContainerRef.current?.offsetLeft || 0));
@@ -297,7 +306,7 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
     container.scrollLeft = scrollLeft - walk;
   };
 
-  // Update arrow visibility on scroll and resize
+  // Update arrow visibility
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -313,7 +322,7 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
     };
   }, []);
 
-  // ✅ Render icon with White Fill + Green Border (Vector Style)
+  // ✅ Render icon
   const renderIcon = (category: Category) => {
     return (
       <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-white border-2 border-[#0F766E] flex items-center justify-center shadow-sm transition-all duration-300 group-hover:border-[#D4AF37] group-hover:shadow-md">
@@ -374,14 +383,10 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
                     isActive ? 'scale-105' : ''
                   } ${isCompact ? 'p-1 sm:p-1.5 min-w-[60px] sm:min-w-[70px]' : 'p-1.5 sm:p-2 md:p-2.5 min-w-[65px] sm:min-w-[75px] md:min-w-[85px]'}`}
                 >
-                  {/* ✅ Vector Icon: White Fill + Green Border */}
-                  <div className={`transition-all duration-300 ${
-                    isActive ? 'scale-110' : ''
-                  }`}>
+                  <div className={`transition-all duration-300 ${isActive ? 'scale-110' : ''}`}>
                     {renderIcon(category)}
                   </div>
                   
-                  {/* Category Name */}
                   <span className={`font-medium text-center leading-tight transition-colors ${
                     isActive ? 'text-[#D4AF37]' : 'text-gray-700 dark:text-gray-300 group-hover:text-[#D4AF37]'
                   } ${isCompact ? 'text-[7px] sm:text-[8px]' : 'text-[8px] sm:text-[10px] md:text-[11px]'} line-clamp-1`}>
