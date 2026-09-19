@@ -1,3 +1,4 @@
+// src/config/firebase.ts
 import { initializeApp } from "firebase/app";
 
 import {
@@ -24,6 +25,7 @@ import {
   setDoc,
   arrayUnion,
   arrayRemove,
+  serverTimestamp,          // ✅ ADD THIS
 } from "firebase/firestore";
 
 import {
@@ -33,8 +35,17 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  updateProfile,  // ✅ ADD THIS
+  updateProfile,
 } from "firebase/auth";
+
+// ✅ App Check — reCAPTCHA Enterprise
+import {
+  initializeAppCheck,
+  ReCaptchaEnterpriseProvider,
+} from "firebase/app-check";
+
+// ✅ Firebase AI Logic
+import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
 
 import type {
   DocumentData,
@@ -54,9 +65,36 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
+// ✅ App Check — DEBUG MODE (development only)
+
+if (import.meta.env.DEV) {
+  // @ts-ignore
+  self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+}
+
+// ✅ App Check initialize — reCAPTCHA Enterprise
+initializeAppCheck(app, {
+  provider: new ReCaptchaEnterpriseProvider(
+    "6LejB7ktAAAAADhaoLndVS0tXbwgCZNT-tgwugUZ"  // 👈 yahan apni site key paste karo
+  ),
+  isTokenAutoRefreshEnabled: true,
+});
+
 const db = getFirestore(app);
 const storage = getStorage(app);
 const auth = getAuth(app);
+
+// ✅ AI Logic initialize
+const ai = getAI(app, { backend: new GoogleAIBackend() });
+
+// ✅ Store Builder Model (Gemini)
+const storeBuilderModel = getGenerativeModel(ai, {
+  model: "gemini-3.6-flash",
+  generationConfig: {
+    responseMimeType: "application/json",
+    temperature: 0.7,
+  },
+});
 
 export {
   app,
@@ -66,7 +104,7 @@ export {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  updateProfile,  // ✅ EXPORT THIS
+  updateProfile,
   db,
   collection,
   addDoc,
@@ -83,10 +121,13 @@ export {
   setDoc,
   arrayUnion,
   arrayRemove,
+  serverTimestamp,          // ✅ EXPORT THIS
   storage,
   ref,
   uploadBytesResumable,
   getDownloadURL,
+  ai,
+  storeBuilderModel,
 };
 
 export type {

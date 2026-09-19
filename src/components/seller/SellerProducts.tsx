@@ -1,7 +1,10 @@
 // src/components/seller/SellerProducts.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Eye, Search, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Search, Filter, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { db, collection, query, where, getDocs, deleteDoc, doc } from '../../config/firebase';
 
 interface Product {
   id: string;
@@ -15,28 +18,49 @@ interface Product {
 }
 
 const SellerProducts = () => {
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: '1',
-      name: 'Premium Ladies Suit',
-      category: 'Fashion',
-      price: 2500,
-      stock: 15,
-      status: 'approved',
-      image: 'https://via.placeholder.com/80',
-      createdAt: '2024-01-15',
-    },
-    {
-      id: '2',
-      name: 'Dry Fruit Gift Box',
-      category: 'Dry Fruits',
-      price: 1200,
-      stock: 8,
-      status: 'pending',
-      image: 'https://via.placeholder.com/80',
-      createdAt: '2024-01-14',
-    },
-  ]);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // ✅ Fetch seller's products from Firestore
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!user) return;
+      setLoading(true);
+      try {
+        const q = query(
+          collection(db, 'products'),
+          where('sellerId', '==', user.uid)
+        );
+        const snap = await getDocs(q);
+        const items: Product[] = [];
+        snap.forEach((d) => {
+          items.push({ id: d.id, ...d.data() } as Product);
+        });
+        setProducts(items);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [user]);
+
+  // ✅ Delete product
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    try {
+      await deleteDoc(doc(db, 'products', id));
+      setProducts(products.filter((p) => p.id !== id));
+      alert('🗑️ Product deleted');
+    } catch (error: any) {
+      alert('❌ Delete failed: ' + error.message);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -48,6 +72,20 @@ const SellerProducts = () => {
     }
   };
 
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="animate-spin text-4xl text-[#0F766E]" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -56,7 +94,12 @@ const SellerProducts = () => {
           <h1 className="text-2xl font-bold text-gray-800">My Products</h1>
           <p className="text-sm text-gray-500 mt-1">Manage your products</p>
         </div>
-        <button className="bg-gradient-to-r from-[#0F766E] to-[#065F46] text-white px-6 py-2.5 rounded-lg font-medium hover:shadow-lg transition-all duration-200 flex items-center gap-2">
+        
+        {/* ✅ Add Product Button — Working */}
+        <button
+          onClick={() => navigate('/seller/products/add')}
+          className="bg-gradient-to-r from-[#0F766E] to-[#065F46] text-white px-6 py-2.5 rounded-lg font-medium hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+        >
           <Plus size={20} />
           Add New Product
         </button>
@@ -69,74 +112,107 @@ const SellerProducts = () => {
           <input
             type="text"
             placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-[#0F766E] focus:border-[#0F766E]"
           />
         </div>
         <div className="flex gap-2">
-          <select className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-[#0F766E] focus:border-[#0F766E]">
-            <option>All Status</option>
-            <option>Pending</option>
-            <option>Approved</option>
-            <option>Rejected</option>
-            <option>Draft</option>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-[#0F766E] focus:border-[#0F766E]"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="draft">Draft</option>
           </select>
-          <button className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
-            <Filter size={18} />
-          </button>
         </div>
       </div>
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-1 gap-4">
-        {products.map((product, index) => (
-          <motion.div
-            key={product.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              {/* Image */}
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-20 h-20 object-cover rounded-lg"
-              />
+      {/* Products List */}
+      {filteredProducts.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+          <div className="text-6xl mb-4">📦</div>
+          <h3 className="text-xl font-semibold text-gray-600">No Products Yet</h3>
+          <p className="text-gray-400 mt-2 mb-6">
+            {products.length === 0 
+              ? "You haven't added any products yet. Click 'Add New Product' to start." 
+              : "Try adjusting your search or filter."}
+          </p>
+          {products.length === 0 && (
+            <button
+              onClick={() => navigate('/seller/products/add')}
+              className="bg-gradient-to-r from-[#0F766E] to-[#065F46] text-white px-6 py-2.5 rounded-lg font-medium hover:shadow-lg inline-flex items-center gap-2"
+            >
+              <Plus size={20} />
+              Add Your First Product
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {filteredProducts.map((product, index) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <img
+                  src={product.image || 'https://via.placeholder.com/80'}
+                  alt={product.name}
+                  className="w-20 h-20 object-cover rounded-lg"
+                />
 
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-gray-800 truncate">{product.name}</h3>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <span className="text-sm text-gray-500">{product.category}</span>
-                  <span className="text-xs text-gray-400">•</span>
-                  <span className="text-sm font-medium text-gray-800">Rs. {product.price}</span>
-                  <span className="text-xs text-gray-400">•</span>
-                  <span className="text-sm text-gray-500">Stock: {product.stock}</span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-gray-800 truncate">{product.name}</h3>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <span className="text-sm text-gray-500">{product.category}</span>
+                    <span className="text-xs text-gray-400">•</span>
+                    <span className="text-sm font-medium text-gray-800">Rs. {product.price}</span>
+                    <span className="text-xs text-gray-400">•</span>
+                    <span className="text-sm text-gray-500">Stock: {product.stock}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(product.status)}`}>
+                    {product.status?.charAt(0).toUpperCase() + product.status?.slice(1)}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => navigate(`/seller/products/view/${product.id}`)}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="View"
+                    >
+                      <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={() => navigate(`/seller/products/edit/${product.category}/${product.id}`)}
+                      className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(product.id, product.name)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {/* Status & Actions */}
-              <div className="flex items-center gap-3">
-                <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(product.status)}`}>
-                  {product.status.charAt(0).toUpperCase() + product.status.slice(1)}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                    <Eye size={18} />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors">
-                    <Edit size={18} />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

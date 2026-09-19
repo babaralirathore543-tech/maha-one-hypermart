@@ -6,7 +6,7 @@ import {
   Store, User, Mail, Phone, MapPin, Loader2 
 } from 'lucide-react';
 import { 
-  collection, query, getDocs, doc, updateDoc,
+  collection, query, getDocs, doc, updateDoc, setDoc,   // ✅ setDoc add kiya
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
@@ -121,19 +121,22 @@ const AdminSellerManagement = () => {
       });
       console.log('✅ Seller status updated');
 
-      // ✅ Step 2: Update users collection (optional)
+      // ✅ Step 2: Create/Update users collection with setDoc
       if (app.userId) {
         try {
           const userRef = doc(db, 'users', app.userId);
-          await updateDoc(userRef, {
+          await setDoc(userRef, {
             role: 'seller',
+            email: app.email || '',
+            name: app.fullName || '',
+            phone: app.phone || '',
             isActive: true,
             isVerified: true,
             updatedAt: serverTimestamp(),
-          });
-          console.log('✅ User role updated');
+          }, { merge: true });   // ✅ merge: true zaroori hai
+          console.log('✅ User role set to seller');
         } catch (userError: any) {
-          console.warn('⚠️ Users update failed (skipping):', userError.message);
+          console.error('❌ Users update failed:', userError.message);
         }
       }
 

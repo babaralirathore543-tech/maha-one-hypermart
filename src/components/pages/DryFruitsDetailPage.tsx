@@ -1,14 +1,17 @@
 // src/components/pages/DryFruitsDetailPage.tsx
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { 
-  FaStar, FaShoppingCart, FaArrowLeft, 
+import {
+  FaStar, FaShoppingCart, FaArrowLeft,
   FaTruck, FaShieldAlt, FaLeaf, FaChevronLeft, FaChevronRight,
-  FaCircle, FaSpinner, FaShare, FaWhatsapp, FaCalendarAlt, FaQuoteLeft} from 'react-icons/fa';
+  FaCircle, FaSpinner, FaShare, FaWhatsapp, FaCalendarAlt, FaQuoteLeft
+} from 'react-icons/fa';
+import { Store, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { db, doc, getDoc, collection, getDocs, query, where } from '../../config/firebase';
+import { getStoreSlug } from '../../utils/getStoreSlug';
 
-// ✅ Product Interface - Matching AdminDryFruitsForm
+// ✅ Product Interface
 interface DryFruitsProduct {
   id: string;
   name: string;
@@ -41,11 +44,11 @@ interface DryFruitsProduct {
   isOrganic?: boolean;
   isPremium?: boolean;
   status?: string;
+  sellerId?: string;
   createdAt?: any;
   updatedAt?: any;
 }
 
-// ✅ Weight Variant Interface
 interface WeightVariant {
   id: string;
   weight: string;
@@ -57,7 +60,6 @@ interface WeightVariant {
   sku: string;
 }
 
-// ✅ Review Interface
 interface Review {
   id: string;
   name: string;
@@ -67,7 +69,7 @@ interface Review {
   avatar?: string;
 }
 
-// ✅ Helper function to convert description to bullet points
+// ✅ Helper function
 const formatDescription = (text: string) => {
   if (!text) return [];
   const lines = text.split('\n').filter(line => line.trim());
@@ -97,13 +99,12 @@ const DryFruitsDetailPage = () => {
   const [mainImage, setMainImage] = useState('');
   const [imageLoaded, setImageLoaded] = useState(false);
   const [suggestedProducts, setSuggestedProducts] = useState<DryFruitsProduct[]>([]);
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
-  
-  // ✅ Reviews State
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewLoading, setReviewLoading] = useState(false);
 
-  // ✅ Fetch Product from Firebase
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) {
@@ -111,21 +112,17 @@ const DryFruitsDetailPage = () => {
         setLoading(false);
         return;
       }
-      
+
       try {
         setLoading(true);
         setError(null);
-        
-        console.log('🔵 Fetching product with ID:', id);
-        
+
         const docRef = doc(db, 'products', id);
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
           const data = docSnap.data();
-          console.log('🔵 Product data found:', data.name);
-          
-          // Check if product is dry fruits
+
           if (data.category === 'dryfruits' || data.category === 'dry-fruits') {
             const productData: DryFruitsProduct = {
               id: docSnap.id,
@@ -159,18 +156,18 @@ const DryFruitsDetailPage = () => {
               isOrganic: data.isOrganic || false,
               isPremium: data.isPremium || false,
               status: data.status || 'active',
+              sellerId: data.sellerId || '',
               createdAt: data.createdAt,
               updatedAt: data.updatedAt
             };
-            
+
             setProduct(productData);
-            
-            // Set default selected weight variant
+
             if (data.weightVariants && data.weightVariants.length > 0) {
               setSelectedVariant(data.weightVariants[0]);
               setSelectedWeight(data.weightVariants[0].weight);
             }
-            
+
             const images = data.images || [];
             if (images.length > 0) {
               setMainImage(images[0]);
@@ -178,12 +175,10 @@ const DryFruitsDetailPage = () => {
               setMainImage(data.image);
             }
 
-            // ✅ Fetch suggested products
             await fetchSuggestedProducts(docSnap.id);
-            // ✅ Fetch reviews
             await fetchReviews(docSnap.id);
           } else {
-            setError(`Product is not in dry fruits category (found: ${data.category})`);
+            setError(`Product is not in dry fruits category`);
           }
         } else {
           setError('Product not found');
@@ -198,7 +193,6 @@ const DryFruitsDetailPage = () => {
 
     const fetchSuggestedProducts = async (currentId: string) => {
       try {
-        console.log('🔵 Fetching suggested products...');
         const q = query(
           collection(db, 'products'),
           where('category', 'in', ['dryfruits', 'dry-fruits']),
@@ -206,7 +200,7 @@ const DryFruitsDetailPage = () => {
         );
         const querySnapshot = await getDocs(q);
         const dryFruitsProducts: DryFruitsProduct[] = [];
-        
+
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           if (doc.id !== currentId) {
@@ -242,6 +236,7 @@ const DryFruitsDetailPage = () => {
               isOrganic: data.isOrganic || false,
               isPremium: data.isPremium || false,
               status: data.status || 'active',
+              sellerId: data.sellerId || '',
               createdAt: data.createdAt,
               updatedAt: data.updatedAt
             });
@@ -250,13 +245,11 @@ const DryFruitsDetailPage = () => {
 
         const shuffled = [...dryFruitsProducts].sort(() => 0.5 - Math.random());
         setSuggestedProducts(shuffled.slice(0, 8));
-        console.log('✅ Suggested products loaded:', shuffled.slice(0, 8).length);
       } catch (error) {
         console.error('Error fetching suggested products:', error);
       }
     };
 
-    // ✅ Fetch Reviews from Firebase
     const fetchReviews = async (productId: string) => {
       try {
         setReviewLoading(true);
@@ -267,7 +260,6 @@ const DryFruitsDetailPage = () => {
           ...doc.data()
         } as Review));
         setReviews(reviewsData);
-        console.log('✅ Reviews loaded:', reviewsData.length);
       } catch (error) {
         console.error('Error fetching reviews:', error);
       } finally {
@@ -278,11 +270,17 @@ const DryFruitsDetailPage = () => {
     fetchProduct();
   }, [id]);
 
-  // ✅ Get current variant price
-  const getCurrentVariant = () => {
-    if (selectedVariant) {
-      return selectedVariant;
+  // ✅ Fetch store slug
+  useEffect(() => {
+    if (!product?.sellerId) {
+      setStoreSlug(null);
+      return;
     }
+    getStoreSlug(product.sellerId).then(setStoreSlug);
+  }, [product?.sellerId]);
+
+  const getCurrentVariant = () => {
+    if (selectedVariant) return selectedVariant;
     if (product?.weightVariants && product.weightVariants.length > 0) {
       return product.weightVariants[0];
     }
@@ -306,7 +304,6 @@ const DryFruitsDetailPage = () => {
 
   const discountPercent = getDiscountPercent();
 
-  // ✅ Get all images
   const getAllImages = () => {
     if (!product) return [];
     const images = product.images || [];
@@ -315,9 +312,7 @@ const DryFruitsDetailPage = () => {
 
   const images = getAllImages();
 
-  const isInStock = () => {
-    return currentStock > 0;
-  };
+  const isInStock = () => currentStock > 0;
 
   const nextImage = () => {
     if (images.length <= 1) return;
@@ -336,15 +331,11 @@ const DryFruitsDetailPage = () => {
   };
 
   const scrollLeft = (ref: React.RefObject<HTMLDivElement>) => {
-    if (ref.current) {
-      ref.current.scrollBy({ left: -280, behavior: 'smooth' });
-    }
+    if (ref.current) ref.current.scrollBy({ left: -280, behavior: 'smooth' });
   };
 
   const scrollRight = (ref: React.RefObject<HTMLDivElement>) => {
-    if (ref.current) {
-      ref.current.scrollBy({ left: 280, behavior: 'smooth' });
-    }
+    if (ref.current) ref.current.scrollBy({ left: 280, behavior: 'smooth' });
   };
 
   if (loading) {
@@ -364,9 +355,7 @@ const DryFruitsDetailPage = () => {
         <div className="text-center max-w-md mx-auto px-4">
           <div className="text-6xl mb-4">🥜</div>
           <h1 className="text-2xl font-bold text-[#111827] dark:text-white">Product Not Found</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">
-            {error || 'The product you are looking for does not exist.'}
-          </p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">{error || 'Product does not exist.'}</p>
           <p className="text-xs text-gray-400 mt-1">Product ID: {id}</p>
           <Link to="/shop" className="inline-block mt-4 bg-[#D4AF37] text-white px-6 py-2 rounded-full hover:bg-[#b8941f] transition">
             Back to Shop
@@ -378,31 +367,26 @@ const DryFruitsDetailPage = () => {
 
   const descriptionLines = formatDescription(product.description);
 
-  // ✅ Calculate review stats
-  const avgRating = reviews.length > 0 
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+  const avgRating = reviews.length > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : 0;
-  
+
   const ratingDistribution = [0, 0, 0, 0, 0];
   reviews.forEach(r => {
-    if (r.rating >= 1 && r.rating <= 5) {
-      ratingDistribution[r.rating - 1]++;
-    }
+    if (r.rating >= 1 && r.rating <= 5) ratingDistribution[r.rating - 1]++;
   });
 
   return (
     <div className="bg-[#FFFDF7] dark:bg-[#111827] min-h-screen">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-16 sm:pt-6 md:pt-8 lg:pt-12 pb-4 sm:pb-6 md:pb-8 lg:pb-12">
-        
+
         <Link to="/shop" className="inline-flex items-center gap-2 text-[#0F766E] dark:text-[#14b8a6] hover:text-[#D4AF37] transition mb-3 sm:mb-4 md:mb-6 text-xs sm:text-sm md:text-base">
           <FaArrowLeft className="text-xs sm:text-sm md:text-base" /> Back to Shop
         </Link>
 
         <div className="grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-12">
-          
-          {/* ============================================================
-          PRODUCT IMAGES GALLERY
-          ============================================================ */}
+
+          {/* PRODUCT IMAGES */}
           <div className="relative">
             <div className="bg-[#F5F3FF] dark:bg-[#1F2937] rounded-3xl overflow-hidden border-4 border-purple-500 shadow-xl shadow-purple-500/20 relative">
               <div className="w-full h-[300px] sm:h-[400px] md:h-[450px] lg:h-[500px] relative flex items-center justify-center bg-[#F5F3FF] dark:bg-[#1F2937]">
@@ -424,7 +408,7 @@ const DryFruitsDetailPage = () => {
                   </div>
                 )}
               </div>
-              
+
               {images.length > 1 && (
                 <>
                   <button
@@ -505,11 +489,9 @@ const DryFruitsDetailPage = () => {
             )}
           </div>
 
-          {/* ============================================================
-          PRODUCT INFO
-          ============================================================ */}
+          {/* PRODUCT INFO */}
           <div className="flex flex-col gap-3 sm:gap-4 md:gap-5 overflow-visible">
-            
+
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <span className="bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium capitalize">
                 🥜 {product.subCategory || 'Dry Fruits'}
@@ -526,6 +508,18 @@ const DryFruitsDetailPage = () => {
                 <span className="text-gray-400 dark:text-gray-500 text-[10px] ml-0.5">({product.rating})</span>
               </div>
             </div>
+
+            {/* ✅ VISIT STORE BUTTON */}
+            {storeSlug && (
+              <Link
+                to={`/store/${storeSlug}`}
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#0F766E] hover:text-[#065F46] transition-all duration-200 px-3 py-2 rounded-lg hover:bg-[#0F766E]/5 border border-[#0F766E]/20 w-fit"
+              >
+                <Store size={16} />
+                <span>Visit Store</span>
+                <ChevronRightIcon size={14} className="opacity-60" />
+              </Link>
+            )}
 
             <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[#111827] dark:text-white leading-tight">
               {product.name}
@@ -559,7 +553,7 @@ const DryFruitsDetailPage = () => {
               </span>
             </div>
 
-            {/* ✅ Weight Variants */}
+            {/* Weight Variants */}
             {product.weightVariants && product.weightVariants.length > 0 && (
               <div>
                 <label className="block text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-1.5">
@@ -596,7 +590,7 @@ const DryFruitsDetailPage = () => {
               <div className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm leading-relaxed space-y-1">
                 {descriptionLines.length > 0 ? (
                   descriptionLines.map((line, idx) => {
-                    if (line.includes('🥜') || line.includes('🌰') || line.includes('✨') || 
+                    if (line.includes('🥜') || line.includes('🌰') || line.includes('✨') ||
                         line.includes('⭐') || line.includes('🌟') ||
                         (line.length < 40 && line === line.toUpperCase() && line.trim().length > 0)) {
                       return (
@@ -627,7 +621,6 @@ const DryFruitsDetailPage = () => {
               </div>
             </div>
 
-            {/* Benefits */}
             {product.benefits && product.benefits.length > 0 && (
               <div className="p-2.5 sm:p-3 md:p-4 bg-[#F8FAFC] dark:bg-[#1F2937] rounded-xl border border-[#E5E7EB] dark:border-gray-700">
                 <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-[#111827] dark:text-white mb-1">✨ Key Benefits:</p>
@@ -718,8 +711,8 @@ const DryFruitsDetailPage = () => {
                 }}
                 disabled={!isInStock()}
                 className={`px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 ${
-                  isInStock() 
-                    ? 'bg-[#D4AF37] text-white hover:bg-[#b8941f] cursor-pointer' 
+                  isInStock()
+                    ? 'bg-[#D4AF37] text-white hover:bg-[#b8941f] cursor-pointer'
                     : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50'
                 }`}
               >
@@ -735,15 +728,13 @@ const DryFruitsDetailPage = () => {
                     text: `Check out ${product.name} at Maha One Hypermart!`,
                     url: window.location.href
                   };
-
                   if (navigator.share) {
                     navigator.share(shareData).catch(() => {});
                     return;
                   }
-
                   const fullText = `${shareData.text}\n${shareData.url}`;
                   navigator.clipboard.writeText(fullText).then(() => {
-                    alert('✅ Link copied to clipboard! Share it anywhere.');
+                    alert('✅ Link copied to clipboard!');
                   }).catch(() => {
                     window.location.href = `mailto:?subject=${encodeURIComponent(shareData.title)}&body=${encodeURIComponent(fullText)}`;
                   });
@@ -752,7 +743,6 @@ const DryFruitsDetailPage = () => {
               >
                 <FaShare /> Share
               </button>
-
               <button
                 onClick={() => {
                   const message = `Check out ${product.name} at Maha One Hypermart! ${window.location.href}`;
@@ -781,9 +771,7 @@ const DryFruitsDetailPage = () => {
           </div>
         </div>
 
-        {/* ============================================================
-        SUGGESTED PRODUCTS SLIDER
-        ============================================================ */}
+        {/* Suggested Products */}
         {suggestedProducts.length > 0 && (
           <div className="mt-8 sm:mt-10 md:mt-12">
             <div className="flex items-center justify-between mb-4">
@@ -794,8 +782,8 @@ const DryFruitsDetailPage = () => {
                 View All <span className="text-xs">→</span>
               </Link>
             </div>
-            <ProductSlider 
-              products={suggestedProducts} 
+            <ProductSlider
+              products={suggestedProducts}
               sliderRef={sliderRef}
               scrollLeft={() => scrollLeft(sliderRef)}
               scrollRight={() => scrollRight(sliderRef)}
@@ -804,9 +792,7 @@ const DryFruitsDetailPage = () => {
           </div>
         )}
 
-        {/* ============================================================
-        CUSTOMER REVIEWS
-        ============================================================ */}
+        {/* Reviews */}
         <div className="mt-10 sm:mt-12 md:mt-14">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#111827] dark:text-white flex items-center gap-2">
@@ -823,7 +809,7 @@ const DryFruitsDetailPage = () => {
           ) : reviews.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {reviews.map((review) => (
-                <div 
+                <div
                   key={review.id}
                   className="bg-white dark:bg-[#1F2937] rounded-2xl p-5 sm:p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 hover:-translate-y-1"
                 >
@@ -837,8 +823,8 @@ const DryFruitsDetailPage = () => {
                     {review.comment}
                   </p>
                   <div className="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <img 
-                      src={review.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.name || 'User')}&background=0F766E&color=fff&size=60`} 
+                    <img
+                      src={review.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.name || 'User')}&background=0F766E&color=fff&size=60`}
                       alt={review.name || 'User'}
                       className="w-10 h-10 rounded-full object-cover border-2 border-[#D4AF37]/30"
                       onError={(e) => {
@@ -903,7 +889,7 @@ const DryFruitsDetailPage = () => {
   );
 };
 
-// ✅ Product Slider Component
+// Product Slider
 interface ProductSliderProps {
   products: DryFruitsProduct[];
   sliderRef: React.RefObject<HTMLDivElement>;
@@ -912,12 +898,12 @@ interface ProductSliderProps {
   addToCart: (product: any) => void;
 }
 
-const ProductSlider: React.FC<ProductSliderProps> = ({ 
-  products, 
-  sliderRef, 
-  scrollLeft, 
+const ProductSlider: React.FC<ProductSliderProps> = ({
+  products,
+  sliderRef,
+  scrollLeft,
   scrollRight,
-  addToCart 
+  addToCart
 }) => {
   return (
     <div className="relative">

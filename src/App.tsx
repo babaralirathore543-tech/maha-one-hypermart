@@ -1,11 +1,11 @@
 // src/App.tsx
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 import { auth, onAuthStateChanged, db } from './config/firebase';
 
@@ -15,6 +15,7 @@ import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import WhatsAppButton from './components/common/WhatsAppButton';
 import Popup from './components/common/Popup';
+import PageLoader from './components/common/PageLoader';
 
 import AdminPanel from './components/admin/AdminPanel';
 
@@ -23,108 +24,105 @@ import MaintenancePage from './components/pages/MaintenancePage';
 import LoginPage from './components/pages/LoginPage';
 
 // ============================================================
-// ADMIN ROUTE
+// ADMIN ROUTE — uses AuthContext (Firestore role)
 // ============================================================
-const ADMIN_EMAIL = 'mahaonehypermarket@gmail.com';
-
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [checking, setChecking] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, loading, isAdmin } = useAuth();
+  const location = useLocation();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (!firebaseUser) {
-        setIsAdmin(false);
-        setChecking(false);
-        window.location.replace('/login');
-        return;
-      }
+  // ✅ Wait for auth
+  if (loading) return <PageLoader />;
 
-      if (firebaseUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-        window.location.replace('/');
-      }
-
-      setChecking(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0F766E] mx-auto"></div>
-          <p className="mt-4 text-gray-500 text-sm">Checking admin access...</p>
-        </div>
-      </div>
-    );
+  // ✅ Not logged in → login with return URL
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  if (!isAdmin) return null;
+  // ✅ Logged in but not admin → home
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 };
 
 // ============================================================
-// ✅ SELLER ROUTE — Approved Seller Only
+// SELLER ROUTE — uses AuthContext + seller doc check
 // ============================================================
 const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
   const [checking, setChecking] = useState(true);
-  const [isApprovedSeller, setIsApprovedSeller] = useState(false);
+  const [sellerStatus, setSellerStatus] = useState<
+    'approved' | 'pending' | 'rejected' | 'none' | null
+  >(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) {
-        setIsApprovedSeller(false);
-        setChecking(false);
-        window.location.replace('/login');
-        return;
-      }
+    // ✅ Wait for auth loading before checking seller
+    if (loading) return;
 
+    if (!user) {
+      setChecking(false);
+      setSellerStatus('none');
+      return;
+    }
+
+    let cancelled = false;
+
+    const checkSeller = async () => {
       try {
-        const sellerDoc = await getDoc(doc(db, 'sellers', firebaseUser.uid));
+        const sellerDoc = await getDoc(doc(db, 'sellers', user.uid));
+        if (cancelled) return;
 
         if (sellerDoc.exists()) {
-          const data = sellerDoc.data();
-
-          if (data.verificationStatus === 'approved') {
-            setIsApprovedSeller(true);
-          } else {
-            setIsApprovedSeller(false);
-            alert(`⏳ Your seller account is ${data.verificationStatus}. Please wait for admin approval.`);
-            window.location.replace('/');
-          }
+          const status = sellerDoc.data().verificationStatus;
+          setSellerStatus(
+            status === 'approved'
+              ? 'approved'
+              : status === 'rejected'
+              ? 'rejected'
+              : 'pending'
+          );
         } else {
-          setIsApprovedSeller(false);
-          window.location.replace('/seller/register');
+          setSellerStatus('none');
         }
       } catch (error) {
         console.error('❌ Error checking seller status:', error);
-        setIsApprovedSeller(false);
-        window.location.replace('/');
+        if (!cancelled) setSellerStatus('none');
       } finally {
-        setChecking(false);
+        if (!cancelled) setChecking(false);
       }
-    });
+    };
 
-    return () => unsubscribe();
-  }, []);
+    checkSeller();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, loading]);
 
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0F766E] mx-auto"></div>
-          <p className="mt-4 text-gray-500 text-sm">Checking seller access...</p>
-        </div>
-      </div>
-    );
+  // ✅ Wait for both auth and seller doc
+  if (loading || checking) return <PageLoader />;
+
+  // ✅ Not logged in
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  if (!isApprovedSeller) return null;
+  // ✅ No seller application → go to register
+  if (sellerStatus === 'none') {
+    return <Navigate to="/seller/register" replace />;
+  }
+
+  // ✅ Pending → go to home (or dedicated page)
+  if (sellerStatus === 'pending') {
+    return <Navigate to="/" replace />;
+  }
+
+  // ✅ Rejected → go to home
+  if (sellerStatus === 'rejected') {
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -135,9 +133,9 @@ function App() {
   const SHOW_EID_MILAD = false;
   const MAINTENANCE_MODE = false;
 
-  // ==========================================================
+  // ─────────────────────────────────────────────
   // EID MILAD MODE
-  // ==========================================================
+  // ─────────────────────────────────────────────
   if (SHOW_EID_MILAD) {
     return (
       <ThemeProvider>
@@ -150,9 +148,9 @@ function App() {
     );
   }
 
-  // ==========================================================
+  // ─────────────────────────────────────────────
   // MAINTENANCE MODE
-  // ==========================================================
+  // ─────────────────────────────────────────────
   if (MAINTENANCE_MODE) {
     return (
       <ThemeProvider>
@@ -174,42 +172,37 @@ function App() {
     );
   }
 
-  // ==========================================================
-  // NORMAL WEBSITE — ANIMATED ROUTES WITH LOADER
-  // ==========================================================
+  // ─────────────────────────────────────────────
+  // NORMAL WEBSITE
+  // ─────────────────────────────────────────────
   return (
-    <ThemeProvider>
-      <CartProvider>
+    <Router>
+      <ThemeProvider>
         <AuthProvider>
-          <Router>
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F8FAFC] via-[#FFFDF7] to-[#F8FAFC] p-3 sm:p-4 md:p-6">
-              <div className="w-full max-w-7xl mx-auto bg-white dark:bg-[#1F2937] rounded-2xl sm:rounded-3xl shadow-2xl dark:shadow-gray-900/50 overflow-hidden border border-gray-200 dark:border-gray-700 transition-all duration-500 animate-float-box">
-                <div className="min-h-screen flex flex-col">
-                  <Navbar />
+          <CartProvider>
+            <div className="min-h-screen flex flex-col bg-[#FFFDF7] dark:bg-[#111827]">
+              <Navbar />
 
-                  <main className="flex-grow">
-                    {/* ✅ PASS PROPS TO AnimatedRoutes */}
-                    <AnimatedRoutes
-                      AdminRoute={AdminRoute}
-                      SellerRoute={SellerRoute}
-                    />
-                  </main>
+              <main className="flex-grow">
+                <AnimatedRoutes
+                  AdminRoute={AdminRoute}
+                  SellerRoute={SellerRoute}
+                />
+              </main>
 
-                  <Footer />
-                </div>
-              </div>
-
-              <WhatsAppButton />
-
-              <Popup
-                image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
-                delay={2000}
-              />
+              <Footer />
             </div>
-          </Router>
+
+            <WhatsAppButton />
+
+            <Popup
+              image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
+              delay={2000}
+            />
+          </CartProvider>
         </AuthProvider>
-      </CartProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </Router>
   );
 }
 

@@ -97,7 +97,28 @@ const LoginPage: React.FC = () => {
       }
 
       // ✅ Determine role from userData.role
-      const userRole = userData.role || 'customer';
+      let userRole = userData.role || 'customer';
+
+      // ==========================================
+      // ✅ FALLBACK: Agar users doc mein role nahi hai,
+      //             toh sellers collection check karo
+      // ==========================================
+      if (userRole === 'customer') {
+        try {
+          const sellerCheckRef = doc(db, 'sellers', firebaseUser.uid);
+          const sellerCheckSnap = await getDoc(sellerCheckRef);
+
+          if (sellerCheckSnap.exists()) {
+            const sellerCheckData = sellerCheckSnap.data();
+            if (sellerCheckData.verificationStatus === 'approved') {
+              userRole = 'seller';
+              console.log('✅ Role detected from sellers collection: seller');
+            }
+          }
+        } catch (err) {
+          console.warn('⚠️ Sellers check failed:', err);
+        }
+      }
 
       const user = {
         id: firebaseUser.uid,

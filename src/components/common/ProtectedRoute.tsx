@@ -1,19 +1,30 @@
-import { Navigate } from 'react-router-dom';
+// src/components/common/ProtectedRoute.tsx
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import PageLoader from './PageLoader';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
+  // ✅ Wait for auth before deciding
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0F766E]"></div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
+  // ✅ Not logged in → redirect with return URL
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
   }
 
   return <>{children}</>;

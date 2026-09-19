@@ -1,14 +1,15 @@
 // src/components/common/AnimatedRoutes.tsx
-import { Routes, Route, useLocation, Link } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
 
-// 🔥 IMPORT LOADING SCREEN
+import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+
 import LoadingScreen from './LoadingScreen';
 
 // ============================================================
 // PAGE IMPORTS
 // ============================================================
+// ❌ LandingPage REMOVED
 import HomePage from '../pages/HomePage';
 import DryFruitsPage from '../pages/DryFruitsPage';
 import SweetsPage from '../pages/SweetsPage';
@@ -25,25 +26,20 @@ import AboutPage from '../pages/AboutPage';
 import ContactPage from '../pages/ContactPage';
 import CategoryPage from '../pages/CategoryPage';
 import WishlistPage from '../pages/WishlistPage';
-import DashboardPage from '../pages/DashboardPage';
 import CakesPage from '../pages/CakesPage';
 import CakesDetailPage from '../pages/CakesDetailPage';
-import StorePage from '../pages/public/StorePage';
-
-// ============================================================
-// ✅ HERBAL PAGES — CORRECT PATHS
-// ============================================================
+import CustomerLayout from '../customer/CustomerLayout';
+import CustomerDashboard from '../customer/CustomerDashboard';
+import OrdersTab from '../customer/tabs/OrdersTab';
+import WishlistTab from '../customer/tabs/WishlistTab';
+import AddressesTab from '../customer/tabs/AddressesTab';
+import PaymentsTab from '../customer/tabs/PaymentsTab';
+import HistoryTab from '../customer/tabs/HistoryTab';
+import SettingsTab from '../customer/tabs/SettingsTab';
 import HerbalPage from '../pages/HerbalPage';
 import HerbalDetailPage from '../pages/HerbalDetailPage';
-
-// ============================================================
-// ✅ SELLER REGISTRATION
-// ============================================================
 import SellerRegistration from './seller/SellerRegistration';
-
-// ============================================================
-// ✅ SELLER COMPONENTS
-// ============================================================
+import SellerTermsPage from '../pages/SellerTermsPage';
 import SellerLayout from '../seller/SellerLayout';
 import SellerDashboard from '../seller/SellerDashboard';
 import SellerProducts from '../seller/SellerProducts';
@@ -51,21 +47,20 @@ import SellerOrders from '../seller/SellerOrders';
 import SellerEarnings from '../seller/SellerEarnings';
 import SellerStore from '../seller/SellerStore';
 import SellerSettings from '../seller/SellerSettings';
-
-// ============================================================
-// ✅ ADMIN IMPORTS
-// ============================================================
+import SellerProductPage from '../seller/SellerProductPage';
+import StoreBuilderWizard from '../seller/store-builder/StoreBuilderWizard';
+import PublicStorePage from '../pages/PublicStorePage';
+import ProductDetailPage from '../store/ProductDetailPage';
 import AdminPanel from '../admin/AdminPanel';
-import AdminProductForm from '../pages/AdminProductForm';
 import AdminCakesProductForm from '../pages/AdminCakesProductForm';
 import AdminDryFruitsForm from '../pages/AdminDryFruitsForm';
 import AdminSweetsForm from '../pages/AdminSweetsForm';
 import AdminHerbalForm from '../pages/AdminHerbalForm';
 import AdminSellerManagement from '../admin/AdminSellerManagement';
+import AdminProductsApproval from '../admin/AdminProductsApproval';
+import AdminCategorySelector from '../pages/admin/AdminCategorySelector';
+import AdminProductFormNew from '../admin/AdminProductForm';
 
-// ============================================================
-// ✅ PROPS INTERFACE
-// ============================================================
 interface AnimatedRoutesProps {
   AdminRoute: React.FC<{ children: React.ReactNode }>;
   SellerRoute: React.FC<{ children: React.ReactNode }>;
@@ -75,21 +70,9 @@ interface AnimatedRoutesProps {
 // PAGE TRANSITION VARIANTS
 // ============================================================
 const pageVariants = {
-  initial: {
-    opacity: 0,
-    y: 20,
-    scale: 0.98,
-  },
-  in: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-  },
-  out: {
-    opacity: 0,
-    y: -20,
-    scale: 0.98,
-  },
+  initial: { opacity: 0, y: 20, scale: 0.98 },
+  in: { opacity: 1, y: 0, scale: 1 },
+  out: { opacity: 0, y: -20, scale: 0.98 },
 };
 
 const pageTransition = {
@@ -98,91 +81,57 @@ const pageTransition = {
   duration: 0.5,
 };
 
-// ============================================================
-// PAGE TRANSITION COMPONENT
-// ============================================================
-const PageTransition = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <motion.div
-      initial="initial"
-      animate="in"
-      exit="out"
-      variants={pageVariants}
-      transition={pageTransition}
-      className="w-full"
-    >
-      {children}
-    </motion.div>
-  );
-};
+const PageTransition = ({ children }: { children: React.ReactNode }) => (
+  <motion.div
+    initial="initial"
+    animate="in"
+    exit="out"
+    variants={pageVariants}
+    transition={pageTransition}
+    className="w-full"
+  >
+    {children}
+  </motion.div>
+);
 
 // ============================================================
-// MAIN ANIMATED ROUTES WITH LOADER
+// MAIN ANIMATED ROUTES
 // ============================================================
 const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(true);
-  const [prevPath, setPrevPath] = useState(location.pathname);
-  const [loadingCount, setLoadingCount] = useState(0);
+  const [showSplash, setShowSplash] = useState(true);
+  const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 🔥 INITIAL LOAD
+  // ✅ Splash ONLY on very first mount
   useEffect(() => {
-    console.log('🔄 Initial load started');
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      console.log('✅ Initial load complete');
-    }, 2000);
-    
-    return () => clearTimeout(timer);
+    splashTimerRef.current = setTimeout(() => setShowSplash(false), 1200);
+    return () => {
+      if (splashTimerRef.current) clearTimeout(splashTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 🔥 ROUTE CHANGE PAR LOADER SHOW
+  // ✅ Safety net
   useEffect(() => {
-    if (prevPath !== location.pathname) {
-      console.log('🔄 Route changed from:', prevPath, 'to:', location.pathname);
-      setLoadingCount(prev => prev + 1);
-      setIsLoading(true);
-      setPrevPath(location.pathname);
-      
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-        console.log('✅ Route load complete for:', location.pathname);
-      }, 1500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [location.pathname, prevPath]);
-
-  // 🔥 EMERGENCY TIMEOUT
-  useEffect(() => {
-    if (isLoading) {
-      const emergencyTimer = setTimeout(() => {
-        console.warn('⚠️ Loading stuck! Force resetting...');
-        setIsLoading(false);
-      }, 5000);
-      
-      return () => clearTimeout(emergencyTimer);
-    }
-  }, [isLoading]);
-
-  // 🔥 Console log for debugging
-  useEffect(() => {
-    console.log('📊 Current state:', { isLoading, pathname: location.pathname, loadingCount });
-  }, [isLoading, location.pathname, loadingCount]);
+    if (!showSplash) return;
+    const emergency = setTimeout(() => setShowSplash(false), 5000);
+    return () => clearTimeout(emergency);
+  }, [showSplash]);
 
   return (
     <>
-      {/* 🔥 LOADING SCREEN */}
-      {isLoading && <LoadingScreen />}
-      
-      {/* 🔥 PAGE CONTENT */}
+      {showSplash && <LoadingScreen />}
+
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          
-          {/* ==================================================
-              PUBLIC ROUTES
-          ================================================== */}
-          <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+
+          {/* ✅ ROOT — redirect to /home */}
+          <Route path="/" element={<Navigate to="/home" replace />} />
+
+          {/* CUSTOMER HOME */}
+          <Route path="/home" element={<PageTransition><HomePage /></PageTransition>} />
+
+          {/* PUBLIC */}
           <Route path="/shop" element={<PageTransition><DryFruitsPage /></PageTransition>} />
           <Route path="/sweets" element={<PageTransition><SweetsPage /></PageTransition>} />
           <Route path="/fashion" element={<PageTransition><FashionPage /></PageTransition>} />
@@ -197,41 +146,24 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
           <Route path="/category/:categoryName" element={<PageTransition><CategoryPage /></PageTransition>} />
           <Route path="/cakes" element={<PageTransition><CakesPage /></PageTransition>} />
           <Route path="/cakes/:id" element={<PageTransition><CakesDetailPage /></PageTransition>} />
-          <Route path="/store/:slug" element={<PageTransition><StorePage /></PageTransition>} />
 
-          {/* ✅ HERBAL PAGES */}
-          <Route 
-            path="/herbal" 
-            element={
-              <PageTransition>
-                <HerbalPage />
-              </PageTransition>
-            } 
-          />
-          <Route 
-            path="/herbal/:id" 
-            element={
-              <PageTransition>
-                <HerbalDetailPage />
-              </PageTransition>
-            } 
-          />
+          {/* AI STORES */}
+          <Route path="/store/:slug" element={<PageTransition><PublicStorePage /></PageTransition>} />
 
-          {/* ✅ SELLER REGISTRATION */}
-          <Route 
-            path="/seller/register" 
-            element={
-              <PageTransition>
-                <SellerRegistration />
-              </PageTransition>
-            } 
-          />
+          {/* GENERIC PRODUCT */}
+          <Route path="/product/:id" element={<PageTransition><ProductDetailPage /></PageTransition>} />
 
-          {/* ==================================================
-              ✅ SELLER ROUTES — PROTECTED BY SellerRoute
-          ================================================== */}
-          <Route 
-            path="/seller" 
+          {/* HERBAL */}
+          <Route path="/herbal" element={<PageTransition><HerbalPage /></PageTransition>} />
+          <Route path="/herbal/:id" element={<PageTransition><HerbalDetailPage /></PageTransition>} />
+
+          {/* SELLER REGISTRATION */}
+          <Route path="/seller/register" element={<PageTransition><SellerRegistration /></PageTransition>} />
+          <Route path="/seller/terms" element={<PageTransition><SellerTermsPage /></PageTransition>} />
+
+          {/* SELLER PANEL — protected */}
+          <Route
+            path="/seller"
             element={
               <SellerRoute>
                 <PageTransition>
@@ -241,218 +173,77 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
             }
           >
             <Route index element={<SellerDashboard />} />
+            <Route path="store-builder" element={<StoreBuilderWizard />} />
             <Route path="products" element={<SellerProducts />} />
+            <Route path="products/add" element={<SellerProductPage />} />
+            <Route path="products/edit/:category/:id" element={<SellerProductPage />} />
             <Route path="orders" element={<SellerOrders />} />
             <Route path="earnings" element={<SellerEarnings />} />
             <Route path="store" element={<SellerStore />} />
             <Route path="settings" element={<SellerSettings />} />
           </Route>
 
-          {/* ==================================================
-              PROTECTED ROUTES
-          ================================================== */}
+          {/* CUSTOMER DASHBOARD */}
+          <Route
+            path="/dashboard"
+            element={
+              <PageTransition>
+                <CustomerLayout />
+              </PageTransition>
+            }
+          >
+            <Route index element={<CustomerDashboard />} />
+            <Route path="overview" element={<CustomerDashboard />} />
+            <Route path="orders" element={<OrdersTab />} />
+            <Route path="wishlist" element={<WishlistTab />} />
+            <Route path="addresses" element={<AddressesTab />} />
+            <Route path="payments" element={<PaymentsTab />} />
+            <Route path="history" element={<HistoryTab />} />
+            <Route path="settings" element={<SettingsTab />} />
+          </Route>
+
+          {/* CART / CHECKOUT / WISHLIST */}
           <Route path="/cart" element={<PageTransition><CartPage /></PageTransition>} />
           <Route path="/checkout" element={<PageTransition><CheckoutPage /></PageTransition>} />
           <Route path="/wishlist" element={<PageTransition><WishlistPage /></PageTransition>} />
-          <Route path="/dashboard" element={<PageTransition><DashboardPage /></PageTransition>} />
 
-          {/* ==================================================
-              ✅ ADMIN ROUTES — PROTECTED BY AdminRoute
-          ================================================== */}
-          <Route 
-            path="/admin" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminPanel />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/products" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminPanel />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/orders" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminPanel />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/users" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminPanel />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/categories" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminPanel />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/sellers" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminSellerManagement />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
+          {/* ADMIN */}
+          <Route path="/admin/products/add" element={<AdminRoute><PageTransition><AdminCategorySelector /></PageTransition></AdminRoute>} />
+          <Route path="/admin/products/add/:category" element={<AdminRoute><PageTransition><AdminProductFormNew /></PageTransition></AdminRoute>} />
+          <Route path="/admin/products/edit/:category/:id" element={<AdminRoute><PageTransition><AdminProductFormNew /></PageTransition></AdminRoute>} />
 
-          {/* ✅ ADMIN PRODUCT FORMS */}
-          <Route 
-            path="/admin/products/add" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminProductForm />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/products/edit/:id" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminProductForm />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/dryfruits/add" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminDryFruitsForm />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/dryfruits/edit/:id" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminDryFruitsForm />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/sweets/add" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminSweetsForm />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/sweets/edit/:id" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminSweetsForm />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/cakes/add" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminCakesProductForm />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/cakes/edit/:id" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminCakesProductForm />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
+          <Route path="/admin" element={<AdminRoute><PageTransition><AdminPanel /></PageTransition></AdminRoute>} />
+          <Route path="/admin/products" element={<AdminRoute><PageTransition><AdminPanel /></PageTransition></AdminRoute>} />
+          <Route path="/admin/orders" element={<AdminRoute><PageTransition><AdminPanel /></PageTransition></AdminRoute>} />
+          <Route path="/admin/users" element={<AdminRoute><PageTransition><AdminPanel /></PageTransition></AdminRoute>} />
+          <Route path="/admin/categories" element={<AdminRoute><PageTransition><AdminPanel /></PageTransition></AdminRoute>} />
+          <Route path="/admin/sellers" element={<AdminRoute><PageTransition><AdminSellerManagement /></PageTransition></AdminRoute>} />
+          <Route path="/admin/products-approval" element={<AdminRoute><PageTransition><AdminProductsApproval /></PageTransition></AdminRoute>} />
 
-          {/* ✅ ADMIN HERBAL FORM — CORRECT PATH */}
-          <Route 
-            path="/admin/herbal/add" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminHerbalForm />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/herbal/edit/:id" 
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminHerbalForm />
-                </PageTransition>
-              </AdminRoute>
-            } 
-          />
+          {/* Legacy admin routes */}
+          <Route path="/admin/dryfruits/add" element={<AdminRoute><PageTransition><AdminDryFruitsForm /></PageTransition></AdminRoute>} />
+          <Route path="/admin/dryfruits/edit/:id" element={<AdminRoute><PageTransition><AdminDryFruitsForm /></PageTransition></AdminRoute>} />
+          <Route path="/admin/sweets/add" element={<AdminRoute><PageTransition><AdminSweetsForm /></PageTransition></AdminRoute>} />
+          <Route path="/admin/sweets/edit/:id" element={<AdminRoute><PageTransition><AdminSweetsForm /></PageTransition></AdminRoute>} />
+          <Route path="/admin/cakes/add" element={<AdminRoute><PageTransition><AdminCakesProductForm /></PageTransition></AdminRoute>} />
+          <Route path="/admin/cakes/edit/:id" element={<AdminRoute><PageTransition><AdminCakesProductForm /></PageTransition></AdminRoute>} />
+          <Route path="/admin/herbal/add" element={<AdminRoute><PageTransition><AdminHerbalForm /></PageTransition></AdminRoute>} />
+          <Route path="/admin/herbal/edit/:id" element={<AdminRoute><PageTransition><AdminHerbalForm /></PageTransition></AdminRoute>} />
 
-          {/* ==================================================
-              404 PAGE
-          ================================================== */}
-          <Route 
-            path="*" 
+          {/* 404 */}
+          <Route
+            path="*"
             element={
               <PageTransition>
                 <div className="flex flex-col items-center justify-center h-96">
                   <h1 className="text-6xl font-bold text-gray-300">404</h1>
                   <p className="text-gray-500 mt-2">Page not found</p>
-                  <Link to="/" className="mt-4 text-[#0F766E] hover:underline">
-                    Go back home
+                  <Link to="/home" className="mt-4 text-[#0F766E] hover:underline">
+                    Go back to Home
                   </Link>
                 </div>
               </PageTransition>
-            } 
+            }
           />
         </Routes>
       </AnimatePresence>
