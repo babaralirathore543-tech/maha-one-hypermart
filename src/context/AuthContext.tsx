@@ -31,6 +31,11 @@ import {
 import { auth, db } from '../config/firebase';
 
 // ============================================================
+// ADMIN EMAIL
+// ============================================================
+const ADMIN_EMAIL = 'mahaonehypermarket@gmail.com';
+
+// ============================================================
 // TYPES
 // ============================================================
 interface AppUser {
@@ -81,14 +86,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     firebaseUser: FirebaseUser
   ): Promise<AppUser | null> => {
     try {
+      // ✅ ADMIN EMAIL FALLBACK
+      const isAdminEmail =
+        firebaseUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
       const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
 
       if (userDoc.exists()) {
         const data = userDoc.data();
         let role: AppUser['role'] = data.role || 'customer';
 
-        // Fallback: seller collection check
-        if (!data.role) {
+        // Fallback: seller collection check if role missing
+        if (!data.role && !isAdminEmail) {
           try {
             const sellerSnap = await getDoc(doc(db, 'sellers', firebaseUser.uid));
             if (
@@ -111,20 +120,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             data.displayName ||
             null,
           photoURL: firebaseUser.photoURL || data.photoURL || null,
-          role,
+          // ✅ Force admin if email matches
+          role: isAdminEmail ? 'admin' : role,
           status: data.status || 'active',
           phoneNumber: data.phoneNumber || null,
           createdAt: data.createdAt || new Date().toISOString(),
         };
       }
 
-      // Default
+      // No users doc → default
       return {
         uid: firebaseUser.uid,
         email: firebaseUser.email || null,
         displayName: firebaseUser.displayName || null,
         photoURL: firebaseUser.photoURL || null,
-        role: 'customer',
+        // ✅ Force admin if email matches
+        role: isAdminEmail ? 'admin' : 'customer',
         status: 'active',
         phoneNumber: null,
         createdAt: new Date().toISOString(),
@@ -155,11 +166,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           (snap) => {
             if (snap.exists()) {
               const data = snap.data();
+              const isAdminEmail =
+                currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
               setAppUser((prev) =>
                 prev
                   ? {
                       ...prev,
-                      role: data.role || prev.role,
+                      role: isAdminEmail ? 'admin' : data.role || prev.role,
                       status: data.status || prev.status,
                       displayName:
                         data.name || data.displayName || prev.displayName,

@@ -1,3 +1,4 @@
+// src/pages/LoginPage.tsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -8,6 +9,7 @@ import {
   signInWithEmailAndPassword,
   doc,
   getDoc,
+  setDoc,
 } from '../../config/firebase';
 
 const logo = '/images/logo.png';
@@ -64,19 +66,39 @@ const LoginPage: React.FC = () => {
         localStorage.setItem('user', JSON.stringify(adminUser));
         localStorage.setItem('userId', firebaseUser.uid);
 
+        // ✅ Firestore mein bhi role: admin set karo
+        try {
+          await setDoc(
+            doc(db, 'users', firebaseUser.uid),
+            {
+              uid: firebaseUser.uid,
+              role: 'admin',
+              status: 'active',
+              email: firebaseUser.email,
+              name: 'Babar Ali',
+            },
+            { merge: true }
+          );
+          console.log('✅ Admin role saved to Firestore');
+        } catch (err) {
+          console.warn('⚠️ Could not update Firestore:', err);
+        }
+
         window.dispatchEvent(new Event('userUpdated'));
         window.dispatchEvent(new Event('storage'));
 
         console.log('👑 ADMIN LOGIN SUCCESS');
 
-        navigate('/admin', { replace: true });
+        // ✅ Delay — AuthContext onSnapshot update hone de
+        setTimeout(() => {
+          navigate('/admin', { replace: true });
+        }, 500);
         return;
       }
 
       // ==========================================
-      // 3. NORMAL USER — Fetch role from users collection
+      // 3. NORMAL USER
       // ==========================================
-
       let userData: any = {};
 
       try {
@@ -90,19 +112,12 @@ const LoginPage: React.FC = () => {
           console.log('ℹ️ No users document found. Using Firebase profile.');
         }
       } catch (firestoreError) {
-        console.warn(
-          '⚠️ Could not read users document:',
-          firestoreError
-        );
+        console.warn('⚠️ Could not read users document:', firestoreError);
       }
 
-      // ✅ Determine role from userData.role
       let userRole = userData.role || 'customer';
 
-      // ==========================================
-      // ✅ FALLBACK: Agar users doc mein role nahi hai,
-      //             toh sellers collection check karo
-      // ==========================================
+      // ✅ Fallback: sellers collection check
       if (userRole === 'customer') {
         try {
           const sellerCheckRef = doc(db, 'sellers', firebaseUser.uid);
@@ -122,19 +137,13 @@ const LoginPage: React.FC = () => {
 
       const user = {
         id: firebaseUser.uid,
-        name:
-          userData.name ||
-          firebaseUser.displayName ||
-          'User',
+        name: userData.name || firebaseUser.displayName || 'User',
         email: firebaseUser.email || cleanEmail,
         role: userRole,
         isActive: userData.isActive !== false,
         phone: userData.phone || '',
         isVerified: userData.isVerified || false,
-        photoURL:
-          userData.photoURL ||
-          firebaseUser.photoURL ||
-          '',
+        photoURL: userData.photoURL || firebaseUser.photoURL || '',
       };
 
       localStorage.setItem('user', JSON.stringify(user));
@@ -146,11 +155,8 @@ const LoginPage: React.FC = () => {
       // ==========================================
       // 4. REDIRECT — Based on Role
       // ==========================================
-
-      // ✅ SELLER REDIRECT
       if (userRole === 'seller') {
         try {
-          // Check if seller is approved
           const sellerDocRef = doc(db, 'sellers', firebaseUser.uid);
           const sellerDocSnap = await getDoc(sellerDocRef);
 
@@ -162,34 +168,30 @@ const LoginPage: React.FC = () => {
               console.log('✅ APPROVED SELLER → /seller');
               navigate('/seller', { replace: true });
             } else if (sellerData.verificationStatus === 'pending') {
-              console.log('⏳ PENDING SELLER → /');
+              console.log('⏳ PENDING SELLER → /home');
               alert('⏳ Your seller account is pending approval. Please wait for admin approval.');
-              navigate('/', { replace: true });
+              navigate('/home', { replace: true });
             } else if (sellerData.verificationStatus === 'rejected') {
-              console.log('❌ REJECTED SELLER → /');
+              console.log('❌ REJECTED SELLER → /home');
               alert('❌ Your seller application was rejected. Please contact support.');
-              navigate('/', { replace: true });
+              navigate('/home', { replace: true });
             } else {
-              navigate('/', { replace: true });
+              navigate('/home', { replace: true });
             }
           } else {
-            console.log('⚠️ No seller doc found → /');
-            navigate('/', { replace: true });
+            console.log('⚠️ No seller doc found → /home');
+            navigate('/home', { replace: true });
           }
         } catch (sellerError) {
           console.warn('⚠️ Could not read seller document:', sellerError);
-          navigate('/', { replace: true });
+          navigate('/home', { replace: true });
         }
-      } 
-      // ✅ ADMIN REDIRECT (from users collection)
-      else if (userRole === 'admin') {
+      } else if (userRole === 'admin') {
         console.log('👑 ADMIN ROLE → /admin');
         navigate('/admin', { replace: true });
-      } 
-      // ✅ CUSTOMER REDIRECT
-      else {
-        console.log('👤 CUSTOMER → /');
-        navigate('/', { replace: true });
+      } else {
+        console.log('👤 CUSTOMER → /home');
+        navigate('/home', { replace: true });
       }
 
     } catch (error: any) {
@@ -201,34 +203,24 @@ const LoginPage: React.FC = () => {
         case 'auth/invalid-credential':
           message = '❌ Incorrect email or password.';
           break;
-
         case 'auth/invalid-email':
           message = '❌ Please enter a valid email address.';
           break;
-
         case 'auth/user-not-found':
           message = '❌ No account found with this email.';
           break;
-
         case 'auth/wrong-password':
           message = '❌ Incorrect password.';
           break;
-
         case 'auth/too-many-requests':
-          message =
-            '❌ Too many login attempts. Please try again later.';
+          message = '❌ Too many login attempts. Please try again later.';
           break;
-
         case 'auth/network-request-failed':
-          message =
-            '❌ Network error. Please check your internet connection.';
+          message = '❌ Network error. Please check your internet connection.';
           break;
-
         case 'permission-denied':
-          message =
-            '❌ Firestore permission denied. Please check your security rules.';
+          message = '❌ Firestore permission denied. Please check your security rules.';
           break;
-
         default:
           message = `❌ ${error.message || 'Login failed.'}`;
       }
@@ -241,7 +233,6 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-4 sm:py-6 md:py-8">
-      
       <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md mt-16 sm:mt-20 md:mt-24 lg:mt-28 mb-4 sm:mb-6">
 
         {/* LOGO */}
@@ -270,9 +261,7 @@ const LoginPage: React.FC = () => {
             <span className="text-[#D4AF37]"> ONE</span>
           </h1>
 
-          <p className="text-gray-500 text-sm">
-            Sign in to your account
-          </p>
+          <p className="text-gray-500 text-sm">Sign in to your account</p>
         </div>
 
         {/* ERROR */}
@@ -284,15 +273,14 @@ const LoginPage: React.FC = () => {
 
         {/* LOGIN FORM */}
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+
           {/* EMAIL */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
             </label>
-
             <div className="relative">
               <FaEnvelope className="absolute left-3 top-3 text-gray-400" />
-
               <input
                 type="email"
                 value={email}
@@ -310,10 +298,8 @@ const LoginPage: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
-
             <div className="relative">
               <FaLock className="absolute left-3 top-3 text-gray-400" />
-
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
@@ -323,7 +309,6 @@ const LoginPage: React.FC = () => {
                 autoComplete="current-password"
                 required
               />
-
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
