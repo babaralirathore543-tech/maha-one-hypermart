@@ -19,42 +19,78 @@ const CloudinaryUpload = ({
   onUploadError,
   onUploadStart,
   buttonText = 'Upload Image',
-  folder = 'maha-one/products',
+  folder,
   multiple = false,
   maxFiles = 5,
   accept = 'image/*',
-  className = ''
+  className = '',
 }: CloudinaryUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ✅ Env variables
   const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+  const ENV_FOLDER = import.meta.env.VITE_CLOUDINARY_FOLDER || 'maha-one/products';
+
+  // ✅ Debug logging
+  console.log('☁️ Cloudinary Config:', {
+    cloudName: CLOUD_NAME,
+    cloudNameExists: !!CLOUD_NAME,
+    uploadPreset: UPLOAD_PRESET,
+    presetExists: !!UPLOAD_PRESET,
+    folder: folder || ENV_FOLDER,
+  });
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    // ✅ Validate env vars
+    if (!CLOUD_NAME || !UPLOAD_PRESET) {
+      const errorMsg = 'Cloudinary configuration missing. Check .env file.';
+      console.error('❌', errorMsg);
+      onUploadError?.(errorMsg);
+      return;
+    }
+
     setUploading(true);
     setProgress(0);
     onUploadStart?.();
 
-    const uploaded: string[] = [];
+    // ✅ Folder priority: prop > env > default
+    const FOLDER = folder || ENV_FOLDER;
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      
+    const uploaded: string[] = [];
+    const filesToUpload = multiple ? Array.from(files) : [files[0]];
+
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const file = filesToUpload[i];
+
+      // ✅ Validate file
+      if (!file.type.startsWith('image/')) {
+        console.warn(`⚠️ Skipping non-image file: ${file.name}`);
+        continue;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        const errorMsg = `File "${file.name}" exceeds 5MB limit`;
+        console.error('❌', errorMsg);
+        onUploadError?.(errorMsg);
+        continue;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', UPLOAD_PRESET);
-      formData.append('folder', folder);
+      formData.append('folder', FOLDER);
 
       try {
         const xhr = new XMLHttpRequest();
-        
-        const uploadPromise = new Promise((resolve, reject) => {
+
+        const uploadPromise = new Promise<string>((resolve, reject) => {
           xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable) {
               const percent = Math.round((event.loaded / event.total) * 100);
@@ -62,35 +98,52 @@ const CloudinaryUpload = ({
             }
           });
 
-          xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`);
-          
+          xhr.open(
+            'POST',
+            `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`
+          );
+
           xhr.onload = () => {
             if (xhr.status === 200) {
-              const response = JSON.parse(xhr.responseText);
-              resolve(response.secure_url);
+              try {
+                const response = JSON.parse(xhr.responseText);
+                resolve(response.secure_url);
+              } catch {
+                reject(new Error('Invalid response from Cloudinary'));
+              }
             } else {
-              const error = JSON.parse(xhr.responseText);
-              reject(error.error?.message || 'Upload failed');
+              try {
+                const error = JSON.parse(xhr.responseText);
+                reject(
+                  new Error(
+                    error.error?.message || `Upload failed (${xhr.status})`
+                  )
+                );
+              } catch {
+                reject(new Error(`Upload failed (${xhr.status})`));
+              }
             }
           };
 
           xhr.onerror = () => {
-            reject('Network error. Please try again.');
+            reject(new Error('Network error. Please try again.'));
           };
 
           xhr.send(formData);
         });
 
-        const url = await uploadPromise as string;
+        const url = await uploadPromise;
         uploaded.push(url);
-        setUploadedUrls(prev => [...prev, url]);
-        
-        console.log(`✅ Cloudinary upload success (${i + 1}/${files.length}):`, url);
+        setUploadedUrls((prev) => [...prev, url]);
 
+        console.log(
+          `✅ Cloudinary upload success (${i + 1}/${filesToUpload.length}):`,
+          url
+        );
       } catch (error: any) {
         console.error('❌ Cloudinary upload error:', error);
         onUploadError?.(error.message || 'Upload failed');
-        break;
+        // Don't break — continue with other files
       }
     }
 
@@ -109,7 +162,7 @@ const CloudinaryUpload = ({
   };
 
   const removeImage = (index: number) => {
-    setUploadedUrls(prev => prev.filter((_, i) => i !== index));
+    setUploadedUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -125,7 +178,7 @@ const CloudinaryUpload = ({
           disabled={uploading}
           multiple={multiple}
         />
-        
+
         <label
           htmlFor="cloudinary-upload"
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-all duration-300 ${
@@ -160,7 +213,8 @@ const CloudinaryUpload = ({
       {uploadedUrls.length > 0 && (
         <div className="mt-3">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-            {uploadedUrls.length} image{uploadedUrls.length > 1 ? 's' : ''} uploaded
+            {uploadedUrls.length} image
+            {uploadedUrls.length > 1 ? 's' : ''} uploaded
           </p>
           <div className="flex flex-wrap gap-2">
             {uploadedUrls.map((url, index) => (
@@ -171,6 +225,7 @@ const CloudinaryUpload = ({
                   className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border-2 border-[#D4AF37] shadow-sm"
                 />
                 <button
+                  type="button"
                   onClick={() => removeImage(index)}
                   className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition shadow-md opacity-0 group-hover:opacity-100"
                 >
