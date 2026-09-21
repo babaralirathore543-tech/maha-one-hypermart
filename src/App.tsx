@@ -1,6 +1,12 @@
 // src/App.tsx
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 
 import { CartProvider } from './context/CartContext';
@@ -24,21 +30,67 @@ import MaintenancePage from './components/pages/MaintenancePage';
 import LoginPage from './components/pages/LoginPage';
 
 // ============================================================
-// ADMIN ROUTE — uses AuthContext (Firestore role)
+// ERROR BOUNDARY — catches runtime errors
+// ============================================================
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: any }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, info: any) {
+    console.error('🚨 CAUGHT ERROR:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-red-50 p-4">
+          <div className="max-w-md w-full text-center bg-white p-6 rounded-2xl shadow-xl">
+            <div className="text-5xl mb-3">⚠️</div>
+            <h1 className="text-xl font-bold text-red-600 mb-2">
+              Something went wrong
+            </h1>
+            <p className="text-sm text-gray-600 mb-4 break-words">
+              {this.state.error?.message || 'Unknown error'}
+            </p>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                window.location.reload();
+              }}
+              className="bg-red-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-700 transition"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ============================================================
+// ADMIN ROUTE
 // ============================================================
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading, isAdmin } = useAuth();
   const location = useLocation();
 
-  // ✅ Wait for auth
   if (loading) return <PageLoader />;
 
-  // ✅ Not logged in → login with return URL
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  // ✅ Logged in but not admin → home
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
@@ -47,7 +99,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // ============================================================
-// SELLER ROUTE — uses AuthContext + seller doc check
+// SELLER ROUTE — FIXED
 // ============================================================
 const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -58,7 +110,6 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   >(null);
 
   useEffect(() => {
-    // ✅ Wait for auth loading before checking seller
     if (loading) return;
 
     if (!user) {
@@ -71,7 +122,18 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     const checkSeller = async () => {
       try {
-        const sellerDoc = await getDoc(doc(db, 'sellers', user.uid));
+        // ✅ 5s timeout
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), 5000)
+        );
+
+        const docPromise = getDoc(doc(db, 'sellers', user.uid));
+
+        const sellerDoc = (await Promise.race([
+          docPromise,
+          timeoutPromise,
+        ])) as any;
+
         if (cancelled) return;
 
         if (sellerDoc.exists()) {
@@ -95,12 +157,22 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
 
     checkSeller();
+
+    // ✅ Safety net — 8s baad force complete
+    const safetyTimer = setTimeout(() => {
+      if (!cancelled) {
+        console.warn('⚠️ Seller check timeout — forcing complete');
+        setChecking(false);
+      }
+    }, 8000);
+
     return () => {
       cancelled = true;
+      clearTimeout(safetyTimer);
     };
   }, [user, loading]);
 
-  // ✅ Wait for both auth and seller doc
+  // ✅ Wait
   if (loading || checking) return <PageLoader />;
 
   // ✅ Not logged in
@@ -108,19 +180,9 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  // ✅ No seller application → go to register
-  if (sellerStatus === 'none') {
+  // ✅ Not approved → register (NOT home)
+  if (sellerStatus !== 'approved') {
     return <Navigate to="/seller/register" replace />;
-  }
-
-  // ✅ Pending → go to home (or dedicated page)
-  if (sellerStatus === 'pending') {
-    return <Navigate to="/" replace />;
-  }
-
-  // ✅ Rejected → go to home
-  if (sellerStatus === 'rejected') {
-    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -176,33 +238,35 @@ function App() {
   // NORMAL WEBSITE
   // ─────────────────────────────────────────────
   return (
-    <Router>
-      <ThemeProvider>
-        <AuthProvider>
-          <CartProvider>
-            <div className="min-h-screen flex flex-col bg-[#FFFDF7] dark:bg-[#111827]">
-              <Navbar />
+    <ErrorBoundary>
+      <Router>
+        <ThemeProvider>
+          <AuthProvider>
+            <CartProvider>
+              <div className="min-h-screen flex flex-col bg-[#FFFDF7] dark:bg-[#111827]">
+                <Navbar />
 
-              <main className="flex-grow">
-                <AnimatedRoutes
-                  AdminRoute={AdminRoute}
-                  SellerRoute={SellerRoute}
-                />
-              </main>
+                <main className="flex-grow">
+                  <AnimatedRoutes
+                    AdminRoute={AdminRoute}
+                    SellerRoute={SellerRoute}
+                  />
+                </main>
 
-              <Footer />
-            </div>
+                <Footer />
+              </div>
 
-            <WhatsAppButton />
+              <WhatsAppButton />
 
-            <Popup
-              image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
-              delay={2000}
-            />
-          </CartProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </Router>
+              <Popup
+                image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
+                delay={2000}
+              />
+            </CartProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

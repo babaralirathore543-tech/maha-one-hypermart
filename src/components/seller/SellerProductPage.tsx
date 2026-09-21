@@ -9,15 +9,10 @@ const SellerProductPage = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState(category || '');
 
-  // 🔍 DEBUG
-  console.log('🔍 SellerProductPage rendered');
-  console.log('🔍 categoryConfigs:', categoryConfigs);
-  console.log('🔍 categoryConfigs length:', categoryConfigs?.length);
-
-  // ✅ Edit mode
+  // Edit mode
   if (id && category) {
     return (
-      <div className="p-6">
+      <div className="p-0 sm:p-6">
         <ProductForm
           mode="seller"
           categoryId={category}
@@ -28,26 +23,32 @@ const SellerProductPage = () => {
     );
   }
 
-  // ✅ Step 1: Select Category
+  // Step 1: Category selection
   if (!selectedCategory) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Add New Product</h1>
-          <p className="text-gray-500 mt-2">Select a category to continue</p>
+      <div className="max-w-4xl mx-auto p-0 sm:p-6">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-800">
+            Add New Product
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-2">
+            Select a category to continue
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
           {categoryConfigs.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className="bg-white p-8 rounded-2xl shadow-sm border-2 border-gray-100 hover:border-[#0F766E] hover:shadow-lg transition-all group"
+              className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border-2 border-gray-100 hover:border-[#0F766E] hover:shadow-lg transition-all group"
             >
-              <div className="text-6xl mb-4 group-hover:scale-110 transition-transform">
+              <div className="text-4xl sm:text-5xl mb-3 group-hover:scale-110 transition-transform">
                 {cat.icon}
               </div>
-              <p className="font-semibold text-gray-800 text-lg">{cat.name}</p>
+              <p className="font-semibold text-gray-800 text-xs sm:text-base">
+                {cat.name}
+              </p>
             </button>
           ))}
         </div>
@@ -55,12 +56,12 @@ const SellerProductPage = () => {
     );
   }
 
-  // ✅ Step 2: Show Form
+  // Step 2: Form
   return (
-    <div className="p-6">
+    <div className="p-0 sm:p-6">
       <button
         onClick={() => setSelectedCategory('')}
-        className="mb-4 text-sm text-[#0F766E] hover:underline"
+        className="mb-3 sm:mb-4 text-xs sm:text-sm text-[#0F766E] hover:underline font-medium"
       >
         ← Change Category
       </button>
