@@ -6,7 +6,6 @@ import {
   FaWhatsapp,
   FaYoutube,
   FaTiktok,
-  FaStore // ✅ ADDED for seller icon
 } from 'react-icons/fa';
 
 // Logo Import
@@ -20,7 +19,7 @@ const Footer = () => {
 
           {/* Logo + Brand */}
           <div>
-            <Link to="/" className="flex items-center gap-3 group">
+            <Link to="/home" className="flex items-center gap-3 group">
               <img
                 src={logo}
                 alt="MAHA ONE"
@@ -40,8 +39,8 @@ const Footer = () => {
             </Link>
 
             <p className="text-sm text-gray-500 mt-3">
-              Pakistan's premier hypermart offering premium dry fruits, 
-              delicious sweets, stylish fashion, and freshly baked cakes. 
+              Pakistan's premier hypermart offering premium dry fruits,
+              delicious sweets, stylish fashion, and freshly baked cakes.
               Quality you can trust, delivered to your doorstep.
             </p>
 
@@ -99,9 +98,7 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* ============================================================
-              QUICK LINKS — ✅ BECOME A SELLER ADDED
-              ============================================================ */}
+          {/* Quick Links */}
           <div>
             <h5 className="text-white font-semibold mb-4">Quick Links</h5>
 
@@ -130,18 +127,6 @@ const Footer = () => {
                   className="hover:text-[#D4AF37] transition-colors"
                 >
                   Contact
-                </Link>
-              </li>
-
-              {/* ✅ BECOME A SELLER — WITH ICON AND GOLD COLOR */}
-              <li>
-                <Link
-                  to="/seller/register"
-                  className="flex items-center gap-2 text-[#D4AF37] hover:text-[#c4a030] transition-colors font-medium"
-                >
-                  <FaStore size={14} />
-                  <span>Become a Seller</span>
-                  <span className="text-[10px] bg-[#D4AF37]/20 px-1.5 py-0.5 rounded-full">🚀</span>
                 </Link>
               </li>
             </ul>

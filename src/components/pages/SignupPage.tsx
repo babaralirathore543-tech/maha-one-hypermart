@@ -1,7 +1,6 @@
 // src/components/pages/SignupPage.tsx
-
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 import {
   FaUser,
@@ -10,7 +9,7 @@ import {
   FaPhone,
   FaEye,
   FaEyeSlash,
-  FaCheckCircle
+  FaCheckCircle,
 } from 'react-icons/fa';
 
 import {
@@ -19,7 +18,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   doc,
-  setDoc
+  setDoc,
 } from '../../config/firebase';
 
 import { sendSignupWelcomeWhatsApp } from '../../services/whatsappNotificationService';
@@ -28,13 +27,18 @@ const logo = '/images/logo.png';
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // ✅ Get redirect URL from query params
+  const params = new URLSearchParams(location.search);
+  const redirectTo = params.get('redirect') || '/home';
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -47,18 +51,16 @@ const SignupPage: React.FC = () => {
   // ==========================================
   // HANDLE INPUT CHANGE
   // ==========================================
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   // ==========================================
   // SIGNUP
   // ==========================================
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -72,10 +74,7 @@ const SignupPage: React.FC = () => {
     const password = formData.password;
     const confirmPassword = formData.confirmPassword;
 
-    // ==========================================
     // VALIDATION
-    // ==========================================
-
     if (!name || !email || !phone || !password) {
       setError('Please fill in all required fields.');
       setLoading(false);
@@ -95,10 +94,7 @@ const SignupPage: React.FC = () => {
     }
 
     try {
-      // ==========================================
       // 1. CREATE FIREBASE AUTH USER
-      // ==========================================
-
       console.log('🔐 Creating Firebase Authentication user...');
 
       const userCredential = await createUserWithEmailAndPassword(
@@ -112,20 +108,14 @@ const SignupPage: React.FC = () => {
       console.log('✅ Firebase Auth user created');
       console.log('👤 UID:', firebaseUser.uid);
 
-      // ==========================================
       // 2. UPDATE FIREBASE PROFILE
-      // ==========================================
-
       await updateProfile(firebaseUser, {
-        displayName: name
+        displayName: name,
       });
 
       console.log('✅ Firebase profile updated');
 
-      // ==========================================
       // 3. CREATE USER DOCUMENT IN FIRESTORE
-      // ==========================================
-
       const userDocRef = doc(db, 'users', firebaseUser.uid);
 
       await setDoc(userDocRef, {
@@ -143,18 +133,15 @@ const SignupPage: React.FC = () => {
           city: '',
           province: '',
           postalCode: '',
-          country: 'Pakistan'
+          country: 'Pakistan',
         },
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
 
       console.log('✅ Firestore user document created');
 
-      // ==========================================
       // 4. SAVE USER LOCALLY
-      // ==========================================
-
       const userData = {
         id: firebaseUser.uid,
         uid: firebaseUser.uid,
@@ -163,7 +150,7 @@ const SignupPage: React.FC = () => {
         phone: phone,
         role: 'customer',
         isActive: true,
-        isVerified: false
+        isVerified: false,
       };
 
       localStorage.setItem('user', JSON.stringify(userData));
@@ -171,55 +158,37 @@ const SignupPage: React.FC = () => {
 
       window.dispatchEvent(new Event('userUpdated'));
 
-      // ==========================================
       // SUCCESS
-      // ==========================================
-
       setSuccess(true);
 
       console.log('🎉 Signup completed successfully');
 
-      // ==========================================
-      // SEND WHATSAPP MESSAGE
-      // ==========================================
-
+      // ✅ SEND WHATSAPP MESSAGE (synchronous — try/catch)
       if (phone) {
         try {
-          await sendSignupWelcomeWhatsApp(phone, name, email);
+          sendSignupWelcomeWhatsApp(phone, name, email);
           console.log('📱 WhatsApp welcome message triggered');
         } catch (whatsappError) {
           console.warn('⚠️ WhatsApp message failed:', whatsappError);
         }
       }
 
-      // ==========================================
       // RESET FORM
-      // ==========================================
-
       setFormData({
         name: '',
         email: '',
         phone: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
       });
 
-      // ==========================================
-      // REDIRECT
-      // ==========================================
-
+      // ✅ REDIRECT to the URL from query param
       setTimeout(() => {
-        navigate('/', {
-          replace: true
-        });
-      }, 2000);
-
+        console.log('➡️ Redirecting to:', redirectTo);
+        navigate(redirectTo, { replace: true });
+      }, 1500);
     } catch (error: any) {
       console.error('❌ Signup error:', error);
-
-      // ==========================================
-      // FIREBASE AUTH ERRORS
-      // ==========================================
 
       let errorMessage = 'Signup failed. Please try again.';
 
@@ -249,7 +218,6 @@ const SignupPage: React.FC = () => {
       }
 
       setError(errorMessage);
-
     } finally {
       setLoading(false);
     }
@@ -259,10 +227,7 @@ const SignupPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8 pt-16 sm:pt-20 md:pt-24 lg:pt-28">
       <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md my-4 sm:my-6">
 
-        {/* ==========================================
-            LOGO
-        ========================================== */}
-
+        {/* LOGO */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center">
             <img
@@ -274,7 +239,8 @@ const SignupPage: React.FC = () => {
                 const parent = e.currentTarget.parentElement;
                 if (parent) {
                   const fallback = document.createElement('div');
-                  fallback.className = 'w-14 h-14 sm:w-16 sm:h-16 bg-[#0F766E] rounded-full flex items-center justify-center text-white text-2xl font-bold';
+                  fallback.className =
+                    'w-14 h-14 sm:w-16 sm:h-16 bg-[#0F766E] rounded-full flex items-center justify-center text-white text-2xl font-bold';
                   fallback.textContent = 'M';
                   parent.appendChild(fallback);
                 }
@@ -287,50 +253,34 @@ const SignupPage: React.FC = () => {
             <span className="text-[#D4AF37]"> ONE</span>
           </h1>
 
-          <p className="text-gray-500 text-sm">
-            Create your account
-          </p>
+          <p className="text-gray-500 text-sm">Create your account</p>
         </div>
 
-        {/* ==========================================
-            SUCCESS MESSAGE
-        ========================================== */}
-
+        {/* SUCCESS MESSAGE */}
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
             <FaCheckCircle className="text-green-500 flex-shrink-0" />
-            <span>
-              Account created successfully! Redirecting...
-            </span>
+            <span>Account created successfully! Redirecting...</span>
           </div>
         )}
 
-        {/* ==========================================
-            ERROR MESSAGE
-        ========================================== */}
-
+        {/* ERROR MESSAGE */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
             {error}
           </div>
         )}
 
-        {/* ==========================================
-            SIGNUP FORM
-        ========================================== */}
-
+        {/* SIGNUP FORM */}
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
 
           {/* FULL NAME */}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Full Name <span className="text-red-500">*</span>
             </label>
-
             <div className="relative">
               <FaUser className="absolute left-3 top-3 text-gray-400" />
-
               <input
                 type="text"
                 name="name"
@@ -344,15 +294,12 @@ const SignupPage: React.FC = () => {
           </div>
 
           {/* EMAIL */}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email Address <span className="text-red-500">*</span>
             </label>
-
             <div className="relative">
               <FaEnvelope className="absolute left-3 top-3 text-gray-400" />
-
               <input
                 type="email"
                 name="email"
@@ -367,15 +314,12 @@ const SignupPage: React.FC = () => {
           </div>
 
           {/* PHONE */}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number <span className="text-red-500">*</span>
             </label>
-
             <div className="relative">
               <FaPhone className="absolute left-3 top-3 text-gray-400" />
-
               <input
                 type="tel"
                 name="phone"
@@ -387,22 +331,18 @@ const SignupPage: React.FC = () => {
                 required
               />
             </div>
-
             <p className="text-[10px] text-gray-400 mt-1">
               📱 We'll send order updates via WhatsApp
             </p>
           </div>
 
           {/* PASSWORD */}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Password <span className="text-red-500">*</span>
             </label>
-
             <div className="relative">
               <FaLock className="absolute left-3 top-3 text-gray-400" />
-
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -414,7 +354,6 @@ const SignupPage: React.FC = () => {
                 required
                 minLength={6}
               />
-
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -426,15 +365,12 @@ const SignupPage: React.FC = () => {
           </div>
 
           {/* CONFIRM PASSWORD */}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Confirm Password <span className="text-red-500">*</span>
             </label>
-
             <div className="relative">
               <FaLock className="absolute left-3 top-3 text-gray-400" />
-
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 name="confirmPassword"
@@ -445,7 +381,6 @@ const SignupPage: React.FC = () => {
                 autoComplete="new-password"
                 required
               />
-
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -457,24 +392,26 @@ const SignupPage: React.FC = () => {
           </div>
 
           {/* SUBMIT BUTTON */}
-
           <button
             type="submit"
             disabled={loading || success}
             className="w-full bg-[#0F766E] text-white py-2.5 rounded-lg font-medium hover:bg-[#065F46] transition disabled:opacity-50 text-sm sm:text-base"
           >
-            {loading ? 'Creating account...' : success ? 'Account Created!' : 'Create Account'}
+            {loading
+              ? 'Creating account...'
+              : success
+              ? 'Account Created!'
+              : 'Create Account'}
           </button>
-
         </form>
 
-        {/* ==========================================
-            LOGIN LINK
-        ========================================== */}
-
+        {/* LOGIN LINK */}
         <p className="text-center text-sm text-gray-600 mt-4">
           Already have an account?{' '}
-          <Link to="/login" className="text-[#0F766E] font-medium hover:underline">
+          <Link
+            to="/login"
+            className="text-[#0F766E] font-medium hover:underline"
+          >
             Sign In
           </Link>
         </p>
@@ -482,7 +419,6 @@ const SignupPage: React.FC = () => {
         <p className="text-center text-xs text-gray-400 mt-4">
           © 2026 Maha One HyperMart. All rights reserved.
         </p>
-
       </div>
     </div>
   );

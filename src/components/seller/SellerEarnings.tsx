@@ -353,4 +353,4 @@ const SellerEarnings = () => {
   );
 };
 
-export default SellerEarnings;
+export default SellerEarnings; 

@@ -11,8 +11,22 @@ import {
 import { User, Store, ArrowRight as ArrowRightIcon } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-import { db, collection, getDocs, query, where, limit } from '../../config/firebase';
+import {
+  db,
+  collection,
+  getDocs,
+  query,
+  where,
+  limit,
+  doc,
+  getDoc,
+} from '../../config/firebase';
 import ProductCard from '../common/ProductCard';
+
+// ============================================================
+// TYPE
+// ============================================================
+type SellerStatus = 'none' | 'pending' | 'approved' | 'rejected' | 'checking';
 
 // ============================================================
 // CATEGORY HERO BANNER
@@ -165,9 +179,69 @@ const CategoryProductSection: React.FC<CategoryProductSectionProps> = ({
 };
 
 // ============================================================
-// CUSTOMER / SELLER CARDS — Compact Premium
+// CUSTOMER / SELLER CARDS — Smart (Seller status aware)
 // ============================================================
-const CustomerSellerCards = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
+const CustomerSellerCards = ({
+  isLoggedIn,
+  sellerStatus,
+}: {
+  isLoggedIn: boolean;
+  sellerStatus: SellerStatus;
+}) => {
+  // ✅ Seller card configuration based on status
+  const getSellerCard = () => {
+    if (!isLoggedIn) {
+      return {
+        to: '/seller/register',
+        title: 'Seller',
+        subtitle: 'Login / Register',
+        iconColor: 'text-[#3B1E54]',
+        badge: null,
+      };
+    }
+
+    if (sellerStatus === 'approved') {
+      return {
+        to: '/seller',
+        title: 'Seller Dashboard',
+        subtitle: 'Manage your store',
+        iconColor: 'text-[#3B1E54]',
+        badge: { text: '● Live', color: 'bg-green-600 text-white' },
+      };
+    }
+
+    if (sellerStatus === 'pending') {
+      return {
+        to: '/seller/register',
+        title: 'Pending',
+        subtitle: 'Under review',
+        iconColor: 'text-yellow-800',
+        badge: { text: '⏳', color: 'bg-yellow-600 text-white' },
+      };
+    }
+
+    if (sellerStatus === 'rejected') {
+      return {
+        to: '/seller/register',
+        title: 'Rejected',
+        subtitle: 'Contact support',
+        iconColor: 'text-red-800',
+        badge: { text: '✕', color: 'bg-red-600 text-white' },
+      };
+    }
+
+    // Logged in, no seller doc → Register
+    return {
+      to: '/seller/register',
+      title: 'Seller',
+      subtitle: 'Register as seller',
+      iconColor: 'text-[#3B1E54]',
+      badge: null,
+    };
+  };
+
+  const sellerCard = getSellerCard();
+
   return (
     <section className="max-w-[1500px] mx-auto px-3 sm:px-4 lg:px-6 pt-10 sm:pt-24 md:pt-28 lg:pt-32 pb-2 sm:pb-3">
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
@@ -215,9 +289,9 @@ const CustomerSellerCards = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
           </div>
         </Link>
 
-        {/* SELLER — Gold Gradient */}
+        {/* SELLER — Smart Gold Gradient */}
         <Link
-          to="/seller/register"
+          to={sellerCard.to}
           className="
             group relative overflow-hidden
             bg-gradient-to-br from-[#FCD34D] via-[#D4AF37] to-[#B8941F]
@@ -243,16 +317,26 @@ const CustomerSellerCards = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
               flex-shrink-0
               group-hover:scale-110
               transition-transform duration-300
+              relative
             ">
-              <Store className="w-4 h-4 text-[#3B1E54]" strokeWidth={2.5} />
+              <Store className={`w-4 h-4 ${sellerCard.iconColor}`} strokeWidth={2.5} />
+
+              {/* Badge on icon */}
+              {sellerCard.badge && (
+                <span
+                  className={`absolute -top-1 -right-1 text-[8px] font-bold px-1 rounded-full ${sellerCard.badge.color}`}
+                >
+                  {sellerCard.badge.text}
+                </span>
+              )}
             </div>
 
             <div className="min-w-0 flex-1">
               <p className="text-xs sm:text-sm font-black text-[#3B1E54] truncate tracking-tight leading-tight">
-                Seller
+                {sellerCard.title}
               </p>
               <p className="text-[9px] sm:text-[10px] text-[#3B1E54]/80 truncate font-semibold leading-tight">
-                Login / Register
+                {sellerCard.subtitle}
               </p>
             </div>
 
@@ -272,7 +356,7 @@ const CustomerSellerCards = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
 };
 
 // ============================================================
-// SHOP BY CATEGORY (COMPACT + PURPLE OUTLINE ICONS)
+// SHOP BY CATEGORY
 // ============================================================
 const ShopByCategory = () => {
   const categories = [
@@ -549,6 +633,9 @@ const HomePage = () => {
   const { user } = useAuth();
   const isLoggedIn = !!user;
 
+  // ✅ Seller status state
+  const [sellerStatus, setSellerStatus] = useState<SellerStatus>('checking');
+
   const [dryFruitsProducts, setDryFruitsProducts] = useState<any[]>([]);
   const [mensFashionProducts, setMensFashionProducts] = useState<any[]>([]);
   const [womensFashionProducts, setWomensFashionProducts] = useState<any[]>([]);
@@ -570,6 +657,37 @@ const HomePage = () => {
   ];
 
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // ✅ Seller status check
+  useEffect(() => {
+    const checkSeller = async () => {
+      if (!user?.uid) {
+        setSellerStatus('none');
+        return;
+      }
+
+      try {
+        const snap = await getDoc(doc(db, 'sellers', user.uid));
+
+        if (!snap.exists()) {
+          setSellerStatus('none');
+          return;
+        }
+
+        const data = snap.data();
+        const status = data.verificationStatus || 'pending';
+
+        if (status === 'approved') setSellerStatus('approved');
+        else if (status === 'rejected') setSellerStatus('rejected');
+        else setSellerStatus('pending');
+      } catch (err) {
+        console.error('Error checking seller:', err);
+        setSellerStatus('none');
+      }
+    };
+
+    checkSeller();
+  }, [user?.uid]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -672,9 +790,12 @@ const HomePage = () => {
     <div className="bg-[#FFFDF7] dark:bg-[#111827] min-h-screen">
 
       {/* ============================================================
-          CUSTOMER / SELLER CARDS — Hero ke UPAR
+          CUSTOMER / SELLER CARDS — Smart
       ============================================================ */}
-      <CustomerSellerCards isLoggedIn={isLoggedIn} />
+      <CustomerSellerCards
+        isLoggedIn={isLoggedIn}
+        sellerStatus={sellerStatus}
+      />
 
       {/* HERO SECTION */}
       <section
