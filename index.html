@@ -3,11 +3,312 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/src/assets/images/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MAHA ONE HYPERMART</title>
+
+    <!-- ============================================================
+         VIEWPORT & BASIC META
+         ============================================================ -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="theme-color" content="#0F766E" />
+
+    <!-- ============================================================
+         SEO META TAGS
+         ============================================================ -->
+    <title>MAHA ONE HYPERMART — Premium Online Shopping in Pakistan</title>
+    <meta
+      name="description"
+      content="MAHA ONE HYPERMART — Pakistan's premium online store. Shop Fashion, Dry Fruits, Sweets, Herbal & Cakes with fast delivery. Best quality, best prices."
+    />
+    <meta
+      name="keywords"
+      content="maha one, hypermart, online shopping pakistan, dry fruits, sweets, fashion, herbal, cakes, ecommerce pakistan"
+    />
+    <meta name="author" content="MAHA ONE HYPERMART" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://www.mahaonehypermaket.com" />
+
+    <!-- ============================================================
+         OPEN GRAPH (Facebook / WhatsApp preview)
+         ============================================================ -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MAHA ONE HYPERMART — Premium Online Shopping" />
+    <meta
+      property="og:description"
+      content="Shop Fashion, Dry Fruits, Sweets, Herbal & Cakes. Fast delivery across Pakistan."
+    />
+    <meta property="og:url" content="https://www.mahaonehypermaket.com" />
+    <meta
+      property="og:image"
+      content="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787685509/logo_mhrzum.png"
+    />
+    <meta property="og:site_name" content="MAHA ONE HYPERMART" />
+
+    <!-- ============================================================
+         TWITTER CARD
+         ============================================================ -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MAHA ONE HYPERMART" />
+    <meta name="twitter:description" content="Premium Online Shopping in Pakistan" />
+    <meta
+      name="twitter:image"
+      content="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787685509/logo_mhrzum.png"
+    />
+
+    <!-- ============================================================
+         PERFORMANCE — Preconnect to critical origins
+         ============================================================ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://res.cloudinary.com" />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+
+    <!-- ============================================================
+         🔒 SECURITY — DevTools Block (Production Only)
+         ============================================================ -->
+    <script>
+      (function () {
+        // ✅ Skip on localhost / dev environments
+        var hostname = window.location.hostname;
+        var isDev =
+          hostname === 'localhost' ||
+          hostname === '127.0.0.1' ||
+          hostname === '0.0.0.0' ||
+          hostname.endsWith('.local') ||
+          hostname.startsWith('192.168.') ||
+          hostname.startsWith('10.') ||
+          hostname.includes('vercel.app') || // preview deploys
+          hostname.includes('netlify.app'); // preview deploys
+
+        if (isDev) return;
+
+        // ============================================================
+        // 1. DISABLE RIGHT-CLICK
+        // ============================================================
+        document.addEventListener('contextmenu', function (e) {
+          e.preventDefault();
+          return false;
+        });
+
+        // ============================================================
+        // 2. DISABLE DEVTOOLS SHORTCUTS
+        // ============================================================
+        document.addEventListener(
+          'keydown',
+          function (e) {
+            // F12
+            if (e.keyCode === 123 || e.key === 'F12') {
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }
+
+            // Ctrl + Shift + I / J / C (Windows/Linux)
+            if (
+              e.ctrlKey &&
+              e.shiftKey &&
+              (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)
+            ) {
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }
+
+            // Ctrl + U (View Source)
+            if (e.ctrlKey && (e.keyCode === 85 || e.key === 'u' || e.key === 'U')) {
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }
+
+            // Ctrl + S (Save Page)
+            if (e.ctrlKey && (e.keyCode === 83 || e.key === 's' || e.key === 'S')) {
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }
+
+            // Ctrl + Shift + K (Firefox console)
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 75) {
+              e.preventDefault();
+              return false;
+            }
+
+            // Cmd + Option + I / J / C (Mac)
+            if (
+              e.metaKey &&
+              e.altKey &&
+              (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)
+            ) {
+              e.preventDefault();
+              return false;
+            }
+
+            // Cmd + U (Mac view source)
+            if (e.metaKey && (e.keyCode === 85 || e.key === 'u' || e.key === 'U')) {
+              e.preventDefault();
+              return false;
+            }
+
+            // Cmd + S (Mac save)
+            if (e.metaKey && (e.keyCode === 83 || e.key === 's' || e.key === 'S')) {
+              e.preventDefault();
+              return false;
+            }
+          },
+          true
+        );
+
+        // ============================================================
+        // 3. DISABLE DRAG (prevents image/code dragging)
+        // ============================================================
+        document.addEventListener('dragstart', function (e) {
+          e.preventDefault();
+          return false;
+        });
+
+        // ============================================================
+        // 4. DISABLE TEXT SELECTION (Optional — comment if unwanted)
+        // ============================================================
+        // ⚠️ This makes copy/paste impossible — may hurt UX
+        // document.addEventListener('selectstart', function (e) {
+        //   e.preventDefault();
+        //   return false;
+        // });
+
+        // ============================================================
+        // 5. CLEAR CONSOLE PERIODICALLY (hides console output)
+        // ============================================================
+        if (typeof console !== 'undefined') {
+          setInterval(function () {
+            try {
+              console.clear();
+            } catch (err) {
+              /* silent */
+            }
+          }, 2000);
+        }
+
+        // ============================================================
+        // 6. DEVTOOLS SIZE DETECTION (aggressive)
+        // ============================================================
+        // ⚠️ This can false-positive if browser UI changes
+        // ⚠️ Enable only if you really want aggressive detection
+        /*
+        var devtoolsOpen = false;
+        var threshold = 160;
+
+        setInterval(function () {
+          var widthDiff = window.outerWidth - window.innerWidth;
+          var heightDiff = window.outerHeight - window.innerHeight;
+
+          if (widthDiff > threshold || heightDiff > threshold) {
+            if (!devtoolsOpen) {
+              devtoolsOpen = true;
+              // Options:
+              // 1. Blank the page
+              // document.body.innerHTML = '<div style="padding:50px;font-family:sans-serif;text-align:center;"><h1>⚠️ Access Restricted</h1><p>Please close developer tools to continue.</p></div>';
+              // 2. Redirect
+              // window.location.href = 'about:blank';
+            }
+          } else {
+            devtoolsOpen = false;
+          }
+        }, 800);
+        */
+      })();
+    </script>
+
+    <!-- ============================================================
+         FIREBASE SDK PRECONNECT (optional — improves Firebase load)
+         ============================================================ -->
+    <link rel="preconnect" href="https://firestore.googleapis.com" />
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
+    <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
   </head>
+
   <body>
+    <!-- ============================================================
+         NOSCRIPT FALLBACK
+         ============================================================ -->
+    <noscript>
+      <div
+        style="
+          font-family: sans-serif;
+          padding: 40px;
+          text-align: center;
+          background: #fffdf7;
+          color: #111827;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        "
+      >
+        <h1 style="color: #0f766e; margin-bottom: 12px">MAHA ONE HYPERMART</h1>
+        <p style="margin-bottom: 8px">
+          JavaScript is required to use this website.
+        </p>
+        <p style="color: #666; font-size: 14px">
+          Please enable JavaScript in your browser settings and reload.
+        </p>
+      </div>
+    </noscript>
+
+    <!-- ============================================================
+         ROOT + APP ENTRY
+         ============================================================ -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- ============================================================
+         LOADING FALLBACK (shown before React hydrates)
+         ============================================================ -->
+    <div
+      id="initial-loader"
+      style="
+        position: fixed;
+        inset: 0;
+        background: #fffdf7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.3s ease;
+      "
+    >
+      <div
+        style="
+          width: 48px;
+          height: 48px;
+          border: 4px solid #0f766e;
+          border-top-color: transparent;
+          border-radius: 50%;
+          animation: initial-spin 0.8s linear infinite;
+        "
+      ></div>
+      <style>
+        @keyframes initial-spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      </style>
+    </div>
+
+    <script>
+      // ✅ Remove initial loader once React mounts
+      window.addEventListener('load', function () {
+        setTimeout(function () {
+          var loader = document.getElementById('initial-loader');
+          if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(function () {
+              if (loader.parentNode) loader.parentNode.removeChild(loader);
+            }, 300);
+          }
+        }, 500);
+      });
+    </script>
   </body>
 </html>
