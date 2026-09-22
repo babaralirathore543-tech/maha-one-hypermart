@@ -28,7 +28,6 @@ import AdminProductsApproval from './AdminProductsApproval';
 
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
-
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState<any[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -37,21 +36,51 @@ const AdminPanel: React.FC = () => {
   const user = userStr ? JSON.parse(userStr) : null;
   const isAdmin = user?.role === 'admin';
 
+  // ✅ Body class for CSS isolation
   useEffect(() => {
-    if (!isAdmin) {
-      navigate('/');
-    }
+    document.body.classList.add('admin-active');
+    return () => document.body.classList.remove('admin-active');
+  }, []);
+
+  useEffect(() => {
+    if (!isAdmin) navigate('/');
     fetchProducts();
   }, [isAdmin, navigate]);
+
+  // ✅ Body scroll lock when mobile sidebar open
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isSidebarOpen]);
+
+  // ✅ ESC key closes sidebar
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsSidebarOpen(false);
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
+
+  // ✅ Auto-close on desktop resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) setIsSidebarOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fetchProducts = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'products'));
-      const productsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setProducts(productsData);
+      setProducts(querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error('Error fetching products:', error);
     }
@@ -66,7 +95,6 @@ const AdminPanel: React.FC = () => {
     navigate('/login');
   };
 
-  // ✅ Category Stats
   const getCategoryStats = () => {
     const fashion = products.filter((p) => p.category === 'fashion').length;
     const dryFruits = products.filter(
@@ -79,25 +107,27 @@ const AdminPanel: React.FC = () => {
 
   const categoryStats = getCategoryStats();
 
-  // ✅ Stats Cards
   const stats = [
-    { title: 'Total Products', value: products.length, icon: <FaBox />, color: 'bg-blue-500' },
+    { title: 'Products', value: products.length, icon: <FaBox />, color: 'bg-blue-500' },
     { title: 'Fashion', value: categoryStats.fashion, icon: <FaTshirt />, color: 'bg-purple-500' },
     { title: 'Dry Fruits', value: categoryStats.dryFruits, icon: <FaSeedling />, color: 'bg-green-500' },
     { title: 'Sweets', value: categoryStats.sweets, icon: <FaCookie />, color: 'bg-pink-500' },
     { title: 'Herbal', value: categoryStats.herbal, icon: <FaLeaf />, color: 'bg-emerald-500' },
   ];
 
-  // ✅ Menu Items — Categories Removed
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <FaHome /> },
-    { id: 'add-product', label: 'Add Product', icon: <FaPlus />, isLink: true, link: '/admin/products/add' },
     { id: 'products', label: 'Products', icon: <FaBox /> },
-    { id: 'products-approval', label: 'Products Approval', icon: <FaCheckCircle /> },
+    { id: 'products-approval', label: 'Products Approval', icon: <FaCheckCircle />, badge: 'Pending' },
     { id: 'orders', label: 'Orders', icon: <FaShoppingCart /> },
     { id: 'users', label: 'Users', icon: <FaUsers /> },
-    { id: 'sellers', label: 'Sellers', icon: <FaUserPlus /> },
+    { id: 'sellers', label: 'Sellers', icon: <FaUserPlus />, badge: 'New' },
   ];
+
+  const handleMenuClick = (id: string) => {
+    setActiveTab(id);
+    setIsSidebarOpen(false);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -114,143 +144,233 @@ const AdminPanel: React.FC = () => {
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#0F0A1A]">
-      {/* HEADER */}
-      <header className="bg-[#0F766E] dark:bg-[#181028] text-white p-4 shadow-lg border-b border-[#D4AF37]/20">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+    <div className="admin-layout min-h-screen bg-gray-100">
+
+      {/* ================================================================
+          LAYOUT STRUCTURE:
+          
+          ┌──────────────────────────────────────────┐
+          │  HEADER (sticky top)                     │
+          ├──────────────────────────────────────────┤
+          │  MOBILE SIDEBAR (fixed, overlay+drawer)  │  ← Overlay + drawer
+          ├─────────────┬────────────────────────────┤
+          │  DESKTOP    │  MAIN CONTENT              │
+          │  SIDEBAR    │                            │
+          │  (sticky)   │                            │
+          └─────────────┴────────────────────────────┘
+          
+          ✅ Desktop sidebar is INSIDE flex, takes space
+          ✅ Mobile sidebar is FIXED, OUTSIDE flex, overlays
+          ================================================================ */}
+
+      {/* ==================== 1. HEADER ==================== */}
+      <header className="bg-gradient-to-r from-[#0F766E] to-[#065F46] text-white shadow-lg sticky top-0 z-30">
+        <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
           {/* Left */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition"
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 transition shrink-0 active:scale-95"
+              aria-label="Open menu"
             >
-              {isSidebarOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+              <FaBars size={18} />
             </button>
 
-            <FaStore className="text-2xl" />
-            <h1 className="text-xl font-bold">Maha One Admin</h1>
-            <span className="text-xs bg-[#D4AF37]/20 px-2 py-0.5 rounded-full text-[#D4AF37] ml-2">
-              v2.0
-            </span>
+            <div className="w-9 h-9 bg-[#D4AF37] rounded-xl flex items-center justify-center shrink-0">
+              <FaStore className="text-lg text-[#0F766E]" />
+            </div>
+            <h1 className="text-base sm:text-lg font-bold truncate">
+              Maha One <span className="hidden sm:inline">Admin</span>
+            </h1>
           </div>
 
           {/* Right */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Link
               to="/admin/products/add"
-              className="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5"
+              className="bg-[#D4AF37] hover:bg-[#c19f2e] text-[#0F766E] px-2.5 sm:px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 active:scale-95"
             >
-              <FaPlus /> Add Product
+              <FaPlus size={12} />
+              <span className="hidden sm:inline">Add Product</span>
             </Link>
             <button
               onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5"
+              className="bg-red-500 hover:bg-red-600 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1.5 active:scale-95"
             >
-              <FaSignOutAlt /> Logout
+              <FaSignOutAlt size={12} />
+              <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
-      <div className="max-w-7xl mx-auto p-4 sm:p-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* SIDEBAR */}
-          <div
-            className={`
-              lg:w-64
-              bg-white dark:bg-[#1F2937]
-              rounded-xl shadow-sm p-4
-              h-fit
-              border border-gray-200 dark:border-gray-700
-              lg:block
-              ${isSidebarOpen ? 'block' : 'hidden'}
-            `}
+      {/* ==================== 2. MOBILE SIDEBAR (fixed, overlays) ==================== */}
+      {/* Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Drawer */}
+      <aside
+        className={`
+          fixed top-0 left-0 z-50
+          h-[100dvh] w-[280px] max-w-[85vw]
+          bg-gradient-to-b from-[#0F766E] to-[#065F46] text-white
+          transform transition-transform duration-300 ease-out
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:hidden
+          flex flex-col
+          shadow-2xl
+        `}
+      >
+        {/* Mobile Close Header */}
+        <div className="p-4 border-b border-white/10 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center">
+              <FaStore className="text-xl text-[#0F766E]" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold leading-tight">Maha One</h1>
+              <p className="text-[11px] text-[#a8d5d0] leading-tight">Admin Panel</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition active:scale-95"
+            aria-label="Close menu"
           >
-            <nav className="space-y-1">
-              {menuItems.map((item) => {
-                // If it's a link, use Link component
-                if ((item as any).isLink && (item as any).link) {
-                  return (
-                    <Link
-                      key={item.id}
-                      to={(item as any).link}
-                      onClick={() => setIsSidebarOpen(false)}
-                      className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm transition text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    >
-                      {item.icon}
-                      {item.label}
-                      <span className="ml-auto text-xs bg-[#D4AF37] text-white px-2 py-0.5 rounded-full">
-                        New
-                      </span>
-                    </Link>
-                  );
-                }
-
-                // Otherwise, tab button
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setIsSidebarOpen(false);
-                    }}
-                    className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm transition ${
-                      activeTab === item.id
-                        ? 'bg-[#0F766E] dark:bg-[#7C3AED] text-white shadow-md'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    {item.icon}
-                    {item.label}
-
-                    {item.id === 'sellers' && (
-                      <span className="ml-auto text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">
-                        New
-                      </span>
-                    )}
-
-                    {item.id === 'products-approval' && (
-                      <span className="ml-auto text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full">
-                        Pending
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* CONTENT AREA */}
-          <div className="flex-1 min-w-0">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-6">
-              {stats.map((stat, index) => (
-                <div
-                  key={index}
-                  className="bg-white dark:bg-[#1F2937] rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700"
-                >
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                    {stat.title}
-                  </p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mt-1">
-                    {stat.value}
-                  </p>
-                  <div
-                    className={`${stat.color} text-white w-8 h-8 rounded-lg flex items-center justify-center mt-2 text-sm`}
-                  >
-                    {stat.icon}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Main Content */}
-            <div className="bg-white dark:bg-[#1F2937] rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-              {renderContent()}
-            </div>
-          </div>
+            <FaTimes size={16} />
+          </button>
         </div>
+
+        {/* Menu */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          <p className="text-[10px] uppercase tracking-wider text-[#a8d5d0] font-semibold px-3 py-2">
+            Main Menu
+          </p>
+
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleMenuClick(item.id)}
+              className={`flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium transition active:scale-[0.98] ${
+                activeTab === item.id
+                  ? 'bg-white text-[#0F766E] shadow-lg'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <span className="text-lg shrink-0">{item.icon}</span>
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge && (
+                <span className="text-[10px] bg-[#D4AF37] text-[#0F766E] font-bold px-2 py-0.5 rounded-full">
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* Logout */}
+        <div className="p-3 border-t border-white/10 shrink-0">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3.5 py-3 rounded-xl text-white/80 hover:bg-red-500 hover:text-white transition w-full text-sm font-medium active:scale-[0.98]"
+          >
+            <FaSignOutAlt className="text-lg" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* ==================== 3. FLEX WRAPPER: DESKTOP SIDEBAR + MAIN ==================== */}
+      <div className="flex w-full">
+        {/* ---------- 3A. DESKTOP SIDEBAR (hidden on mobile) ---------- */}
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:sticky lg:top-[60px] lg:h-[calc(100vh-60px)] bg-gradient-to-b from-[#0F766E] to-[#065F46] text-white">
+          {/* Desktop Header */}
+          <div className="p-4 border-b border-white/10 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center">
+                <FaStore className="text-xl text-[#0F766E]" />
+              </div>
+              <div>
+                <h1 className="text-base font-bold leading-tight">Maha One</h1>
+                <p className="text-[11px] text-[#a8d5d0] leading-tight">Admin Panel</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Menu */}
+          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+            <p className="text-[10px] uppercase tracking-wider text-[#a8d5d0] font-semibold px-3 py-2">
+              Main Menu
+            </p>
+
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleMenuClick(item.id)}
+                className={`flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium transition ${
+                  activeTab === item.id
+                    ? 'bg-white text-[#0F766E] shadow-lg'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span className="text-lg shrink-0">{item.icon}</span>
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.badge && (
+                  <span className="text-[10px] bg-[#D4AF37] text-[#0F766E] font-bold px-2 py-0.5 rounded-full">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+
+          {/* Logout */}
+          <div className="p-3 border-t border-white/10 shrink-0">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-3.5 py-3 rounded-xl text-white/80 hover:bg-red-500 hover:text-white transition w-full text-sm font-medium"
+            >
+              <FaSignOutAlt className="text-lg" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </aside>
+
+        {/* ---------- 3B. MAIN CONTENT ---------- */}
+        <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6">
+            {stats.map((stat, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-gray-100 hover:shadow-md transition"
+              >
+                <p className="text-xs sm:text-sm text-gray-500 truncate">
+                  {stat.title}
+                </p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mt-1">
+                  {stat.value}
+                </p>
+                <div
+                  className={`${stat.color} text-white w-8 h-8 rounded-lg flex items-center justify-center mt-2 text-sm`}
+                >
+                  {stat.icon}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Dynamic Content */}
+          <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 lg:p-6 border border-gray-100">
+            {renderContent()}
+          </div>
+        </main>
       </div>
     </div>
   );

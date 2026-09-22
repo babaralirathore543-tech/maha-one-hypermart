@@ -117,14 +117,12 @@ const AdminDashboard: React.FC = () => {
       try {
         setLoading(true);
 
-        // 1. Fetch Products
         const productsSnap = await getDocs(collection(db, 'products'));
         const products = productsSnap.docs.map((d) => ({
           id: d.id,
           ...d.data(),
         }));
 
-        // 2. ✅ Fetch ALL variants in ONE query using collectionGroup
         let allVariants: any[] = [];
         let lowStock = 0;
         let outOfStock = 0;
@@ -141,18 +139,13 @@ const AdminDashboard: React.FC = () => {
           allVariants.forEach((v: any) => {
             if (v.stock === 0) outOfStock++;
             else if (v.stock <= 5) lowStock++;
-
             if (v.colour) uniqueColours.add(v.colour);
             if (v.size) uniqueSizes.add(v.size);
           });
         } catch (err) {
-          console.warn(
-            '⚠️ collectionGroup("variants") failed — you may need to enable it in Firestore indexes:',
-            err
-          );
+          console.warn('⚠️ collectionGroup("variants") failed:', err);
         }
 
-        // 3. Fetch Orders
         const ordersSnap = await getDocs(collection(db, 'orders'));
         const orders = ordersSnap.docs.map((d) => ({
           id: d.id,
@@ -160,8 +153,7 @@ const AdminDashboard: React.FC = () => {
         }));
 
         const pending = orders.filter(
-          (o: any) =>
-            o.orderStatus === 'pending' || o.orderStatus === 'processing'
+          (o: any) => o.orderStatus === 'pending' || o.orderStatus === 'processing'
         ).length;
         const completed = orders.filter(
           (o: any) => o.orderStatus === 'delivered'
@@ -186,14 +178,11 @@ const AdminDashboard: React.FC = () => {
           0
         );
 
-        const avgOrderValue =
-          orders.length > 0 ? totalRevenue / orders.length : 0;
+        const avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
 
-        // 4. Users
         const usersSnap = await getDocs(collection(db, 'users'));
         const usersCount = usersSnap.size;
 
-        // 5. Recent Orders
         const recentOrdersData: RecentOrder[] = orders
           .sort((a: any, b: any) => {
             const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
@@ -214,7 +203,6 @@ const AdminDashboard: React.FC = () => {
             size: o.items?.[0]?.size,
           }));
 
-        // 6. Top Products
         const productSales: {
           [key: string]: {
             name: string;
@@ -236,8 +224,7 @@ const AdminDashboard: React.FC = () => {
               };
             }
             productSales[key].sales += item.quantity || 1;
-            productSales[key].revenue +=
-              (item.price || 0) * (item.quantity || 1);
+            productSales[key].revenue += (item.price || 0) * (item.quantity || 1);
           });
         });
 
@@ -246,7 +233,6 @@ const AdminDashboard: React.FC = () => {
           .sort((a, b) => b.sales - a.sales)
           .slice(0, 5);
 
-        // 7. Chart Data — Monthly Sales
         const monthlySales = new Array(12).fill(0);
         orders.forEach((order: any) => {
           const date = order.createdAt?.toDate?.() || new Date(order.createdAt);
@@ -255,20 +241,7 @@ const AdminDashboard: React.FC = () => {
         });
 
         setSalesData({
-          labels: [
-            'Jan',
-            'Feb',
-            'Mar',
-            'Apr',
-            'May',
-            'Jun',
-            'Jul',
-            'Aug',
-            'Sep',
-            'Oct',
-            'Nov',
-            'Dec',
-          ],
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
           datasets: [
             {
               label: 'Monthly Sales (Rs.)',
@@ -281,12 +254,9 @@ const AdminDashboard: React.FC = () => {
           ],
         });
 
-        // 8. Colour Distribution
         const colourCount: { [key: string]: number } = {};
         allVariants.forEach((v: any) => {
-          if (v.colour) {
-            colourCount[v.colour] = (colourCount[v.colour] || 0) + 1;
-          }
+          if (v.colour) colourCount[v.colour] = (colourCount[v.colour] || 0) + 1;
         });
 
         setColourData({
@@ -296,27 +266,16 @@ const AdminDashboard: React.FC = () => {
               label: 'Products by Colour',
               data: Object.values(colourCount),
               backgroundColor: [
-                '#FF6B6B',
-                '#4ECDC4',
-                '#45B7D1',
-                '#96CEB4',
-                '#FFEAA7',
-                '#DDA0DD',
-                '#98D8C8',
-                '#F7DC6F',
-                '#BB8FCE',
-                '#85C1E9',
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
               ],
             },
           ],
         });
 
-        // 9. Size Distribution
         const sizeCount: { [key: string]: number } = {};
         allVariants.forEach((v: any) => {
-          if (v.size) {
-            sizeCount[v.size] = (sizeCount[v.size] || 0) + 1;
-          }
+          if (v.size) sizeCount[v.size] = (sizeCount[v.size] || 0) + 1;
         });
 
         setSizeData({
@@ -358,7 +317,6 @@ const AdminDashboard: React.FC = () => {
 
     fetchAllData();
 
-    // Real-time orders listener
     const ordersUnsubscribe = onSnapshot(
       collection(db, 'orders'),
       (snapshot) => {
@@ -367,8 +325,7 @@ const AdminDashboard: React.FC = () => {
           ...d.data(),
         }));
         const pending = orders.filter(
-          (o: any) =>
-            o.orderStatus === 'pending' || o.orderStatus === 'processing'
+          (o: any) => o.orderStatus === 'pending' || o.orderStatus === 'processing'
         ).length;
         const completed = orders.filter(
           (o: any) => o.orderStatus === 'delivered'
@@ -411,7 +368,7 @@ const AdminDashboard: React.FC = () => {
     {
       title: 'Total Revenue',
       value: `Rs. ${stats.totalRevenue.toLocaleString()}`,
-      icon: <FaChartLine className="text-3xl" />,
+      icon: <FaChartLine />,
       color: 'bg-gradient-to-br from-yellow-400 to-yellow-600',
       change: '+8%',
       up: true,
@@ -419,7 +376,7 @@ const AdminDashboard: React.FC = () => {
     {
       title: "Today's Sales",
       value: `Rs. ${stats.todaySales.toLocaleString()}`,
-      icon: <FaShoppingCart className="text-3xl" />,
+      icon: <FaShoppingCart />,
       color: 'bg-gradient-to-br from-green-400 to-green-600',
       change: '+12%',
       up: true,
@@ -427,7 +384,7 @@ const AdminDashboard: React.FC = () => {
     {
       title: 'Total Orders',
       value: stats.totalOrders,
-      icon: <FaBox className="text-3xl" />,
+      icon: <FaBox />,
       color: 'bg-gradient-to-br from-blue-400 to-blue-600',
       change: '+5%',
       up: true,
@@ -435,7 +392,7 @@ const AdminDashboard: React.FC = () => {
     {
       title: 'Total Users',
       value: stats.totalUsers,
-      icon: <FaUsers className="text-3xl" />,
+      icon: <FaUsers />,
       color: 'bg-gradient-to-br from-purple-400 to-purple-600',
       change: '+15%',
       up: true,
@@ -443,72 +400,22 @@ const AdminDashboard: React.FC = () => {
   ];
 
   const statusCards = [
-    {
-      title: 'Pending',
-      value: stats.pendingOrders,
-      icon: <FaHourglassHalf className="text-xl" />,
-      color: 'bg-yellow-100 text-yellow-800',
-    },
-    {
-      title: 'Processing',
-      value: stats.pendingOrders,
-      icon: <FaClock className="text-xl" />,
-      color: 'bg-blue-100 text-blue-800',
-    },
-    {
-      title: 'Delivered',
-      value: stats.completedOrders,
-      icon: <FaCheckCircle className="text-xl" />,
-      color: 'bg-green-100 text-green-800',
-    },
-    {
-      title: 'Cancelled',
-      value: stats.cancelledOrders,
-      icon: <FaTimesCircle className="text-xl" />,
-      color: 'bg-red-100 text-red-800',
-    },
+    { title: 'Pending', value: stats.pendingOrders, icon: <FaHourglassHalf />, color: 'bg-yellow-100 text-yellow-800' },
+    { title: 'Processing', value: stats.pendingOrders, icon: <FaClock />, color: 'bg-blue-100 text-blue-800' },
+    { title: 'Delivered', value: stats.completedOrders, icon: <FaCheckCircle />, color: 'bg-green-100 text-green-800' },
+    { title: 'Cancelled', value: stats.cancelledOrders, icon: <FaTimesCircle />, color: 'bg-red-100 text-red-800' },
   ];
 
   const stockCards = [
-    {
-      title: 'Low Stock',
-      value: stats.lowStockProducts,
-      icon: <FaExclamationTriangle className="text-xl" />,
-      color: 'bg-orange-100 text-orange-800',
-    },
-    {
-      title: 'Out of Stock',
-      value: stats.outOfStockProducts,
-      icon: <FaTimesCircle className="text-xl" />,
-      color: 'bg-red-100 text-red-800',
-    },
-    {
-      title: 'Total Variants',
-      value: stats.totalVariants,
-      icon: <FaPalette className="text-xl" />,
-      color: 'bg-purple-100 text-purple-800',
-    },
-    {
-      title: 'Avg Order Value',
-      value: `Rs. ${stats.averageOrderValue.toFixed(0)}`,
-      icon: <FaChartLine className="text-xl" />,
-      color: 'bg-teal-100 text-teal-800',
-    },
+    { title: 'Low Stock', value: stats.lowStockProducts, icon: <FaExclamationTriangle />, color: 'bg-orange-100 text-orange-800' },
+    { title: 'Out of Stock', value: stats.outOfStockProducts, icon: <FaTimesCircle />, color: 'bg-red-100 text-red-800' },
+    { title: 'Total Variants', value: stats.totalVariants, icon: <FaPalette />, color: 'bg-purple-100 text-purple-800' },
+    { title: 'Avg Order Value', value: `Rs. ${stats.averageOrderValue.toFixed(0)}`, icon: <FaChartLine />, color: 'bg-teal-100 text-teal-800' },
   ];
 
   const variantStats = [
-    {
-      title: 'Total Colours',
-      value: stats.totalColours,
-      icon: <FaPalette className="text-2xl" />,
-      color: 'bg-pink-100 text-pink-800',
-    },
-    {
-      title: 'Total Sizes',
-      value: stats.totalSizes,
-      icon: <FaRuler className="text-2xl" />,
-      color: 'bg-indigo-100 text-indigo-800',
-    },
+    { title: 'Total Colours', value: stats.totalColours, icon: <FaPalette />, color: 'bg-pink-100 text-pink-800' },
+    { title: 'Total Sizes', value: stats.totalSizes, icon: <FaRuler />, color: 'bg-indigo-100 text-indigo-800' },
   ];
 
   if (loading) {
@@ -520,44 +427,38 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-gray-500">
             Welcome back! Here's what's happening with your store.
           </p>
         </div>
-        <div className="flex gap-2">
-          <button className="bg-[#0F766E] text-white px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-sm">
-            <FaClock className="inline mr-2" />
-            Last 30 Days
-          </button>
-        </div>
+        <button className="bg-[#0F766E] text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-[#065F46] transition text-xs sm:text-sm">
+          <FaClock className="inline mr-1 sm:mr-2" />
+          Last 30 Days
+        </button>
       </div>
 
       {/* Main Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {statCards.map((stat, index) => (
           <div
             key={index}
-            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-lg transition-all duration-300"
+            className="bg-white rounded-xl shadow-sm p-3 sm:p-6 hover:shadow-lg transition-all duration-300"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] sm:text-sm text-gray-500 font-medium truncate">
                   {stat.title}
                 </p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">
+                <p className="text-sm sm:text-2xl font-bold text-gray-800 mt-1 truncate">
                   {stat.value}
                 </p>
-                <div className="flex items-center gap-1 mt-2">
-                  <span
-                    className={`text-xs font-medium ${
-                      stat.up ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
+                <div className="hidden sm:flex items-center gap-1 mt-2">
+                  <span className={`text-xs font-medium ${stat.up ? 'text-green-600' : 'text-red-600'}`}>
                     {stat.change}
                   </span>
                   {stat.up ? (
@@ -568,9 +469,7 @@ const AdminDashboard: React.FC = () => {
                   <span className="text-xs text-gray-400">vs last month</span>
                 </div>
               </div>
-              <div
-                className={`${stat.color} text-white p-4 rounded-xl shadow-lg`}
-              >
+              <div className={`${stat.color} text-white p-2 sm:p-4 rounded-xl shadow-lg text-sm sm:text-2xl shrink-0`}>
                 {stat.icon}
               </div>
             </div>
@@ -579,41 +478,41 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Order Status & Stock */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
+          <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
             <FaBox className="text-[#0F766E]" />
             Order Status Overview
           </h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {statusCards.map((card, i) => (
-              <div key={i} className={`${card.color} rounded-lg p-4`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium">{card.title}</p>
-                    <p className="text-2xl font-bold mt-1">{card.value}</p>
+              <div key={i} className={`${card.color} rounded-lg p-3 sm:p-4`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-xs font-medium truncate">{card.title}</p>
+                    <p className="text-lg sm:text-2xl font-bold mt-1">{card.value}</p>
                   </div>
-                  <div className="opacity-75">{card.icon}</div>
+                  <div className="opacity-75 text-sm sm:text-base shrink-0">{card.icon}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
+          <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
             <FaExclamationTriangle className="text-orange-500" />
             Inventory Overview
           </h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {stockCards.map((card, i) => (
-              <div key={i} className={`${card.color} rounded-lg p-4`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium">{card.title}</p>
-                    <p className="text-2xl font-bold mt-1">{card.value}</p>
+              <div key={i} className={`${card.color} rounded-lg p-3 sm:p-4`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-xs font-medium truncate">{card.title}</p>
+                    <p className="text-lg sm:text-2xl font-bold mt-1 truncate">{card.value}</p>
                   </div>
-                  <div className="opacity-75">{card.icon}</div>
+                  <div className="opacity-75 text-sm sm:text-base shrink-0">{card.icon}</div>
                 </div>
               </div>
             ))}
@@ -622,35 +521,37 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Colour & Size Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6">
         {variantStats.map((stat, index) => (
           <div
             key={index}
-            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition"
+            className="bg-white rounded-xl shadow-sm p-3 sm:p-6 hover:shadow-md transition"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[11px] sm:text-sm text-gray-500 font-medium truncate">
                   {stat.title}
                 </p>
-                <p className="text-3xl font-bold text-gray-800 mt-1">
+                <p className="text-lg sm:text-3xl font-bold text-gray-800 mt-1">
                   {stat.value}
                 </p>
               </div>
-              <div className={`${stat.color} p-4 rounded-xl`}>{stat.icon}</div>
+              <div className={`${stat.color} p-2 sm:p-4 rounded-xl text-sm sm:text-2xl shrink-0`}>
+                {stat.icon}
+              </div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-800 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
+          <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">
             Revenue Overview
           </h3>
           {salesData && (
-            <div className="h-64">
+            <div className="h-56 sm:h-64">
               <Line
                 data={salesData}
                 options={{
@@ -673,12 +574,12 @@ const AdminDashboard: React.FC = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-800 mb-4">
+        <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
+          <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">
             Products by Colour
           </h3>
           {colourData && (
-            <div className="h-64 flex justify-center">
+            <div className="h-56 sm:h-64 flex justify-center">
               <Doughnut
                 data={colourData}
                 options={{
@@ -695,12 +596,12 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Size Distribution */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h3 className="font-semibold text-gray-800 mb-4">
+      <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
+        <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">
           Products by Size
         </h3>
         {sizeData && (
-          <div className="h-64">
+          <div className="h-56 sm:h-64">
             <Bar
               data={sizeData}
               options={{
@@ -708,10 +609,7 @@ const AdminDashboard: React.FC = () => {
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 },
-                  },
+                  y: { beginAtZero: true, ticks: { stepSize: 1 } },
                 },
               }}
             />
@@ -720,107 +618,98 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Recent Orders & Top Products */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-800">Recent Orders</h3>
-            <button className="text-sm text-[#0F766E] hover:underline">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Recent Orders</h3>
+            <button className="text-xs sm:text-sm text-[#0F766E] hover:underline">
               View All
             </button>
           </div>
-          <div className="space-y-3 max-h-80 overflow-y-auto">
+          <div className="space-y-2 sm:space-y-3 max-h-80 overflow-y-auto">
             {recentOrders.length > 0 ? (
               recentOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 px-2 rounded-lg transition"
+                  className="flex items-center justify-between py-2 sm:py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 px-1 sm:px-2 rounded-lg transition gap-2"
                 >
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
                       {order.orderNumber}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                       {order.customerName}
                     </p>
                     {order.colour && order.size && (
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="hidden sm:flex items-center text-xs text-gray-400 mt-1">
                         <span
                           className="inline-block w-2 h-2 rounded-full mr-1"
-                          style={{
-                            backgroundColor: order.colour.toLowerCase(),
-                          }}
+                          style={{ backgroundColor: order.colour.toLowerCase() }}
                         ></span>
                         {order.colour} • {order.size}
                       </p>
                     )}
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-800">
+                  <div className="text-right shrink-0">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-800 whitespace-nowrap">
                       Rs. {order.total.toLocaleString()}
                     </p>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
-                        order.status
-                      )}`}
-                    >
+                    <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${getStatusColor(order.status)}`}>
                       {order.status}
                     </span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-500 py-8">
-                No recent orders
-              </p>
+              <p className="text-center text-gray-500 py-8 text-sm">No recent orders</p>
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-800">
+        <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="font-semibold text-gray-800 text-sm sm:text-base">
               Top Selling Products
             </h3>
-            <button className="text-sm text-[#0F766E] hover:underline">
+            <button className="text-xs sm:text-sm text-[#0F766E] hover:underline">
               View All
             </button>
           </div>
-          <div className="space-y-3 max-h-80 overflow-y-auto">
+          <div className="space-y-2 sm:space-y-3 max-h-80 overflow-y-auto">
             {topProducts.length > 0 ? (
               topProducts.map((product, i) => (
                 <div
                   key={product.id}
-                  className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0"
+                  className="flex items-center gap-2 sm:gap-3 py-2 border-b border-gray-100 last:border-0"
                 >
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-bold text-gray-600">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold text-gray-600 shrink-0">
                     #{i + 1}
                   </div>
                   <img
                     src={product.image || '/images/placeholder.jpg'}
                     alt={product.name}
-                    className="w-12 h-12 object-cover rounded-lg"
+                    className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg shrink-0"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        '/images/placeholder.jpg';
+                      (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
                     }}
                   />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
                       {product.name}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-[10px] sm:text-xs text-gray-500">
                       {product.sales} sales
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-[#0F766E]">
+                  <div className="text-right shrink-0">
+                    <p className="text-xs sm:text-sm font-semibold text-[#0F766E] whitespace-nowrap">
                       Rs. {product.revenue.toLocaleString()}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-500 py-8">
+              <p className="text-center text-gray-500 py-8 text-sm">
                 No products sold yet
               </p>
             )}

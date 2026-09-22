@@ -25,6 +25,12 @@ const SellerLayout = () => {
   const [storeName, setStoreName] = useState('');
   const [checking, setChecking] = useState(true);
 
+  // ✅ Body class for CSS isolation
+  useEffect(() => {
+    document.body.classList.add('seller-active');
+    return () => document.body.classList.remove('seller-active');
+  }, []);
+
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -87,26 +93,8 @@ const SellerLayout = () => {
 
   if (loading || checking) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          background: '#f9fafb',
-        }}
-      >
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            border: '4px solid #0F766E',
-            borderTopColor: 'transparent',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-          }}
-        />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="w-12 h-12 border-4 border-[#0F766E] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -122,131 +110,52 @@ const SellerLayout = () => {
   ];
 
   return (
-    <div
-      style={{
-        background: '#f9fafb',
-        minHeight: '100vh',
-        position: 'relative',
-        paddingBottom: 80, // space for bottom nav
-      }}
-    >
-      {/* HEADER */}
-      <header
-        style={{
-          background: 'white',
-          borderBottom: '1px solid #e5e7eb',
-          position: 'sticky',
-          top: 0,
-          zIndex: 20,
-        }}
-      >
-        <div
-          style={{
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              minWidth: 0,
-              flex: 1,
-            }}
-          >
-            <FaStore style={{ color: '#0F766E', flexShrink: 0 }} />
-            <h1
-              style={{
-                fontWeight: 600,
-                color: '#1f2937',
-                fontSize: 16,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
+    <div className="min-h-screen bg-gray-50 flex flex-col w-full max-w-full overflow-x-hidden">
+      {/* ============ HEADER ============ */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-30 w-full">
+        <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-3 max-w-4xl mx-auto w-full">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <FaStore className="text-[#0F766E] shrink-0 text-lg" />
+            <h1 className="font-semibold text-gray-800 text-sm sm:text-base truncate">
               {storeName}
             </h1>
           </div>
 
           <button
             onClick={handleLogout}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 12px',
-              fontSize: 13,
-              color: '#dc2626',
-              background: 'white',
-              border: '1px solid #fecaca',
-              borderRadius: 8,
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition shrink-0 active:scale-95"
           >
-            <FaSignOutAlt />
-            <span>Logout</span>
+            <FaSignOutAlt size={12} />
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </header>
 
-      {/* CONTENT */}
-      <main
-        style={{
-          padding: 16,
-          maxWidth: 1200,
-          margin: '0 auto',
-        }}
-      >
+      {/* ============ CONTENT ============ */}
+      <main className="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24 lg:pb-6 overflow-x-hidden">
         <Outlet />
       </main>
 
-      {/* BOTTOM NAV */}
-      <nav
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: 'white',
-          borderTop: '1px solid #e5e7eb',
-          zIndex: 30,
-          boxShadow: '0 -2px 10px rgba(0,0,0,0.05)',
-        }}
-      >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            maxWidth: 500,
-            margin: '0 auto',
-          }}
-        >
+      {/* ============ BOTTOM NAV (Mobile only) ============ */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] w-full max-w-full">
+        <div className="grid grid-cols-5 max-w-lg mx-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.end}
-              style={({ isActive }) => ({
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '10px 4px',
-                color: isActive ? '#0F766E' : '#6b7280',
-                textDecoration: 'none',
-                fontSize: 10,
-                fontWeight: 500,
-              })}
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center py-2.5 px-1 transition-colors active:scale-95 ${
+                  isActive ? 'text-[#0F766E]' : 'text-gray-500 hover:text-gray-700'
+                }`
+              }
             >
               {({ isActive }) => (
                 <>
                   <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                  <span style={{ marginTop: 2 }}>{item.label}</span>
+                  <span className="text-[10px] font-medium mt-0.5">
+                    {item.label}
+                  </span>
                 </>
               )}
             </NavLink>

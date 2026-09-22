@@ -69,7 +69,6 @@ const SellerDashboard = () => {
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [recentLoading, setRecentLoading] = useState(true);
 
-  // ✅ Wait for auth to resolve
   useEffect(() => {
     if (authLoading) return;
     if (!user?.uid) {
@@ -81,7 +80,6 @@ const SellerDashboard = () => {
 
     let cancelled = false;
 
-    // ✅ Fetch store
     const fetchStore = async () => {
       try {
         const snap = await getDocs(
@@ -114,7 +112,6 @@ const SellerDashboard = () => {
       }
     };
 
-    // ✅ Fetch stats + recent orders (parallel)
     const fetchStats = async () => {
       try {
         const [productsSnap, ordersSnap] = await Promise.all([
@@ -158,7 +155,6 @@ const SellerDashboard = () => {
           availableBalance,
         });
 
-        // Recent orders (latest 3)
         const sorted = [...orders].sort((a, b) => {
           const aTime =
             a.createdAt?.toDate?.()?.getTime?.() ||
@@ -229,7 +225,7 @@ const SellerDashboard = () => {
       color: 'bg-purple-500',
     },
     {
-      title: 'Pending Orders',
+      title: 'Pending',
       value: stats.pendingOrders,
       icon: Clock,
       color: 'bg-orange-500',
@@ -237,9 +233,8 @@ const SellerDashboard = () => {
   ];
 
   return (
-    <div className="space-y-3 sm:space-y-6 w-full max-w-full">
-
-      {/* YOUR STORE — only show after loading completes */}
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full">
+      {/* YOUR STORE */}
       {!storeLoading && storeInfo && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -252,7 +247,7 @@ const SellerDashboard = () => {
           <div className="relative z-10">
             <div className="flex flex-col gap-3 sm:gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center shrink-0">
                   <Store size={22} className="text-[#D4AF37]" />
                 </div>
 
@@ -279,7 +274,7 @@ const SellerDashboard = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleCopyUrl}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 backdrop-blur px-3 py-2 rounded-lg text-xs font-medium transition-colors border border-white/10"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 backdrop-blur px-3 py-2 rounded-lg text-xs font-medium transition-colors border border-white/10 active:scale-95"
                 >
                   {copied ? (
                     <><Check size={14} /> Copied</>
@@ -292,7 +287,7 @@ const SellerDashboard = () => {
                   to={`/store/${storeInfo.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#D4AF37] hover:bg-[#c9a52d] text-gray-900 px-3 py-2 rounded-lg text-xs font-bold transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#D4AF37] hover:bg-[#c9a52d] text-gray-900 px-3 py-2 rounded-lg text-xs font-bold transition-colors active:scale-95"
                 >
                   <ExternalLink size={14} /> Preview
                 </Link>
@@ -302,7 +297,7 @@ const SellerDashboard = () => {
         </motion.div>
       )}
 
-      {/* AI Store Builder — only if store done loading and no store */}
+      {/* AI Store Builder */}
       {!storeLoading && !storeInfo && <StoreBuilderCard />}
 
       {/* STATS GRID */}
@@ -330,7 +325,7 @@ const SellerDashboard = () => {
                     </p>
                   )}
                 </div>
-                <div className={`${stat.color} p-2 rounded-lg flex-shrink-0`}>
+                <div className={`${stat.color} p-2 rounded-lg shrink-0`}>
                   <Icon size={16} className="text-white" />
                 </div>
               </div>
@@ -356,7 +351,7 @@ const SellerDashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg p-3 sm:p-4">
             <p className="text-xs text-gray-600">Pending Earnings</p>
-            <p className="text-lg sm:text-2xl font-bold text-emerald-700 mt-1">
+            <p className="text-lg sm:text-2xl font-bold text-emerald-700 mt-1 truncate">
               Rs. {stats.pendingEarnings.toLocaleString()}
             </p>
             <p className="text-[10px] text-gray-500 mt-1">
@@ -366,7 +361,7 @@ const SellerDashboard = () => {
 
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 sm:p-4">
             <p className="text-xs text-gray-600">Available Balance</p>
-            <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-1">
+            <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-1 truncate">
               Rs. {stats.availableBalance.toLocaleString()}
             </p>
             <Link
@@ -388,7 +383,7 @@ const SellerDashboard = () => {
         <div className="space-y-2">
           <Link
             to="/seller/products/add"
-            className="w-full flex items-center justify-between px-3 py-2.5 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2.5 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors active:scale-[0.98]"
           >
             <span className="text-xs sm:text-sm text-teal-700 font-medium">
               Add New Product
@@ -398,7 +393,7 @@ const SellerDashboard = () => {
 
           <Link
             to="/seller/orders"
-            className="w-full flex items-center justify-between px-3 py-2.5 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2.5 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors active:scale-[0.98]"
           >
             <span className="text-xs sm:text-sm text-orange-700 font-medium">
               View Pending Orders
@@ -408,7 +403,7 @@ const SellerDashboard = () => {
 
           <Link
             to="/seller/store"
-            className="w-full flex items-center justify-between px-3 py-2.5 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2.5 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors active:scale-[0.98]"
           >
             <span className="text-xs sm:text-sm text-blue-700 font-medium">
               Update Store
@@ -468,7 +463,7 @@ const SellerDashboard = () => {
                 </div>
 
                 <span
-                  className={`px-2 py-1 text-[10px] rounded-full flex-shrink-0 capitalize ${
+                  className={`px-2 py-1 text-[10px] rounded-full shrink-0 capitalize ${
                     order.status === 'delivered'
                       ? 'bg-green-100 text-green-700'
                       : order.status === 'pending'
