@@ -30,7 +30,7 @@ import MaintenancePage from './components/pages/MaintenancePage';
 import LoginPage from './components/pages/LoginPage';
 
 // ============================================================
-// ERROR BOUNDARY — catches runtime errors
+// ERROR BOUNDARY
 // ============================================================
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -99,7 +99,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // ============================================================
-// SELLER ROUTE — FIXED
+// SELLER ROUTE
 // ============================================================
 const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -122,7 +122,6 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     const checkSeller = async () => {
       try {
-        // ✅ 5s timeout
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Timeout')), 5000)
         );
@@ -158,12 +157,8 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     checkSeller();
 
-    // ✅ Safety net — 8s baad force complete
     const safetyTimer = setTimeout(() => {
-      if (!cancelled) {
-        console.warn('⚠️ Seller check timeout — forcing complete');
-        setChecking(false);
-      }
+      if (!cancelled) setChecking(false);
     }, 8000);
 
     return () => {
@@ -172,15 +167,12 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
   }, [user, loading]);
 
-  // ✅ Wait
   if (loading || checking) return <PageLoader />;
 
-  // ✅ Not logged in
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  // ✅ Not approved → register (NOT home)
   if (sellerStatus !== 'approved') {
     return <Navigate to="/seller/register" replace />;
   }
@@ -189,15 +181,58 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // ============================================================
+// APP CONTENT — inside Router, uses useLocation
+// ============================================================
+function AppContent() {
+  const location = useLocation();
+
+  // ✅ Detect special pages
+  const isSellerPage = location.pathname.startsWith('/seller');
+  const isAdminPage = location.pathname.startsWith('/admin');
+  const isDashboard = location.pathname.startsWith('/dashboard');
+
+  // ✅ Hide global chrome on these pages
+  const hideChrome = isSellerPage || isAdminPage;
+
+  return (
+    <>
+      <div className="min-h-[100dvh] flex flex-col bg-[#FFFDF7] dark:bg-[#111827]">
+        {/* ✅ Navbar — only on public pages */}
+        {!hideChrome && <Navbar />}
+
+        <main className="flex-grow">
+          <AnimatedRoutes
+            AdminRoute={AdminRoute}
+            SellerRoute={SellerRoute}
+          />
+        </main>
+
+        {/* ✅ Footer — only on public pages */}
+        {!hideChrome && <Footer />}
+      </div>
+
+      {/* ✅ Overlays — only on public pages */}
+      {!hideChrome && !isDashboard && (
+        <>
+          <WhatsAppButton />
+          <Popup
+            image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
+            delay={2000}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+// ============================================================
 // MAIN APP
 // ============================================================
 function App() {
   const SHOW_EID_MILAD = false;
   const MAINTENANCE_MODE = false;
 
-  // ─────────────────────────────────────────────
   // EID MILAD MODE
-  // ─────────────────────────────────────────────
   if (SHOW_EID_MILAD) {
     return (
       <ThemeProvider>
@@ -210,9 +245,7 @@ function App() {
     );
   }
 
-  // ─────────────────────────────────────────────
   // MAINTENANCE MODE
-  // ─────────────────────────────────────────────
   if (MAINTENANCE_MODE) {
     return (
       <ThemeProvider>
@@ -234,34 +267,14 @@ function App() {
     );
   }
 
-  // ─────────────────────────────────────────────
   // NORMAL WEBSITE
-  // ─────────────────────────────────────────────
   return (
     <ErrorBoundary>
       <Router>
         <ThemeProvider>
           <AuthProvider>
             <CartProvider>
-              <div className="min-h-screen flex flex-col bg-[#FFFDF7] dark:bg-[#111827]">
-                <Navbar />
-
-                <main className="flex-grow">
-                  <AnimatedRoutes
-                    AdminRoute={AdminRoute}
-                    SellerRoute={SellerRoute}
-                  />
-                </main>
-
-                <Footer />
-              </div>
-
-              <WhatsAppButton />
-
-              <Popup
-                image="https://res.cloudinary.com/kw3pdwrb/image/upload/v1787129090/ChatGPT_Image_Aug_19_2026_01_43_49_PM_gkjxzb.png"
-                delay={2000}
-              />
+              <AppContent />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>
