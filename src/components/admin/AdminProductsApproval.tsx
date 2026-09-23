@@ -3,14 +3,49 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   CheckCircle, XCircle, Clock, Search, Eye,
-  Package, Loader2, Store, RefreshCw
+  Package, Loader2, Store, RefreshCw, Mail, MessageCircle,
 } from 'lucide-react';
 import {
   collection, query, getDocs, doc,
-  updateDoc, serverTimestamp
+  updateDoc, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 
+// ============================================================
+// CONSTANTS
+// ============================================================
+const ADMIN_EMAIL = 'mahaonehypermarket@gmail.com';
+const SITE_URL = 'https://www.mahaonehypermaket.com';
+
+// ============================================================
+// HELPERS
+// ============================================================
+const cleanPhone = (phone: string): string => {
+  if (!phone) return '';
+  let cleaned = phone.replace(/\D/g, '');
+  if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+  if (!cleaned.startsWith('92')) cleaned = `92${cleaned}`;
+  return cleaned;
+};
+
+const openMailto = (to: string, subject: string, body: string): void => {
+  const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href = mailtoUrl;
+};
+
+const openWhatsApp = (phone: string, message: string): void => {
+  const cleaned = cleanPhone(phone);
+  if (!cleaned) {
+    alert('❌ Phone number not available');
+    return;
+  }
+  const whatsappUrl = `https://wa.me/${cleaned}?text=${encodeURIComponent(message)}`;
+  window.location.href = whatsappUrl;
+};
+
+// ============================================================
+// INTERFACE
+// ============================================================
 interface SellerProduct {
   id: string;
   name: string;
@@ -21,12 +56,17 @@ interface SellerProduct {
   image?: string;
   sellerId: string;
   sellerName?: string;
+  sellerEmail?: string;
+  sellerPhone?: string;
   status: string;
   approvalStatus: string;
   shortDescription?: string;
   createdAt?: any;
 }
 
+// ============================================================
+// COMPONENT
+// ============================================================
 const AdminProductsApproval = () => {
   const [products, setProducts] = useState<SellerProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +92,8 @@ const AdminProductsApproval = () => {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+
+        // ✅ Sirf seller products (admin products skip)
         if (!data.sellerId || data.sellerId === 'admin') return;
 
         const product = { id: doc.id, ...data } as SellerProduct;
@@ -78,6 +120,9 @@ const AdminProductsApproval = () => {
     }
   };
 
+  // ============================================================
+  // ✅ APPROVE — with isActive: true
+  // ============================================================
   const handleApprove = async (product: SellerProduct) => {
     if (actionLoading) return;
     if (!confirm(`Approve "${product.name}"?`)) return;
@@ -88,10 +133,12 @@ const AdminProductsApproval = () => {
       await updateDoc(productRef, {
         status: 'active',
         approvalStatus: 'approved',
+        isActive: true,                    // ✅ Ye add karo
         approvedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      alert(`✅ ${product.name} approved!`);
+
+      alert(`✅ ${product.name} approved!\n\nCustomer page pe ab dikhega.`);
       setShowModal(false);
       fetchProducts();
     } catch (error: any) {
@@ -101,6 +148,9 @@ const AdminProductsApproval = () => {
     }
   };
 
+  // ============================================================
+  // ✅ REJECT
+  // ============================================================
   const handleReject = async (product: SellerProduct) => {
     if (actionLoading) return;
     if (!confirm(`Reject "${product.name}"?`)) return;
@@ -111,6 +161,7 @@ const AdminProductsApproval = () => {
       await updateDoc(productRef, {
         status: 'rejected',
         approvalStatus: 'rejected',
+        isActive: false,                   // ✅ Add karo
         rejectedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -122,6 +173,66 @@ const AdminProductsApproval = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  // ============================================================
+  // ✅ EMAIL — Pre-filled
+  // ============================================================
+  const handleEmailSeller = (product: SellerProduct) => {
+    if (!product.sellerEmail) {
+      alert('❌ Seller email not available');
+      return;
+    }
+
+    const subject = `Your Product Status - ${product.name}`;
+    const body = `Dear ${product.sellerName || 'Seller'},
+
+Your product "${product.name}" has been reviewed.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+📦 PRODUCT DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━
+Name: ${product.name}
+Category: ${product.category}
+Price: Rs. ${product.price}
+Stock: ${product.stock}
+Status: ${product.approvalStatus === 'approved' ? '✅ APPROVED' : product.approvalStatus === 'rejected' ? '❌ REJECTED' : '⏳ PENDING'}
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+${product.approvalStatus === 'approved'
+  ? `Your product is now LIVE on ${SITE_URL}!`
+  : product.approvalStatus === 'rejected'
+  ? `Unfortunately, your product did not meet our guidelines. Please review and resubmit.`
+  : `Your product is under review.`}
+
+📞 Contact us:
+📧 ${ADMIN_EMAIL}
+
+Best regards,
+MAHA ONE Team`;
+
+    openMailto(product.sellerEmail, subject, body);
+  };
+
+  // ============================================================
+  // ✅ WHATSAPP — Pre-filled
+  // ============================================================
+  const handleWhatsAppSeller = (product: SellerProduct) => {
+    if (!product.sellerPhone) {
+      alert('❌ Seller phone not available');
+      return;
+    }
+
+    let message = '';
+    if (product.approvalStatus === 'approved') {
+      message = `🎉 *Product Approved!*\n\nYour product *${product.name}* has been APPROVED ✅\n\n💰 Price: Rs. ${product.price}\n📦 Category: ${product.category}\n\n🌐 Now live at ${SITE_URL}\n\n*MAHA ONE Team*`;
+    } else if (product.approvalStatus === 'rejected') {
+      message = `Dear ${product.sellerName || 'Seller'},\n\nYour product *${product.name}* has been reviewed.\n\n❌ Status: *REJECTED*\n\nPlease review our guidelines and resubmit.\n\n📧 ${ADMIN_EMAIL}\n\n*MAHA ONE Team*`;
+    } else {
+      message = `Dear ${product.sellerName || 'Seller'},\n\nYour product *${product.name}* is under review. We'll notify you soon! ⏳\n\n*MAHA ONE Team*`;
+    }
+
+    openWhatsApp(product.sellerPhone, message);
   };
 
   const viewDetails = (product: SellerProduct) => {
@@ -282,7 +393,7 @@ const AdminProductsApproval = () => {
                     </span>
                   </div>
 
-                  <div className="flex gap-2 pt-2 border-t">
+                  <div className="flex flex-wrap gap-2 pt-2 border-t">
                     <button
                       onClick={() => viewDetails(product)}
                       className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-blue-50 text-blue-600 py-2 rounded-lg"
@@ -294,14 +405,14 @@ const AdminProductsApproval = () => {
                         <button
                           onClick={() => handleApprove(product)}
                           disabled={actionLoading}
-                          className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-green-50 text-green-600 py-2 rounded-lg disabled:opacity-50"
+                          className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-green-600 text-white py-2 rounded-lg disabled:opacity-50"
                         >
                           <CheckCircle size={12} /> Approve
                         </button>
                         <button
                           onClick={() => handleReject(product)}
                           disabled={actionLoading}
-                          className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-red-50 text-red-600 py-2 rounded-lg disabled:opacity-50"
+                          className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-red-600 text-white py-2 rounded-lg disabled:opacity-50"
                         >
                           <XCircle size={12} /> Reject
                         </button>
@@ -362,6 +473,7 @@ const AdminProductsApproval = () => {
                           <button
                             onClick={() => viewDetails(product)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View Details"
                           >
                             <Eye size={16} />
                           </button>
@@ -371,6 +483,7 @@ const AdminProductsApproval = () => {
                                 onClick={() => handleApprove(product)}
                                 disabled={actionLoading}
                                 className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                                title="Approve"
                               >
                                 <CheckCircle size={16} />
                               </button>
@@ -378,6 +491,7 @@ const AdminProductsApproval = () => {
                                 onClick={() => handleReject(product)}
                                 disabled={actionLoading}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                title="Reject"
                               >
                                 <XCircle size={16} />
                               </button>
@@ -474,6 +588,22 @@ const AdminProductsApproval = () => {
                     <span className="text-gray-500">Seller ID:</span>{' '}
                     <span className="font-mono text-xs break-all">{selectedProduct.sellerId}</span>
                   </p>
+                </div>
+
+                {/* Contact Buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleEmailSeller(selectedProduct)}
+                    className="flex items-center justify-center gap-2 bg-purple-50 text-purple-700 py-2.5 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium"
+                  >
+                    <Mail size={16} /> Email
+                  </button>
+                  <button
+                    onClick={() => handleWhatsAppSeller(selectedProduct)}
+                    className="flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2.5 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                  >
+                    <MessageCircle size={16} /> WhatsApp
+                  </button>
                 </div>
 
                 {selectedProduct.approvalStatus === 'pending' && (

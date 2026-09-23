@@ -50,6 +50,12 @@ const HerbalPage = () => {
         const allProducts: HerbalProduct[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
+
+          // ✅ STATUS FILTER — sirf active/approved
+          const isActive =
+            data.status === 'active' || data.approvalStatus === 'approved';
+          if (!isActive) return;
+
           if (data.category === 'herbal') {
             allProducts.push({
               id: doc.id,

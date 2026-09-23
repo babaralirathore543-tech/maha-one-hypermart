@@ -42,6 +42,12 @@ const DryFruitsPage = () => {
         const allProducts: DryFruitsProduct[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
+
+          // ✅ STATUS FILTER — sirf active/approved
+          const isActive =
+            data.status === 'active' || data.approvalStatus === 'approved';
+          if (!isActive) return;
+
           if (data.category === 'dryfruits' || data.category === 'dry-fruits') {
             allProducts.push({
               id: doc.id,

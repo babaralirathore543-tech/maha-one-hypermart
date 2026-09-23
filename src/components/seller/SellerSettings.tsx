@@ -1,12 +1,29 @@
-// src/components/seller/SellerSettings.tsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  FaUser, FaStore, FaPhone, FaEnvelope, FaMapMarkerAlt,
-  FaCity, FaSave, FaLock, FaBell, FaCreditCard, FaShieldAlt
+  FaUser,
+  FaStore,
+  FaPhone,
+  FaEnvelope,
+  FaMapMarkerAlt,
+  FaCity,
+  FaSave,
+  FaLock,
+  FaBell,
+  FaCreditCard,
+  FaShieldAlt,
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+} from 'firebase/firestore';
 import { db } from '../../config/firebase';
 
 interface SellerSettingsData {
@@ -24,6 +41,8 @@ const SellerSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [sellerDocId, setSellerDocId] = useState<string | null>(null);
+
   const [settings, setSettings] = useState<SellerSettingsData>({
     storeName: '',
     storeDescription: '',
@@ -35,23 +54,49 @@ const SellerSettings = () => {
   });
 
   useEffect(() => {
-    if (user) fetchSellerData();
-  }, [user]);
+    if (user?.uid) {
+      fetchSellerData();
+    } else {
+      setLoading(false);
+    }
+  }, [user?.uid]);
 
   const fetchSellerData = async () => {
+    if (!user?.uid) return;
     setLoading(true);
+
     try {
-      const sellerDoc = await getDoc(doc(db, 'sellers', user?.uid || ''));
-      if (sellerDoc.exists()) {
+      const q = query(
+        collection(db, 'sellers'),
+        where('userId', '==', user.uid),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+
+      if (!snap.empty) {
+        const sellerDoc = snap.docs[0];
         const data = sellerDoc.data();
+
+        setSellerDocId(sellerDoc.id);
+
         setSettings({
           storeName: data.storeName || '',
           storeDescription: data.storeDescription || '',
           phone: data.phone || '',
           address: data.address || '',
           city: data.city || '',
-          email: user?.email || '',
-          displayName: user?.displayName || '',
+          email: user.email || '',
+          displayName: user.displayName || data.fullName || '',
+        });
+      } else {
+        setSettings({
+          storeName: user.displayName || '',
+          storeDescription: '',
+          phone: '',
+          address: '',
+          city: '',
+          email: user.email || '',
+          displayName: user.displayName || '',
         });
       }
     } catch (error) {
@@ -62,9 +107,14 @@ const SellerSettings = () => {
   };
 
   const handleSave = async () => {
+    if (!sellerDocId) {
+      alert('Seller profile not found. Please complete registration.');
+      return;
+    }
+
     setSaving(true);
     try {
-      await updateDoc(doc(db, 'sellers', user?.uid || ''), {
+      await updateDoc(doc(db, 'sellers', sellerDocId), {
         storeName: settings.storeName,
         storeDescription: settings.storeDescription,
         phone: settings.phone,
@@ -72,10 +122,23 @@ const SellerSettings = () => {
         city: settings.city,
         updatedAt: new Date().toISOString(),
       });
-      alert('✅ Settings saved successfully!');
+
+      if (settings.displayName && settings.displayName !== user?.displayName) {
+        try {
+          const userRef = doc(db, 'users', user!.uid);
+          await updateDoc(userRef, {
+            name: settings.displayName,
+            updatedAt: new Date().toISOString(),
+          });
+        } catch (userErr) {
+          console.warn('User update failed:', userErr);
+        }
+      }
+
+      alert('Settings saved successfully!');
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('❌ Failed to save settings.');
+      alert('Failed to save settings.');
     } finally {
       setSaving(false);
     }
@@ -104,18 +167,18 @@ const SellerSettings = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-
-      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Settings</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+            Settings
+          </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
             Manage your account
           </p>
         </div>
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || !sellerDocId}
           className="bg-[#0F766E] text-white px-3 sm:px-5 py-2 rounded-lg hover:bg-[#065F46] transition-colors flex items-center gap-2 disabled:opacity-50 text-xs sm:text-sm font-medium"
         >
           {saving ? (
@@ -132,7 +195,6 @@ const SellerSettings = () => {
         </button>
       </div>
 
-      {/* Tabs */}
       <div className="border-b border-gray-200 overflow-x-auto">
         <nav className="flex gap-1 sm:gap-2 min-w-max">
           {tabs.map((tab) => (
@@ -152,7 +214,6 @@ const SellerSettings = () => {
         </nav>
       </div>
 
-      {/* Content */}
       <motion.div
         key={activeTab}
         initial={{ opacity: 0, y: 10 }}
@@ -332,7 +393,9 @@ const SellerSettings = () => {
                 className="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg"
               >
                 <div className="min-w-0">
-                  <p className="font-medium text-gray-800 text-sm truncate">{label}</p>
+                  <p className="font-medium text-gray-800 text-sm truncate">
+                    {label}
+                  </p>
                   <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                     Get notified about {label.toLowerCase()}
                   </p>

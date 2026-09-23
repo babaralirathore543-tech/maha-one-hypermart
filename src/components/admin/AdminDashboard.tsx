@@ -1,53 +1,24 @@
 // src/components/admin/AdminDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import {
-  FaUsers,
-  FaBox,
-  FaShoppingCart,
-  FaChartLine,
-  FaArrowUp,
-  FaArrowDown,
-  FaExclamationTriangle,
-  FaPalette,
-  FaRuler,
-  FaClock,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaHourglassHalf,
+  FaUsers, FaBox, FaShoppingCart, FaChartLine,
+  FaExclamationTriangle, FaPalette, FaRuler, FaClock,
+  FaCheckCircle, FaTimesCircle, FaHourglassHalf,
 } from 'react-icons/fa';
 import { db } from '../../config/firebase';
 import {
-  collection,
-  collectionGroup,
-  getDocs,
-  onSnapshot,
+  collection, collectionGroup, getDocs, onSnapshot,
 } from 'firebase/firestore';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
+  CategoryScale, LinearScale, PointElement, LineElement,
+  BarElement, ArcElement, Title, Tooltip, Legend, Filler,
 } from 'chart.js';
 
 ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
+  CategoryScale, LinearScale, PointElement, LineElement,
+  BarElement, ArcElement, Title, Tooltip, Legend, Filler
 );
 
 interface DashboardStats {
@@ -56,6 +27,7 @@ interface DashboardStats {
   totalOrders: number;
   totalRevenue: number;
   pendingOrders: number;
+  processingOrders: number;  // ✅ NEW
   completedOrders: number;
   cancelledOrders: number;
   lowStockProducts: number;
@@ -94,6 +66,7 @@ const AdminDashboard: React.FC = () => {
     totalOrders: 0,
     totalRevenue: 0,
     pendingOrders: 0,
+    processingOrders: 0,  // ✅ NEW
     completedOrders: 0,
     cancelledOrders: 0,
     lowStockProducts: 0,
@@ -152,8 +125,12 @@ const AdminDashboard: React.FC = () => {
           ...d.data(),
         }));
 
+        // ✅ FIX: Separate counters
         const pending = orders.filter(
-          (o: any) => o.orderStatus === 'pending' || o.orderStatus === 'processing'
+          (o: any) => o.orderStatus === 'pending'
+        ).length;
+        const processing = orders.filter(
+          (o: any) => o.orderStatus === 'processing'
         ).length;
         const completed = orders.filter(
           (o: any) => o.orderStatus === 'delivered'
@@ -204,12 +181,7 @@ const AdminDashboard: React.FC = () => {
           }));
 
         const productSales: {
-          [key: string]: {
-            name: string;
-            sales: number;
-            revenue: number;
-            image: string;
-          };
+          [key: string]: { name: string; sales: number; revenue: number; image: string };
         } = {};
         orders.forEach((order: any) => {
           order.items?.forEach((item: any) => {
@@ -293,8 +265,9 @@ const AdminDashboard: React.FC = () => {
           totalUsers: usersCount,
           totalProducts: products.length,
           totalOrders: orders.length,
-          totalRevenue: totalRevenue,
+          totalRevenue,
           pendingOrders: pending,
+          processingOrders: processing,  // ✅ FIX
           completedOrders: completed,
           cancelledOrders: cancelled,
           lowStockProducts: lowStock,
@@ -302,7 +275,7 @@ const AdminDashboard: React.FC = () => {
           totalVariants: allVariants.length,
           totalColours: uniqueColours.size,
           totalSizes: uniqueSizes.size,
-          todaySales: todaySales,
+          todaySales,
           averageOrderValue: avgOrderValue,
         });
 
@@ -317,6 +290,7 @@ const AdminDashboard: React.FC = () => {
 
     fetchAllData();
 
+    // Real-time orders
     const ordersUnsubscribe = onSnapshot(
       collection(db, 'orders'),
       (snapshot) => {
@@ -325,7 +299,10 @@ const AdminDashboard: React.FC = () => {
           ...d.data(),
         }));
         const pending = orders.filter(
-          (o: any) => o.orderStatus === 'pending' || o.orderStatus === 'processing'
+          (o: any) => o.orderStatus === 'pending'
+        ).length;
+        const processing = orders.filter(
+          (o: any) => o.orderStatus === 'processing'
         ).length;
         const completed = orders.filter(
           (o: any) => o.orderStatus === 'delivered'
@@ -338,6 +315,7 @@ const AdminDashboard: React.FC = () => {
           ...prev,
           totalOrders: orders.length,
           pendingOrders: pending,
+          processingOrders: processing,  // ✅ FIX
           completedOrders: completed,
           cancelledOrders: cancelled,
         }));
@@ -364,44 +342,38 @@ const AdminDashboard: React.FC = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
+  // ✅ FIX: Removed fake changes, added real data
   const statCards = [
     {
       title: 'Total Revenue',
       value: `Rs. ${stats.totalRevenue.toLocaleString()}`,
       icon: <FaChartLine />,
       color: 'bg-gradient-to-br from-yellow-400 to-yellow-600',
-      change: '+8%',
-      up: true,
     },
     {
       title: "Today's Sales",
       value: `Rs. ${stats.todaySales.toLocaleString()}`,
       icon: <FaShoppingCart />,
       color: 'bg-gradient-to-br from-green-400 to-green-600',
-      change: '+12%',
-      up: true,
     },
     {
       title: 'Total Orders',
       value: stats.totalOrders,
       icon: <FaBox />,
       color: 'bg-gradient-to-br from-blue-400 to-blue-600',
-      change: '+5%',
-      up: true,
     },
     {
       title: 'Total Users',
       value: stats.totalUsers,
       icon: <FaUsers />,
       color: 'bg-gradient-to-br from-purple-400 to-purple-600',
-      change: '+15%',
-      up: true,
     },
   ];
 
+  // ✅ FIX: Separate counts
   const statusCards = [
     { title: 'Pending', value: stats.pendingOrders, icon: <FaHourglassHalf />, color: 'bg-yellow-100 text-yellow-800' },
-    { title: 'Processing', value: stats.pendingOrders, icon: <FaClock />, color: 'bg-blue-100 text-blue-800' },
+    { title: 'Processing', value: stats.processingOrders, icon: <FaClock />, color: 'bg-blue-100 text-blue-800' },
     { title: 'Delivered', value: stats.completedOrders, icon: <FaCheckCircle />, color: 'bg-green-100 text-green-800' },
     { title: 'Cancelled', value: stats.cancelledOrders, icon: <FaTimesCircle />, color: 'bg-red-100 text-red-800' },
   ];
@@ -457,17 +429,6 @@ const AdminDashboard: React.FC = () => {
                 <p className="text-sm sm:text-2xl font-bold text-gray-800 mt-1 truncate">
                   {stat.value}
                 </p>
-                <div className="hidden sm:flex items-center gap-1 mt-2">
-                  <span className={`text-xs font-medium ${stat.up ? 'text-green-600' : 'text-red-600'}`}>
-                    {stat.change}
-                  </span>
-                  {stat.up ? (
-                    <FaArrowUp className="text-green-600 text-xs" />
-                  ) : (
-                    <FaArrowDown className="text-red-600 text-xs" />
-                  )}
-                  <span className="text-xs text-gray-400">vs last month</span>
-                </div>
               </div>
               <div className={`${stat.color} text-white p-2 sm:p-4 rounded-xl shadow-lg text-sm sm:text-2xl shrink-0`}>
                 {stat.icon}
@@ -586,7 +547,10 @@ const AdminDashboard: React.FC = () => {
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
-                    legend: { position: 'right' },
+                    legend: {
+                      position: 'bottom',
+                      labels: { boxWidth: 12, font: { size: 10 }, padding: 8 },
+                    },
                   },
                 }}
               />

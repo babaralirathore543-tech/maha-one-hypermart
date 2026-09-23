@@ -40,49 +40,52 @@ interface FashionProduct {
 interface BannerConfig {
   title: string;
   subtitle: string;
-  bg: string;   // solid background color
+  bg: string;
 }
 
 const getBannerConfig = (
   urlGender: string | null,
   urlCategory: string | null
 ): BannerConfig => {
-  if (urlGender === 'women') {
+  const g = urlGender?.toLowerCase();
+  const c = urlCategory?.toLowerCase();
+
+  if (g === 'women') {
     return {
       title: "WOMEN'S FASHION",
       subtitle: 'Elegance & Style for Every Occasion',
       bg: '#3B1E54',
     };
   }
-  if (urlGender === 'men') {
+  if (g === 'men') {
     return {
       title: "MEN'S FASHION",
       subtitle: 'Sharp Looks, Timeless Class',
       bg: '#1E3A5F',
     };
   }
-  if (urlGender === 'kids') {
+  if (g === 'kids') {
     return {
       title: 'KIDS FASHION',
       subtitle: 'Playful Styles for Little Stars',
       bg: '#B45309',
     };
   }
-  if (urlCategory === 'footwear') {
+  if (c === 'footwear') {
     return {
       title: 'FOOTWEAR',
       subtitle: 'Step Into Style',
       bg: '#065F46',
     };
   }
-  if (urlCategory === 'bags') {
+  if (c === 'bags') {
     return {
       title: 'BAGS & ACCESSORIES',
       subtitle: 'Carry Confidence Everywhere',
       bg: '#4C1D95',
     };
   }
-  if (urlCategory === 'accessories') {
+  if (c === 'accessories') {
     return {
       title: 'ACCESSORIES',
       subtitle: 'Details That Define You',
@@ -94,6 +97,14 @@ const getBannerConfig = (
     subtitle: 'Discover Premium Styles',
     bg: '#3B1E54',
   };
+};
+
+// ============================================================
+// HELPER: case-insensitive compare
+// ============================================================
+const matches = (a: any, b: any): boolean => {
+  if (!a || !b) return false;
+  return String(a).toLowerCase().trim() === String(b).toLowerCase().trim();
 };
 
 const FashionPage = () => {
@@ -112,34 +123,32 @@ const FashionPage = () => {
   const [sortBy, setSortBy] = useState('popular');
   const [showFilters, setShowFilters] = useState(false);
 
+  // ============================================================
+  // ✅ FIXED: Case-insensitive + Status filter
+  // ============================================================
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        let q;
+
         const productsRef = collection(db, 'products');
-
-        if (urlGender) {
-          q = query(
-            productsRef,
-            where('category', '==', 'fashion'),
-            where('gender', '==', urlGender)
-          );
-        } else if (urlCategory) {
-          q = query(
-            productsRef,
-            where('category', '==', 'fashion'),
-            where('productType', '==', urlCategory)
-          );
-        } else {
-          q = query(productsRef, where('category', '==', 'fashion'));
-        }
-
+        const q = query(productsRef, where('category', '==', 'fashion'));
         const querySnapshot = await getDocs(q);
+
         const productsData: FashionProduct[] = [];
 
         querySnapshot.forEach((doc) => {
           const data = doc.data() as any;
+
+          // ✅ STATUS FILTER
+          const isActive =
+            data.status === 'active' || data.approvalStatus === 'approved';
+          if (!isActive) return;
+
+          // ✅ CASE-INSENSITIVE FILTERS
+          if (urlGender && !matches(data.gender, urlGender)) return;
+          if (urlCategory && !matches(data.productType, urlCategory)) return;
+
           productsData.push({
             id: doc.id,
             name: data?.name || '',
@@ -188,10 +197,10 @@ const FashionPage = () => {
     let filtered = products;
 
     if (selectedGender !== 'all' && !urlGender) {
-      filtered = filtered.filter((p) => p.gender === selectedGender);
+      filtered = filtered.filter((p) => matches(p.gender, selectedGender));
     }
     if (selectedCategory !== 'all' && !urlCategory) {
-      filtered = filtered.filter((p) => p.productType === selectedCategory);
+      filtered = filtered.filter((p) => matches(p.productType, selectedCategory));
     }
     if (selectedSize !== 'all') {
       filtered = filtered.filter((p) => p.sizes && p.sizes.includes(selectedSize));
@@ -230,46 +239,27 @@ const FashionPage = () => {
     <div className="bg-[#FFFDF7] dark:bg-[#111827] pt-16 sm:pt-6 md:pt-8 pb-6 sm:pb-8 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* ================================================== */}
-        {/* ✅ BOLD TEXT BANNER (NO ICON, NO GRADIENT)          */}
-        {/* ================================================== */}
+        {/* BOLD TEXT BANNER */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="
-            relative overflow-hidden
-            rounded-2xl sm:rounded-3xl
-            shadow-2xl
-            mb-6 sm:mb-8
-          "
+          className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-2xl mb-6 sm:mb-8"
           style={{ backgroundColor: banner.bg }}
         >
-          {/* Decorative subtle circles (very light) */}
           <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/5" />
           <div className="absolute -bottom-20 -left-20 w-56 h-56 rounded-full bg-white/5" />
 
-          {/* Content */}
           <div className="relative z-10 px-6 sm:px-10 py-10 sm:py-14 text-center text-white">
-
-            {/* Title — Bold, Uppercase, Wide tracking */}
             <motion.h1
               initial={{ y: 15, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.15, duration: 0.5 }}
-              className="
-                text-3xl sm:text-4xl md:text-5xl lg:text-6xl
-                font-black
-                tracking-[0.15em] sm:tracking-[0.2em]
-                uppercase
-                leading-tight
-                mb-3 sm:mb-4
-              "
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[0.15em] sm:tracking-[0.2em] uppercase leading-tight mb-3 sm:mb-4"
             >
               {banner.title}
             </motion.h1>
 
-            {/* Gold accent line */}
             <motion.div
               initial={{ scaleX: 0, opacity: 0 }}
               animate={{ scaleX: 1, opacity: 1 }}
@@ -278,24 +268,16 @@ const FashionPage = () => {
               style={{ background: '#D4AF37' }}
             />
 
-            {/* Subtitle */}
             <motion.p
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.4 }}
-              className="
-                text-sm sm:text-base md:text-lg
-                text-white/75
-                font-light
-                tracking-wide
-                max-w-xl mx-auto
-              "
+              className="text-sm sm:text-base md:text-lg text-white/75 font-light tracking-wide max-w-xl mx-auto"
             >
               {banner.subtitle}
             </motion.p>
           </div>
 
-          {/* Decorative bottom gold line */}
           <div
             className="absolute bottom-0 left-0 right-0 h-[3px]"
             style={{
@@ -305,9 +287,7 @@ const FashionPage = () => {
           />
         </motion.div>
 
-        {/* ================================================== */}
-        {/* FILTERS TOGGLE (Mobile)                            */}
-        {/* ================================================== */}
+        {/* FILTERS TOGGLE (Mobile) */}
         <div className="lg:hidden mb-4">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -319,9 +299,7 @@ const FashionPage = () => {
           </button>
         </div>
 
-        {/* ================================================== */}
-        {/* FILTERS BAR                                        */}
-        {/* ================================================== */}
+        {/* FILTERS BAR */}
         <div className={`${showFilters ? 'block' : 'hidden lg:block'} mb-6`}>
           <div className="bg-white dark:bg-[#1F2937] rounded-xl shadow-sm p-4 sm:p-5 border border-gray-100 dark:border-gray-700">
             <div className="flex flex-wrap items-center gap-2">
@@ -382,9 +360,7 @@ const FashionPage = () => {
           </div>
         </div>
 
-        {/* ================================================== */}
-        {/* PRODUCTS GRID                                      */}
-        {/* ================================================== */}
+        {/* PRODUCTS GRID */}
         {filteredProducts.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-[#1F2937] rounded-2xl shadow-sm">
             <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400">

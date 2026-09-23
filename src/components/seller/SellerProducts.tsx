@@ -1,7 +1,7 @@
 // src/components/seller/SellerProducts.tsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Eye, Search, Filter, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { db, collection, query, where, getDocs, deleteDoc, doc } from '../../config/firebase';
@@ -25,7 +25,6 @@ const SellerProducts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // ✅ Fetch seller's products from Firestore
   useEffect(() => {
     const fetchProducts = async () => {
       if (!user) return;
@@ -50,7 +49,6 @@ const SellerProducts = () => {
     fetchProducts();
   }, [user]);
 
-  // ✅ Delete product
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     try {
@@ -94,8 +92,7 @@ const SellerProducts = () => {
           <h1 className="text-2xl font-bold text-gray-800">My Products</h1>
           <p className="text-sm text-gray-500 mt-1">Manage your products</p>
         </div>
-        
-        {/* ✅ Add Product Button — Working */}
+
         <button
           onClick={() => navigate('/seller/products/add')}
           className="bg-gradient-to-r from-[#0F766E] to-[#065F46] text-white px-6 py-2.5 rounded-lg font-medium hover:shadow-lg transition-all duration-200 flex items-center gap-2"
@@ -114,14 +111,14 @@ const SellerProducts = () => {
             placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-[#0F766E] focus:border-[#0F766E]"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-[#0F766E] focus:border-[#0F766E] outline-none"
           />
         </div>
         <div className="flex gap-2">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-[#0F766E] focus:border-[#0F766E]"
+            className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-[#0F766E] focus:border-[#0F766E] outline-none"
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
@@ -138,9 +135,9 @@ const SellerProducts = () => {
           <div className="text-6xl mb-4">📦</div>
           <h3 className="text-xl font-semibold text-gray-600">No Products Yet</h3>
           <p className="text-gray-400 mt-2 mb-6">
-            {products.length === 0 
-              ? "You haven't added any products yet. Click 'Add New Product' to start." 
-              : "Try adjusting your search or filter."}
+            {products.length === 0
+              ? "You haven't added any products yet. Click 'Add New Product' to start."
+              : 'Try adjusting your search or filter.'}
           </p>
           {products.length === 0 && (
             <button
@@ -167,6 +164,9 @@ const SellerProducts = () => {
                   src={product.image || 'https://via.placeholder.com/80'}
                   alt={product.name}
                   className="w-20 h-20 object-cover rounded-lg"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80';
+                  }}
                 />
 
                 <div className="flex-1 min-w-0">
@@ -185,10 +185,11 @@ const SellerProducts = () => {
                     {product.status?.charAt(0).toUpperCase() + product.status?.slice(1)}
                   </span>
                   <div className="flex items-center gap-1">
+                    {/* ✅ FIX: View button removed (route missing) — Edit hi View hai */}
                     <button
-                      onClick={() => navigate(`/seller/products/view/${product.id}`)}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="View"
+                      onClick={() => navigate(`/seller/products/edit/${product.category}/${product.id}`)}
+                      className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                      title="View / Edit"
                     >
                       <Eye size={18} />
                     </button>

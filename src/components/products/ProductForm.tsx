@@ -77,6 +77,27 @@ const PRODUCT_DEFAULTS: Record<string, any> = {
   displayOrder: 0,
 };
 
+// ============================================================
+// ✅ HELPER: normalize string fields (lowercase + trim)
+// ============================================================
+const NORMALIZE_FIELDS = [
+  'gender',
+  'productType',
+  'subCategory',
+  'subSubCategory',
+  'style',
+];
+
+const normalizeFields = (data: Record<string, any>) => {
+  const result = { ...data };
+  NORMALIZE_FIELDS.forEach((field) => {
+    if (typeof result[field] === 'string' && result[field]) {
+      result[field] = result[field].toLowerCase().trim();
+    }
+  });
+  return result;
+};
+
 const ProductForm: React.FC<ProductFormProps> = ({
   mode, categoryId, productId, onSuccess,
 }) => {
@@ -205,7 +226,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   // ============================================================
-  // SUBMIT
+  // ✅ SUBMIT — with fixes
   // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,8 +235,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
     try {
       const id = productId || doc(collection(db, 'products')).id;
 
+      // ✅ Normalize string fields (lowercase)
+      const normalizedFormData = normalizeFields(formData);
+
       const baseData: Record<string, any> = {
-        ...formData,
+        ...normalizedFormData,
         category: config?.firestoreCategory || categoryId,
         updatedAt: serverTimestamp(),
       };
@@ -238,6 +262,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         if (!isEditMode) {
           baseData.status = baseData.status || 'active';
           baseData.approvalStatus = 'approved';
+          baseData.isActive = true;
           baseData.approvedAt = serverTimestamp();
           baseData.approvedBy = user?.uid;
         }
@@ -246,12 +271,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
       const productRef = doc(db, 'products', id);
 
       if (isEditMode) {
+        // ✅ FIX: createdByRole preserve karo, override nahi
         const mergedData: Record<string, any> = {
           ...existingData,
           ...baseData,
           createdAt: existingData.createdAt || serverTimestamp(),
           sellerId: existingData.sellerId || baseData.sellerId,
           sellerName: existingData.sellerName || baseData.sellerName,
+          // ✅ Original creator info preserve karo
+          createdBy: existingData.createdBy || baseData.createdBy,
+          createdByRole: existingData.createdByRole || baseData.createdByRole,
         };
 
         if (mode === 'seller') {
@@ -268,6 +297,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       } else {
         await setDoc(productRef, {
           ...baseData,
+          isActive: mode === 'admin' ? true : false,
           createdAt: serverTimestamp(),
         });
         alert(
@@ -426,7 +456,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
           />
         );
 
-      // ✅ DYNAMIC SIZE SELECTOR
       case 'sizes':
         return (
           <SizeSelector
@@ -436,7 +465,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
           />
         );
 
-      // ✅ DYNAMIC SIZE CHART BUILDER
       case 'sizeChart':
         return (
           <SizeChartBuilder

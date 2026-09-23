@@ -1,20 +1,11 @@
 // src/components/admin/AdminUsers.tsx
 import React, { useState, useEffect } from 'react';
 import {
-  FaTrash,
-  FaUserCheck,
-  FaUserTimes,
-  FaEye,
-  FaTimes,
-  FaSearch,
-  FaUser,
-  FaEnvelope,
-  FaPhone,
-  FaCalendarAlt,
-  FaShoppingBag,
-  FaHeart
+  FaTrash, FaUserCheck, FaUserTimes, FaEye, FaTimes,
+  FaSearch, FaUser, FaEnvelope, FaPhone, FaCalendarAlt,
+  FaShoppingBag, FaHeart,
 } from 'react-icons/fa';
-import { db, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from '../../config/firebase';
+import { db, collection, getDocs, doc, updateDoc, deleteDoc } from '../../config/firebase';
 
 interface User {
   id: string;
@@ -57,15 +48,26 @@ const AdminUsers: React.FC = () => {
     }
   }, [searchTerm, users]);
 
+  // ============================================================
+  // ✅ FIX: Fallback when orderBy fails
+  // ============================================================
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
+      // Try ordered fetch first
+      const snapshot = await getDocs(collection(db, 'users'));
       const usersData: User[] = [];
-      querySnapshot.forEach((doc) => {
+      snapshot.forEach((doc) => {
         usersData.push({ id: doc.id, ...doc.data() } as User);
       });
+
+      // ✅ Client-side sort by createdAt (safe even if some users miss it)
+      usersData.sort((a, b) => {
+        const aTime = a.createdAt?.toDate?.()?.getTime?.() || 0;
+        const bTime = b.createdAt?.toDate?.()?.getTime?.() || 0;
+        return bTime - aTime;
+      });
+
       setUsers(usersData);
       setFilteredUsers(usersData);
     } catch (error) {
@@ -230,7 +232,7 @@ const AdminUsers: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* ============ MOBILE CARD VIEW ============ */}
+          {/* MOBILE CARD VIEW */}
           <div className="md:hidden space-y-3">
             {filteredUsers.map((user) => (
               <div key={user.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
@@ -263,7 +265,6 @@ const AdminUsers: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Role select */}
                 <div className="mb-2">
                   <select
                     value={user.role || 'customer'}
@@ -312,7 +313,7 @@ const AdminUsers: React.FC = () => {
             ))}
           </div>
 
-          {/* ============ DESKTOP TABLE ============ */}
+          {/* DESKTOP TABLE */}
           <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -375,7 +376,6 @@ const AdminUsers: React.FC = () => {
                           <button
                             onClick={() => viewUserDetails(user)}
                             className="text-blue-600 hover:text-blue-800 transition p-1.5 rounded hover:bg-blue-50"
-                            title="View Details"
                           >
                             <FaEye size={16} />
                           </button>
