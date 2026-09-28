@@ -50,6 +50,7 @@ const Navbar = () => {
     { name: 'Fashion', path: '/fashion' },
     { name: 'Sweets', path: '/sweets' },
     { name: 'Cakes', path: '/cakes' },
+    { name: 'Crockery', path: '/crockery' },  // ✅ NAYA
     { name: 'About', path: '/about' },
     { name: 'Contact', path: '/contact' },
   ];
@@ -64,7 +65,9 @@ const Navbar = () => {
     'Flax Seeds', 'Basil Seeds', 'Four Seeds',
     'Isphagol Husk', 'Dry Coconut', 'Coconut Powder',
     'Caramel Dream Choco Bar', 'HISS Crispy Wafer', 'Nani Caramel Choco Bar',
-    'Nani Coconut Bar', 'Rili Eclairs', 'Roro Caramel Eclair', 'Spark Coconut Bar'
+    'Nani Coconut Bar', 'Rili Eclairs', 'Roro Caramel Eclair', 'Spark Coconut Bar',
+    'Dinner Set 24 Pieces', 'Ceramic Plate Set', 'Porcelain Bowl Set',
+    'Stainless Steel Cutlery', 'Glass Tea Set', 'Bone China Coffee Set',
   ];
 
   const placeholderTexts = [
@@ -73,7 +76,8 @@ const Navbar = () => {
     'Looking for cashews?',
     'Search sweets...',
     'Find dry fruits...',
-    'Search for walnuts...'
+    'Search for walnuts...',
+    'Search crockery...',  // ✅ NAYA
   ];
 
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -420,15 +424,11 @@ const Navbar = () => {
 
   return (
     <>
-      {/* ============================================================ */}
-      {/* NAVBAR — PURPLE (sirf top section)                            */}
-      {/* ============================================================ */}
+      {/* NAVBAR — PURPLE */}
       <nav className="fixed top-0 left-0 w-full z-[100] transition-all duration-300">
-
-        {/* ✅ PURPLE SECTION — Top bar + Search bar only */}
+        {/* ✅ PURPLE SECTION */}
         <div className="bg-[#3B1E54] border-b-0 shadow-md">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-
             {/* TOP ROW */}
             <div className={`flex items-center justify-between gap-2 sm:gap-3 transition-all duration-300 ${
               isCompact ? 'h-[52px] sm:h-[56px]' : 'h-[56px] sm:h-[64px] md:h-[72px]'
@@ -556,7 +556,7 @@ const Navbar = () => {
               </div>
             </div>
 
-            {/* ✅ SEARCH BAR — WHITE FILL + PURPLE OUTLINE + PURPLE TEXT */}
+            {/* SEARCH BAR */}
             <div className={`transition-all duration-300 overflow-hidden ${
               showFullSearch ? 'max-h-20 opacity-100 pb-3' : 'max-h-0 opacity-0 py-0'
             }`}>
@@ -615,7 +615,7 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* ✅ CATEGORIES SLIDER — NO PURPLE BG (white/transparent) */}
+        {/* CATEGORIES SLIDER */}
         {!isAdminPage && !isSellerPage && !isCustomerDashboard && (
           <div className="bg-[#FFFDF7] dark:bg-[#111827] border-b border-gray-200 dark:border-gray-700">
             <CategoriesSlider
@@ -785,9 +785,7 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* ============================================================ */}
-      {/* MOBILE BOTTOM NAVIGATION — ALTERNATE PURPLE ICONS            */}
-      {/* ============================================================ */}
+      {/* MOBILE BOTTOM NAVIGATION */}
       {shouldShowBottomNav && (
         <div
           className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden border-t-2 shadow-2xl safe-area-bottom"
@@ -798,7 +796,7 @@ const Navbar = () => {
         >
           <div className="grid grid-cols-5 max-w-md mx-auto px-1">
 
-            {/* HOME — Active = purple, Inactive = purple outline */}
+            {/* HOME */}
             <Link
               to="/home"
               className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl transition-all duration-300 relative ${
@@ -829,7 +827,7 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* THEME — Gold (alternate) */}
+            {/* THEME */}
             <div className="flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl text-[#D4AF37]">
               <ThemeToggle />
               <span className="text-[9px] sm:text-[10px] font-semibold" style={{ color: '#D4AF37' }}>
@@ -837,7 +835,7 @@ const Navbar = () => {
               </span>
             </div>
 
-            {/* CATEGORIES — Active purple, alternate purple highlight */}
+            {/* CATEGORIES */}
             <button
               onClick={scrollToCategories}
               className="flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl transition-all duration-300 relative"
@@ -852,7 +850,7 @@ const Navbar = () => {
               <span className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-[#3B1E54] rounded-full"></span>
             </button>
 
-            {/* CART — Alternate (gold accent) */}
+            {/* CART */}
             <Link
               to="/cart"
               className="flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl transition-all duration-300 relative"
@@ -877,7 +875,7 @@ const Navbar = () => {
               </span>
             </Link>
 
-            {/* ACCOUNT — Purple (alternate) */}
+            {/* ACCOUNT */}
             <Link
               to={isLoggedIn || isAuthenticated ? (isSeller ? "/seller" : "/dashboard") : "/login"}
               className="flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl transition-all duration-300 relative"

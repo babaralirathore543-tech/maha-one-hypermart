@@ -37,6 +37,8 @@ import HistoryTab from '../customer/tabs/HistoryTab';
 import SettingsTab from '../customer/tabs/SettingsTab';
 import HerbalPage from '../pages/HerbalPage';
 import HerbalDetailPage from '../pages/HerbalDetailPage';
+import CrockeryPage from '../pages/CrockeryPage';
+import CrockeryDetailPage from '../pages/CrockeryDetailPage';
 import SellerRegistration from './seller/SellerRegistration';
 import SellerTermsPage from '../pages/SellerTermsPage';
 import SellerLayout from '../seller/SellerLayout';
@@ -51,7 +53,7 @@ import StoreBuilderWizard from '../seller/store-builder/StoreBuilderWizard';
 import PublicStorePage from '../pages/PublicStorePage';
 import ProductDetailPage from '../store/ProductDetailPage';
 
-// ✅ ADMIN — Only AdminPanel (tab-based system)
+// ✅ ADMIN
 import AdminPanel from '../admin/AdminPanel';
 import AdminCakesProductForm from '../pages/AdminCakesProductForm';
 import AdminDryFruitsForm from '../pages/AdminDryFruitsForm';
@@ -121,7 +123,9 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
 
   return (
     <>
-      {showSplash && <LoadingScreen />}
+      <AnimatePresence>
+        {showSplash && <LoadingScreen key="splash" />}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
@@ -153,6 +157,10 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
           {/* ============ HERBAL ============ */}
           <Route path="/herbal" element={<PageTransition><HerbalPage /></PageTransition>} />
           <Route path="/herbal/:id" element={<PageTransition><HerbalDetailPage /></PageTransition>} />
+
+          {/* ============ CROCKERY ✅ NEW ============ */}
+          <Route path="/crockery" element={<PageTransition><CrockeryPage /></PageTransition>} />
+          <Route path="/crockery/:id" element={<PageTransition><CrockeryDetailPage /></PageTransition>} />
 
           {/* ============ SELLER REGISTRATION ============ */}
           <Route path="/seller/register" element={<PageTransition><SellerRegistration /></PageTransition>} />
@@ -205,7 +213,7 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
           <Route path="/wishlist" element={<PageTransition><WishlistPage /></PageTransition>} />
 
           {/* ============================================================ */}
-          {/* ADMIN SECTION — FIXED (No double screen)                    */}
+          {/* ADMIN SECTION */}
           {/* ============================================================ */}
 
           {/* ✅ Add/Edit Product — Full page forms (no AdminPanel) */}
@@ -240,7 +248,7 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
             }
           />
 
-          {/* ✅ MAIN ADMIN PANEL — SIRF /admin pe mount */}
+          {/* ✅ MAIN ADMIN PANEL */}
           <Route
             path="/admin"
             element={
@@ -250,7 +258,7 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
             }
           />
 
-          {/* ✅ Separate admin pages (not in AdminPanel tabs) */}
+          {/* ✅ Separate admin pages */}
           <Route
             path="/admin/sellers"
             element={

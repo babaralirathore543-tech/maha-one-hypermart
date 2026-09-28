@@ -7,6 +7,7 @@ import {
   Calendar,
   Download,
   Loader2,
+  DollarSign,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -16,6 +17,10 @@ import {
   where,
   getDocs,
 } from '../../config/firebase';
+import {
+  COMMISSION_CONFIG,
+  getCommissionRate,
+} from '../../config/commission';
 
 // ============================================================
 // TYPES
@@ -33,6 +38,8 @@ interface Transaction {
   date: string;
   order: string;
   amount: number;
+  commission: number;
+  net: number;
   status: 'Paid' | 'Pending';
 }
 
@@ -53,8 +60,10 @@ const SellerEarnings = () => {
   });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
+  const commissionRate = getCommissionRate(); // ✅ 12
+
   // ============================================================
-  // FETCH REAL DATA FROM FIRESTORE
+  // FETCH EARNINGS
   // ============================================================
   useEffect(() => {
     if (authLoading) return;
@@ -69,7 +78,6 @@ const SellerEarnings = () => {
       setLoading(true);
 
       try {
-        // Fetch seller orders
         const ordersSnap = await getDocs(
           query(
             collection(db, 'sellerOrders'),
@@ -85,42 +93,51 @@ const SellerEarnings = () => {
         );
 
         // ============================================================
-        // CALCULATE EARNINGS
+        // CALCULATE EARNINGS — with REAL commission from order data
         // ============================================================
         let grossSales = 0;
         let pendingBalance = 0;
         let paidBalance = 0;
+        let totalCommission = 0;
 
         orders.forEach((o) => {
           const subtotal = o.subtotal || 0;
 
           // Gross = all non-cancelled orders
-          if (o.status !== 'cancelled') {
+          if (o.orderStatus !== 'cancelled' && o.status !== 'cancelled') {
             grossSales += subtotal;
           }
 
+          // Commission — use stored value, fallback to calculation
+          const orderCommission =
+            o.commission ||
+            Math.round(((subtotal * commissionRate) / 100) * 100) / 100;
+
+          if (o.orderStatus !== 'cancelled' && o.status !== 'cancelled') {
+            totalCommission += orderCommission;
+          }
+
           // Delivered = paid, others = pending
-          if (o.status === 'delivered') {
-            paidBalance += subtotal;
-          } else if (o.status !== 'cancelled') {
-            pendingBalance += subtotal;
+          const status = o.orderStatus || o.status;
+          if (status === 'delivered') {
+            paidBalance += subtotal - orderCommission;
+          } else if (status !== 'cancelled') {
+            pendingBalance += subtotal - orderCommission;
           }
         });
 
-        // 10% commission
-        const commission = Math.round(grossSales * 0.1);
-        const netEarnings = grossSales - commission;
+        const netEarnings = grossSales - totalCommission;
 
         setEarningsData({
           grossSales,
-          commission,
+          commission: totalCommission,
           netEarnings,
           pendingBalance,
           paidBalance,
         });
 
         // ============================================================
-        // RECENT TRANSACTIONS (latest 10)
+        // RECENT TRANSACTIONS
         // ============================================================
         const sorted = [...orders].sort((a, b) => {
           const aTime =
@@ -132,16 +149,26 @@ const SellerEarnings = () => {
           return bTime - aTime;
         });
 
-        const recentTxns: Transaction[] = sorted.slice(0, 10).map((o) => ({
-          id: o.id,
-          order: `#${o.orderId || o.id?.slice(0, 8) || '—'}`,
-          date:
-            o.createdAt?.toDate?.()?.toLocaleDateString('en-PK') ||
-            new Date(o.createdAt || 0).toLocaleDateString('en-PK') ||
-            '—',
-          amount: o.subtotal || 0,
-          status: o.status === 'delivered' ? 'Paid' : 'Pending',
-        }));
+        const recentTxns: Transaction[] = sorted.slice(0, 10).map((o) => {
+          const subtotal = o.subtotal || 0;
+          const orderCommission =
+            o.commission ||
+            Math.round(((subtotal * commissionRate) / 100) * 100) / 100;
+          const status = o.orderStatus || o.status;
+
+          return {
+            id: o.id,
+            order: `#${o.orderId || o.orderNumber || o.id?.slice(0, 8) || '—'}`,
+            date:
+              o.createdAt?.toDate?.()?.toLocaleDateString('en-PK') ||
+              new Date(o.createdAt || 0).toLocaleDateString('en-PK') ||
+              '—',
+            amount: subtotal,
+            commission: orderCommission,
+            net: subtotal - orderCommission,
+            status: status === 'delivered' ? 'Paid' : 'Pending',
+          };
+        });
 
         setTransactions(recentTxns);
       } catch (error) {
@@ -156,10 +183,10 @@ const SellerEarnings = () => {
     return () => {
       cancelled = true;
     };
-  }, [user?.uid, authLoading]);
+  }, [user?.uid, authLoading, commissionRate]);
 
   // ============================================================
-  // LOADING STATE
+  // LOADING
   // ============================================================
   if (loading) {
     return (
@@ -181,7 +208,7 @@ const SellerEarnings = () => {
       bg: 'bg-blue-50',
     },
     {
-      label: 'Commission (10%)',
+      label: `Commission (${commissionRate}%)`, // ✅ Dynamic
       value: earningsData.commission,
       icon: TrendingDown,
       color: 'text-orange-600',
@@ -190,7 +217,7 @@ const SellerEarnings = () => {
     {
       label: 'Net Earnings',
       value: earningsData.netEarnings,
-      icon: TrendingUp,
+      icon: DollarSign,
       color: 'text-green-600',
       bg: 'bg-green-50',
     },
@@ -216,7 +243,7 @@ const SellerEarnings = () => {
             Earnings
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Track your sales and earnings
+            Track your sales and earnings • {commissionRate}% commission deducted
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -235,6 +262,15 @@ const SellerEarnings = () => {
             <span className="hidden sm:inline">Export</span>
           </button>
         </div>
+      </div>
+
+      {/* Commission Info Banner */}
+      <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#0F766E]/10 border border-[#D4AF37]/20 rounded-xl p-3 sm:p-4">
+        <p className="text-xs sm:text-sm text-gray-700">
+          <strong className="text-[#0F766E]">Platform Commission:</strong>{' '}
+          MAHA ONE HYPERMARKET charges <strong>{commissionRate}%</strong> commission on every sale.
+          Commission is released to the platform after order delivery.
+        </p>
       </div>
 
       {/* Summary Cards */}
@@ -275,6 +311,9 @@ const SellerEarnings = () => {
           <h2 className="text-base sm:text-lg font-semibold text-gray-800">
             Recent Transactions
           </h2>
+          <span className="text-xs text-gray-400">
+            Commission shown separately
+          </span>
         </div>
 
         {transactions.length === 0 ? (
@@ -293,15 +332,15 @@ const SellerEarnings = () => {
             {transactions.map((txn) => (
               <div
                 key={txn.id}
-                className="px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2"
+                className="px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
               >
-                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-4 min-w-0 w-full sm:w-auto">
                   <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-[10px] sm:text-xs font-medium text-gray-600">
                       {txn.order.slice(0, 3)}
                     </span>
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-800 text-sm truncate">
                       {txn.order}
                     </p>
@@ -310,10 +349,33 @@ const SellerEarnings = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                  <span className="font-semibold text-gray-800 text-xs sm:text-sm">
-                    Rs. {txn.amount.toLocaleString()}
-                  </span>
+
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 flex-shrink-0 w-full sm:w-auto">
+                  {/* Gross */}
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-400">Gross</p>
+                    <p className="font-medium text-gray-700 text-xs sm:text-sm">
+                      Rs. {txn.amount.toLocaleString()}
+                    </p>
+                  </div>
+
+                  {/* Commission */}
+                  <div className="text-right">
+                    <p className="text-[10px] text-orange-500">Commission</p>
+                    <p className="font-medium text-orange-600 text-xs sm:text-sm">
+                      -Rs. {txn.commission.toLocaleString()}
+                    </p>
+                  </div>
+
+                  {/* Net */}
+                  <div className="text-right">
+                    <p className="text-[10px] text-green-500">Net</p>
+                    <p className="font-bold text-green-600 text-xs sm:text-sm">
+                      Rs. {txn.net.toLocaleString()}
+                    </p>
+                  </div>
+
+                  {/* Status */}
                   <span
                     className={`px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-medium rounded-full ${
                       txn.status === 'Paid'
@@ -353,4 +415,4 @@ const SellerEarnings = () => {
   );
 };
 
-export default SellerEarnings; 
+export default SellerEarnings;

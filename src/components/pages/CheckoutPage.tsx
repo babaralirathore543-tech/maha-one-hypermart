@@ -22,7 +22,7 @@ import { auth } from '../../config/firebase';
 import { sendOrderConfirmationEmail } from '../../services/emailService';
 
 // ============================================================
-// PAYMENT ACCOUNTS — EasyPaisa REMOVED
+// PAYMENT ACCOUNTS
 // ============================================================
 interface PaymentAccount {
   name: string;
@@ -60,13 +60,13 @@ const PAYMENT_ACCOUNTS: Record<string, PaymentAccount> = {
 };
 
 // ============================================================
-// PAYMENT TYPES — type-safe
+// PAYMENT TYPES
 // ============================================================
 const VALID_PAYMENT_METHODS = ['jazzcash', 'bank'] as const;
 type PaymentMethod = (typeof VALID_PAYMENT_METHODS)[number];
 
 // ============================================================
-// SHIPPING RATES — same as CartPage
+// SHIPPING RATES
 // ============================================================
 const SHIPPING_RATES = {
   karachi: 250,
@@ -101,7 +101,7 @@ const CITIES = [
 ];
 
 // ============================================================
-// PROVINCE MAP — city → province
+// PROVINCE MAP
 // ============================================================
 const CITY_PROVINCE_MAP: Record<string, string> = {
   Karachi: 'Sindh',
@@ -135,6 +135,8 @@ const CheckoutPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [orderCommission, setOrderCommission] = useState(0);
+  const [orderNetEarnings, setOrderNetEarnings] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -154,7 +156,7 @@ const CheckoutPage = () => {
   });
 
   // ============================================================
-  // ✅ Auto-update province when city changes
+  // Auto-update province when city changes
   // ============================================================
   useEffect(() => {
     const autoProvince = CITY_PROVINCE_MAP[formData.city];
@@ -168,9 +170,10 @@ const CheckoutPage = () => {
   // ============================================================
   const subtotal = useMemo(() => getCartTotal(), [cart, getCartTotal]);
   const shipping = useMemo(
-    () => (formData.city.toLowerCase() === 'karachi'
-      ? SHIPPING_RATES.karachi
-      : SHIPPING_RATES.other),
+    () =>
+      formData.city.toLowerCase() === 'karachi'
+        ? SHIPPING_RATES.karachi
+        : SHIPPING_RATES.other,
     [formData.city]
   );
   const discount = 0;
@@ -190,7 +193,6 @@ const CheckoutPage = () => {
   // PLACE ORDER
   // ============================================================
   const placeOrderToFirebase = async () => {
-    // ✅ Auth check with navigate + toast (no window.location)
     const currentUser = auth.currentUser;
     if (!currentUser) {
       toast.error('Please login to place order');
@@ -223,10 +225,12 @@ const CheckoutPage = () => {
           total: item.price * item.quantity,
           image: item.image || '/images/placeholder.jpg',
           weight: item.weight || null,
-          colour: item.colour || null,
+          colour: item.colour || item.color || null,
           size: item.size || null,
           variantId: item.variantId || null,
           sku: item.sku || null,
+          category: item.category || 'general',   // ✅ NEW — commission calc
+          sellerId: item.sellerId || 'admin',     // ✅ NEW — seller orders
         })),
         subtotal,
         shipping,
@@ -259,7 +263,7 @@ const CheckoutPage = () => {
         verifiedAt: null,
       };
 
-      const result = await placeOrder(orderData);
+      const result = await placeOrder(orderData as any);
 
       if (!result.success) {
         throw new Error(result.error || 'Unknown error');
@@ -267,14 +271,15 @@ const CheckoutPage = () => {
 
       const orderNumber = result.orderNumber || '';
       setOrderId(orderNumber);
+      setOrderCommission(result.commission || 0);
+      setOrderNetEarnings(result.netEarnings || 0);
       setOrderPlaced(true);
 
       // ✅ Clear cart AFTER snapshot
       clearCart();
 
-      // ✅ Send Email (using snapshot, NOT cart)
-      const customerEmail =
-        formData.email || currentUser.email || '';
+      // ✅ Send Email (using snapshot)
+      const customerEmail = formData.email || currentUser.email || '';
       if (customerEmail) {
         try {
           await sendOrderConfirmationEmail({
@@ -305,11 +310,10 @@ const CheckoutPage = () => {
           });
         } catch (emailError) {
           console.error('❌ Email error:', emailError);
-          // Non-blocking — order still placed
         }
       }
 
-      // ✅ Send WhatsApp (using snapshot, NOT cart)
+      // ✅ Send WhatsApp (using snapshot)
       if (formData.phone) {
         try {
           sendOrderConfirmationWhatsApp(
@@ -698,7 +702,7 @@ const CheckoutPage = () => {
                     </h2>
                   </div>
 
-                  {/* Payment Options — 2 options now */}
+                  {/* Payment Options */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                     {Object.entries(PAYMENT_ACCOUNTS).map(
                       ([key, account]) => (

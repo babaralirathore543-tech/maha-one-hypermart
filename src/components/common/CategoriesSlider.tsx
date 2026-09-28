@@ -1,5 +1,5 @@
 // src/components/common/CategoriesSlider.tsx
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaChevronLeft,
@@ -15,6 +15,7 @@ import {
   FaShoppingBag,
   FaGem,
   FaLeaf,
+  FaUtensilSpoon,
 } from 'react-icons/fa';
 
 interface Category {
@@ -47,8 +48,8 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
   const [scrollLeft, setScrollLeft] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string>('dry-fruits');
 
-  // ✅ Categories Data — Purple icons
-  const categories: Category[] = [
+  // ✅ useMemo — observer re-run avoid karne ke liye
+  const categories: Category[] = useMemo(() => [
     {
       id: 'dry-fruits',
       name: 'Dry Fruits',
@@ -68,6 +69,16 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40',
       activeBgColor: 'bg-emerald-500 dark:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30',
+    },
+    {
+      id: 'crockery',
+      name: 'Crockery',
+      icon: <FaUtensilSpoon className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-[#3B1E54] group-hover:text-white transition-colors" />,
+      link: '/crockery',
+      sectionId: 'crockery-section',
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40',
+      activeBgColor: 'bg-amber-500 dark:bg-amber-600 text-white shadow-lg shadow-amber-500/30',
     },
     {
       id: 'mens-fashion',
@@ -120,16 +131,6 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
       activeBgColor: 'bg-orange-500 dark:bg-orange-600 text-white shadow-lg shadow-orange-500/30',
     },
     {
-      id: 'food',
-      name: 'Food Items',
-      icon: <FaUtensils className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-[#3B1E54] group-hover:text-white transition-colors" />,
-      link: '/shop?category=food',
-      sectionId: 'food-section',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40',
-      activeBgColor: 'bg-green-500 dark:bg-green-600 text-white shadow-lg shadow-green-500/30',
-    },
-    {
       id: 'footwear',
       name: 'Footwear',
       icon: <FaShoePrints className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-[#3B1E54] group-hover:text-white transition-colors" />,
@@ -159,7 +160,7 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
       bgColor: 'bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40',
       activeBgColor: 'bg-amber-500 dark:bg-amber-600 text-white shadow-lg shadow-amber-500/30',
     },
-  ];
+  ], []);
 
   // ✅ IntersectionObserver
   useEffect(() => {
@@ -241,9 +242,7 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
       if (targetElement) {
         setTimeout(() => {
           const navElement = document.querySelector('nav') as HTMLElement | null;
-          const sliderElement = document.querySelector(
-            '.categories-slider'
-          ) as HTMLElement | null;
+          const sliderElement = document.querySelector('.categories-slider') as HTMLElement | null;
 
           const headerHeight = navElement?.offsetHeight || 120;
           const categoryHeight = sliderElement?.offsetHeight || 60;
@@ -314,7 +313,6 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
     };
   }, []);
 
-  // ✅ Render icon — PURPLE border
   const renderIcon = (category: Category) => {
     return (
       <div
@@ -344,7 +342,6 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
     >
       <div className="max-w-7xl mx-auto px-2 sm:px-4">
         <div className="relative">
-          {/* Left Arrow */}
           {showLeftArrow && (
             <button
               onClick={() => scroll('left')}
@@ -355,7 +352,6 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
             </button>
           )}
 
-          {/* Categories */}
           <div
             ref={scrollContainerRef}
             className={`flex gap-2 sm:gap-3 overflow-x-auto scroll-smooth hide-scrollbar ${
@@ -414,7 +410,6 @@ const CategoriesSlider: React.FC<CategoriesSliderProps> = ({
             })}
           </div>
 
-          {/* Right Arrow */}
           {showRightArrow && (
             <button
               onClick={() => scroll('right')}

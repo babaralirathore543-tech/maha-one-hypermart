@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import {
   FaUsers, FaBox, FaShoppingCart, FaChartLine,
   FaExclamationTriangle, FaPalette, FaRuler, FaClock,
-  FaCheckCircle, FaTimesCircle, FaHourglassHalf,
+  FaCheckCircle, FaTimesCircle, FaHourglassHalf, FaMoneyBillWave,
 } from 'react-icons/fa';
 import { db } from '../../config/firebase';
 import {
@@ -15,6 +15,8 @@ import {
   CategoryScale, LinearScale, PointElement, LineElement,
   BarElement, ArcElement, Title, Tooltip, Legend, Filler,
 } from 'chart.js';
+import { getCommissionSummary } from '../../services/orderService';
+import { getCommissionRate } from '../../config/commission';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
@@ -27,7 +29,7 @@ interface DashboardStats {
   totalOrders: number;
   totalRevenue: number;
   pendingOrders: number;
-  processingOrders: number;  // ✅ NEW
+  processingOrders: number;
   completedOrders: number;
   cancelledOrders: number;
   lowStockProducts: number;
@@ -37,6 +39,12 @@ interface DashboardStats {
   totalSizes: number;
   todaySales: number;
   averageOrderValue: number;
+
+  // ✅ Commission stats
+  totalCommission: number;
+  pendingCommission: number;
+  releasedCommission: number;
+  reversedCommission: number;
 }
 
 interface RecentOrder {
@@ -44,6 +52,7 @@ interface RecentOrder {
   orderNumber: string;
   customerName: string;
   total: number;
+  commission: number;
   status: string;
   items: number;
   date: Date;
@@ -66,7 +75,7 @@ const AdminDashboard: React.FC = () => {
     totalOrders: 0,
     totalRevenue: 0,
     pendingOrders: 0,
-    processingOrders: 0,  // ✅ NEW
+    processingOrders: 0,
     completedOrders: 0,
     cancelledOrders: 0,
     lowStockProducts: 0,
@@ -76,14 +85,21 @@ const AdminDashboard: React.FC = () => {
     totalSizes: 0,
     todaySales: 0,
     averageOrderValue: 0,
+    totalCommission: 0,
+    pendingCommission: 0,
+    releasedCommission: 0,
+    reversedCommission: 0,
   });
 
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [salesData, setSalesData] = useState<any>(null);
+  const [commissionChartData, setCommissionChartData] = useState<any>(null);
   const [colourData, setColourData] = useState<any>(null);
   const [sizeData, setSizeData] = useState<any>(null);
+
+  const commissionRate = getCommissionRate();
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -125,25 +141,47 @@ const AdminDashboard: React.FC = () => {
           ...d.data(),
         }));
 
-        // ✅ FIX: Separate counters
-        const pending = orders.filter(
-          (o: any) => o.orderStatus === 'pending'
-        ).length;
-        const processing = orders.filter(
-          (o: any) => o.orderStatus === 'processing'
-        ).length;
-        const completed = orders.filter(
-          (o: any) => o.orderStatus === 'delivered'
-        ).length;
-        const cancelled = orders.filter(
-          (o: any) => o.orderStatus === 'cancelled'
-        ).length;
+        // ✅ Status counters
+        const pending = orders.filter((o: any) => o.orderStatus === 'pending').length;
+        const processing = orders.filter((o: any) => o.orderStatus === 'processing').length;
+        const completed = orders.filter((o: any) => o.orderStatus === 'delivered').length;
+        const cancelled = orders.filter((o: any) => o.orderStatus === 'cancelled').length;
 
         const totalRevenue = orders.reduce(
           (sum: number, o: any) => sum + (o.total || 0),
           0
         );
 
+        // ✅ COMMISSION — actual fields use karo, fallback calculation
+        let totalCommission = 0;
+        let pendingCommission = 0;
+        let releasedCommission = 0;
+        let reversedCommission = 0;
+
+        const monthlyCommission = new Array(12).fill(0);
+
+        orders.forEach((o: any) => {
+          const subtotal = o.subtotal || 0;
+          const commission =
+            o.commission ||
+            Math.round(((subtotal * commissionRate) / 100) * 100) / 100;
+
+          totalCommission += commission;
+
+          const status = o.commissionStatus || 'pending';
+          if (status === 'released') releasedCommission += commission;
+          else if (status === 'reversed') reversedCommission += commission;
+          else pendingCommission += commission;
+
+          // Monthly commission for chart
+          const date = o.createdAt?.toDate?.() || new Date(o.createdAt);
+          const month = date.getMonth();
+          if (!isNaN(month)) {
+            monthlyCommission[month] += commission;
+          }
+        });
+
+        // Today's sales
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayOrders = orders.filter((o: any) => {
@@ -155,11 +193,13 @@ const AdminDashboard: React.FC = () => {
           0
         );
 
-        const avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
+        const avgOrderValue =
+          orders.length > 0 ? totalRevenue / orders.length : 0;
 
         const usersSnap = await getDocs(collection(db, 'users'));
         const usersCount = usersSnap.size;
 
+        // ✅ Recent orders — commission bhi include karo
         const recentOrdersData: RecentOrder[] = orders
           .sort((a: any, b: any) => {
             const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
@@ -167,19 +207,31 @@ const AdminDashboard: React.FC = () => {
             return dateB.getTime() - dateA.getTime();
           })
           .slice(0, 5)
-          .map((o: any) => ({
-            id: o.id || '',
-            orderNumber: o.orderNumber || `ORD-${(o.id || '').slice(0, 8)}`,
-            customerName:
-              o.userName || o.customer?.name || o.shippingAddress?.name || 'Guest',
-            total: o.total || 0,
-            status: o.orderStatus || 'pending',
-            items: o.items?.length || 0,
-            date: o.createdAt?.toDate?.() || new Date(o.createdAt),
-            colour: o.items?.[0]?.colour,
-            size: o.items?.[0]?.size,
-          }));
+          .map((o: any) => {
+            const subtotal = o.subtotal || 0;
+            const commission =
+              o.commission ||
+              Math.round(((subtotal * commissionRate) / 100) * 100) / 100;
 
+            return {
+              id: o.id || '',
+              orderNumber: o.orderNumber || `ORD-${(o.id || '').slice(0, 8)}`,
+              customerName:
+                o.userName ||
+                o.customer?.name ||
+                o.shippingAddress?.name ||
+                'Guest',
+              total: o.total || 0,
+              commission,
+              status: o.orderStatus || 'pending',
+              items: o.items?.length || 0,
+              date: o.createdAt?.toDate?.() || new Date(o.createdAt),
+              colour: o.items?.[0]?.colour,
+              size: o.items?.[0]?.size,
+            };
+          });
+
+        // Top products
         const productSales: {
           [key: string]: { name: string; sales: number; revenue: number; image: string };
         } = {};
@@ -205,11 +257,14 @@ const AdminDashboard: React.FC = () => {
           .sort((a, b) => b.sales - a.sales)
           .slice(0, 5);
 
+        // Monthly sales
         const monthlySales = new Array(12).fill(0);
         orders.forEach((order: any) => {
           const date = order.createdAt?.toDate?.() || new Date(order.createdAt);
           const month = date.getMonth();
-          monthlySales[month] += order.total || 0;
+          if (!isNaN(month)) {
+            monthlySales[month] += order.total || 0;
+          }
         });
 
         setSalesData({
@@ -226,6 +281,22 @@ const AdminDashboard: React.FC = () => {
           ],
         });
 
+        // ✅ Commission chart
+        setCommissionChartData({
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+          datasets: [
+            {
+              label: 'Monthly Commission (Rs.)',
+              data: monthlyCommission,
+              borderColor: '#D4AF37',
+              backgroundColor: 'rgba(212, 175, 55, 0.15)',
+              fill: true,
+              tension: 0.4,
+            },
+          ],
+        });
+
+        // Colour distribution
         const colourCount: { [key: string]: number } = {};
         allVariants.forEach((v: any) => {
           if (v.colour) colourCount[v.colour] = (colourCount[v.colour] || 0) + 1;
@@ -267,7 +338,7 @@ const AdminDashboard: React.FC = () => {
           totalOrders: orders.length,
           totalRevenue,
           pendingOrders: pending,
-          processingOrders: processing,  // ✅ FIX
+          processingOrders: processing,
           completedOrders: completed,
           cancelledOrders: cancelled,
           lowStockProducts: lowStock,
@@ -277,10 +348,28 @@ const AdminDashboard: React.FC = () => {
           totalSizes: uniqueSizes.size,
           todaySales,
           averageOrderValue: avgOrderValue,
+          totalCommission,
+          pendingCommission,
+          releasedCommission,
+          reversedCommission,
         });
 
         setRecentOrders(recentOrdersData);
         setTopProducts(topProductsData);
+
+        // ✅ Also fetch live commission summary (in case of server-side updates)
+        try {
+          const commissionData = await getCommissionSummary();
+          setStats((prev) => ({
+            ...prev,
+            totalCommission: commissionData.totalCommission,
+            pendingCommission: commissionData.pendingCommission,
+            releasedCommission: commissionData.releasedCommission,
+            reversedCommission: commissionData.reversedCommission,
+          }));
+        } catch (err) {
+          console.warn('Commission summary fetch failed:', err);
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -298,26 +387,42 @@ const AdminDashboard: React.FC = () => {
           id: d.id,
           ...d.data(),
         }));
-        const pending = orders.filter(
-          (o: any) => o.orderStatus === 'pending'
-        ).length;
-        const processing = orders.filter(
-          (o: any) => o.orderStatus === 'processing'
-        ).length;
-        const completed = orders.filter(
-          (o: any) => o.orderStatus === 'delivered'
-        ).length;
-        const cancelled = orders.filter(
-          (o: any) => o.orderStatus === 'cancelled'
-        ).length;
+        const pending = orders.filter((o: any) => o.orderStatus === 'pending').length;
+        const processing = orders.filter((o: any) => o.orderStatus === 'processing').length;
+        const completed = orders.filter((o: any) => o.orderStatus === 'delivered').length;
+        const cancelled = orders.filter((o: any) => o.orderStatus === 'cancelled').length;
+
+        // Recalculate commission on the fly
+        let totalCommission = 0;
+        let pendingCommission = 0;
+        let releasedCommission = 0;
+        let reversedCommission = 0;
+
+        orders.forEach((o: any) => {
+          const subtotal = o.subtotal || 0;
+          const commission =
+            o.commission ||
+            Math.round(((subtotal * commissionRate) / 100) * 100) / 100;
+
+          totalCommission += commission;
+
+          const status = o.commissionStatus || 'pending';
+          if (status === 'released') releasedCommission += commission;
+          else if (status === 'reversed') reversedCommission += commission;
+          else pendingCommission += commission;
+        });
 
         setStats((prev) => ({
           ...prev,
           totalOrders: orders.length,
           pendingOrders: pending,
-          processingOrders: processing,  // ✅ FIX
+          processingOrders: processing,
           completedOrders: completed,
           cancelledOrders: cancelled,
+          totalCommission,
+          pendingCommission,
+          releasedCommission,
+          reversedCommission,
         }));
       },
       (error) => {
@@ -328,6 +433,7 @@ const AdminDashboard: React.FC = () => {
     return () => {
       ordersUnsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getStatusColor = (status: string): string => {
@@ -342,13 +448,22 @@ const AdminDashboard: React.FC = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  // ✅ FIX: Removed fake changes, added real data
+  // ============================================================
+  // STAT CARDS — with Commission
+  // ============================================================
   const statCards = [
     {
       title: 'Total Revenue',
       value: `Rs. ${stats.totalRevenue.toLocaleString()}`,
       icon: <FaChartLine />,
       color: 'bg-gradient-to-br from-yellow-400 to-yellow-600',
+    },
+    {
+      title: 'Total Commission',
+      value: `Rs. ${stats.totalCommission.toLocaleString()}`,
+      icon: <FaMoneyBillWave />,
+      color: 'bg-gradient-to-br from-orange-400 to-orange-600',
+      subtitle: `${commissionRate}% per order`,
     },
     {
       title: "Today's Sales",
@@ -370,7 +485,6 @@ const AdminDashboard: React.FC = () => {
     },
   ];
 
-  // ✅ FIX: Separate counts
   const statusCards = [
     { title: 'Pending', value: stats.pendingOrders, icon: <FaHourglassHalf />, color: 'bg-yellow-100 text-yellow-800' },
     { title: 'Processing', value: stats.processingOrders, icon: <FaClock />, color: 'bg-blue-100 text-blue-800' },
@@ -388,6 +502,34 @@ const AdminDashboard: React.FC = () => {
   const variantStats = [
     { title: 'Total Colours', value: stats.totalColours, icon: <FaPalette />, color: 'bg-pink-100 text-pink-800' },
     { title: 'Total Sizes', value: stats.totalSizes, icon: <FaRuler />, color: 'bg-indigo-100 text-indigo-800' },
+  ];
+
+  // ✅ Commission cards
+  const commissionCards = [
+    {
+      title: 'Pending Commission',
+      value: `Rs. ${stats.pendingCommission.toLocaleString()}`,
+      description: 'Awaiting delivery',
+      color: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+    },
+    {
+      title: 'Released Commission',
+      value: `Rs. ${stats.releasedCommission.toLocaleString()}`,
+      description: 'Delivered orders',
+      color: 'bg-green-50 border-green-200 text-green-800',
+    },
+    {
+      title: 'Reversed Commission',
+      value: `Rs. ${stats.reversedCommission.toLocaleString()}`,
+      description: 'Cancelled orders',
+      color: 'bg-red-50 border-red-200 text-red-800',
+    },
+    {
+      title: 'Net Payout to Sellers',
+      value: `Rs. ${(stats.totalRevenue - stats.totalCommission).toLocaleString()}`,
+      description: `${commissionRate}% deducted`,
+      color: 'bg-blue-50 border-blue-200 text-blue-800',
+    },
   ];
 
   if (loading) {
@@ -414,28 +556,59 @@ const AdminDashboard: React.FC = () => {
         </button>
       </div>
 
-      {/* Main Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+      {/* Main Stats — 5 cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
         {statCards.map((stat, index) => (
           <div
             key={index}
-            className="bg-white rounded-xl shadow-sm p-3 sm:p-6 hover:shadow-lg transition-all duration-300"
+            className="bg-white rounded-xl shadow-sm p-3 sm:p-5 hover:shadow-lg transition-all duration-300"
           >
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] sm:text-sm text-gray-500 font-medium truncate">
                   {stat.title}
                 </p>
-                <p className="text-sm sm:text-2xl font-bold text-gray-800 mt-1 truncate">
+                <p className="text-sm sm:text-xl font-bold text-gray-800 mt-1 truncate">
                   {stat.value}
                 </p>
+                {stat.subtitle && (
+                  <p className="text-[9px] sm:text-[10px] text-gray-400 mt-0.5">
+                    {stat.subtitle}
+                  </p>
+                )}
               </div>
-              <div className={`${stat.color} text-white p-2 sm:p-4 rounded-xl shadow-lg text-sm sm:text-2xl shrink-0`}>
+              <div className={`${stat.color} text-white p-2 sm:p-3 rounded-xl shadow-lg text-sm sm:text-xl shrink-0`}>
                 {stat.icon}
               </div>
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ✅ Commission Overview */}
+      <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6 border border-[#D4AF37]/20">
+        <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+          <FaMoneyBillWave className="text-[#D4AF37]" />
+          Commission Overview ({commissionRate}% per sale)
+        </h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          {commissionCards.map((card, i) => (
+            <div
+              key={i}
+              className={`${card.color} rounded-lg p-3 sm:p-4 border`}
+            >
+              <p className="text-[10px] sm:text-xs font-medium opacity-80">
+                {card.title}
+              </p>
+              <p className="text-sm sm:text-lg font-bold mt-1 truncate">
+                {card.value}
+              </p>
+              <p className="text-[9px] sm:text-[10px] opacity-70 mt-0.5">
+                {card.description}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Order Status & Stock */}
@@ -536,10 +709,42 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
+          <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base flex items-center gap-2">
+            <FaMoneyBillWave className="text-[#D4AF37]" />
+            Commission Trend
+          </h3>
+          {commissionChartData && (
+            <div className="h-56 sm:h-64">
+              <Line
+                data={commissionChartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        callback: function (value: any) {
+                          return `Rs. ${value.toLocaleString()}`;
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Colour & Size Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
           <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">
             Products by Colour
           </h3>
-          {colourData && (
+          {colourData && Object.keys(colourData.labels || {}).length > 0 && (
             <div className="h-56 sm:h-64 flex justify-center">
               <Doughnut
                 data={colourData}
@@ -557,35 +762,36 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Size Distribution */}
-      <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
-        <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">
-          Products by Size
-        </h3>
-        {sizeData && (
-          <div className="h-56 sm:h-64">
-            <Bar
-              data={sizeData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                  y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                },
-              }}
-            />
-          </div>
-        )}
+        <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
+          <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">
+            Products by Size
+          </h3>
+          {sizeData && (
+            <div className="h-56 sm:h-64">
+              <Bar
+                data={sizeData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                  },
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Recent Orders & Top Products */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Recent Orders</h3>
+            <h3 className="font-semibold text-gray-800 text-sm sm:text-base">
+              Recent Orders
+            </h3>
             <button className="text-xs sm:text-sm text-[#0F766E] hover:underline">
               View All
             </button>
@@ -604,13 +810,9 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                       {order.customerName}
                     </p>
-                    {order.colour && order.size && (
-                      <p className="hidden sm:flex items-center text-xs text-gray-400 mt-1">
-                        <span
-                          className="inline-block w-2 h-2 rounded-full mr-1"
-                          style={{ backgroundColor: order.colour.toLowerCase() }}
-                        ></span>
-                        {order.colour} • {order.size}
+                    {order.commission > 0 && (
+                      <p className="text-[10px] text-orange-600 font-medium mt-0.5">
+                        💰 Commission: Rs. {order.commission.toLocaleString()}
                       </p>
                     )}
                   </div>

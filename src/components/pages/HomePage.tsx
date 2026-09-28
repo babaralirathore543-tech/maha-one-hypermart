@@ -1,4 +1,4 @@
-// src/pages/HomePage.tsx
+// src/components/pages/HomePage.tsx
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,7 +6,8 @@ import {
   FaArrowRight, FaSpinner, FaStar, FaQuoteLeft,
   FaChevronLeft, FaChevronRight,
   FaAppleAlt, FaMale, FaFemale, FaChild, FaCookie,
-  FaShoePrints, FaShoppingBag, FaGem, FaLeaf
+  FaShoePrints, FaShoppingBag, FaGem, FaLeaf,
+  FaUtensilSpoon,  // ✅ Crockery ke liye
 } from 'react-icons/fa';
 import { User, Store, ArrowRight as ArrowRightIcon } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
@@ -155,7 +156,7 @@ const CategoryProductSection: React.FC<CategoryProductSectionProps> = ({
                     isNew: product.isNew,
                     isFeatured: product.isFeatured,
                     isBestSeller: product.isBestSeller,
-                    rating: product.rating || 4.5,
+                    rating: product.rating || 0,
                     reviewCount: 0,
                     category: product.category,
                     colors: product.colors || [],
@@ -179,7 +180,7 @@ const CategoryProductSection: React.FC<CategoryProductSectionProps> = ({
 };
 
 // ============================================================
-// CUSTOMER / SELLER CARDS — Smart (Seller status aware)
+// CUSTOMER / SELLER CARDS
 // ============================================================
 const CustomerSellerCards = ({
   isLoggedIn,
@@ -188,7 +189,6 @@ const CustomerSellerCards = ({
   isLoggedIn: boolean;
   sellerStatus: SellerStatus;
 }) => {
-  // ✅ Seller card configuration based on status
   const getSellerCard = () => {
     if (!isLoggedIn) {
       return {
@@ -230,7 +230,6 @@ const CustomerSellerCards = ({
       };
     }
 
-    // Logged in, no seller doc → Register
     return {
       to: '/seller/register',
       title: 'Seller',
@@ -245,8 +244,7 @@ const CustomerSellerCards = ({
   return (
     <section className="max-w-[1500px] mx-auto px-3 sm:px-4 lg:px-6 pt-10 sm:pt-24 md:pt-28 lg:pt-32 pb-2 sm:pb-3">
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-
-        {/* CUSTOMER — Purple Gradient */}
+        {/* CUSTOMER */}
         <Link
           to={isLoggedIn ? '/dashboard' : '/login'}
           className="
@@ -289,7 +287,7 @@ const CustomerSellerCards = ({
           </div>
         </Link>
 
-        {/* SELLER — Smart Gold Gradient */}
+        {/* SELLER */}
         <Link
           to={sellerCard.to}
           className="
@@ -321,7 +319,6 @@ const CustomerSellerCards = ({
             ">
               <Store className={`w-4 h-4 ${sellerCard.iconColor}`} strokeWidth={2.5} />
 
-              {/* Badge on icon */}
               {sellerCard.badge && (
                 <span
                   className={`absolute -top-1 -right-1 text-[8px] font-bold px-1 rounded-full ${sellerCard.badge.color}`}
@@ -362,6 +359,7 @@ const ShopByCategory = () => {
   const categories = [
     { id: 'dryfruits', name: 'Dry Fruits', icon: <FaAppleAlt className="w-5 h-5 sm:w-6 sm:h-6 text-[#3B1E54] group-hover:text-white transition-colors" />, link: '/shop', bg: 'bg-amber-50 dark:bg-amber-900/20' },
     { id: 'herbal', name: 'Herbal', icon: <FaLeaf className="w-5 h-5 sm:w-6 sm:h-6 text-[#3B1E54] group-hover:text-white transition-colors" />, link: '/herbal', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+    { id: 'crockery', name: 'Crockery', icon: <FaUtensilSpoon className="w-5 h-5 sm:w-6 sm:h-6 text-[#3B1E54] group-hover:text-white transition-colors" />, link: '/crockery', bg: 'bg-amber-50 dark:bg-amber-900/20' },
     { id: 'mens-fashion', name: "Men's", icon: <FaMale className="w-5 h-5 sm:w-6 sm:h-6 text-[#3B1E54] group-hover:text-white transition-colors" />, link: '/fashion?gender=men', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { id: 'womens-fashion', name: "Women's", icon: <FaFemale className="w-5 h-5 sm:w-6 sm:h-6 text-[#3B1E54] group-hover:text-white transition-colors" />, link: '/fashion?gender=women', bg: 'bg-purple-50 dark:bg-purple-900/20' },
     { id: 'kids-fashion', name: "Kids", icon: <FaChild className="w-5 h-5 sm:w-6 sm:h-6 text-[#3B1E54] group-hover:text-white transition-colors" />, link: '/fashion?gender=kids', bg: 'bg-pink-50 dark:bg-pink-900/20' },
@@ -372,7 +370,7 @@ const ShopByCategory = () => {
   ];
 
   return (
-    <section className="py-4 sm:py-6 bg-gradient-to-b from-[#FFFDF7] to-[#F8FAFC] dark:from-[#111827] dark:to-[#1F2937]">
+    <section id="shop-by-category" className="py-4 sm:py-6 bg-gradient-to-b from-[#FFFDF7] to-[#F8FAFC] dark:from-[#111827] dark:to-[#1F2937]">
       <div className="max-w-[1500px] mx-auto px-3 sm:px-4 lg:px-6">
 
         <div className="flex items-center justify-between mb-4 sm:mb-5">
@@ -393,7 +391,7 @@ const ShopByCategory = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-5 sm:grid-cols-9 gap-2 sm:gap-3">
+        <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-3">
           {categories.map((category) => (
             <Link
               key={category.id}
@@ -633,7 +631,6 @@ const HomePage = () => {
   const { user } = useAuth();
   const isLoggedIn = !!user;
 
-  // ✅ Seller status state
   const [sellerStatus, setSellerStatus] = useState<SellerStatus>('checking');
 
   const [dryFruitsProducts, setDryFruitsProducts] = useState<any[]>([]);
@@ -642,6 +639,7 @@ const HomePage = () => {
   const [kidsFashionProducts, setKidsFashionProducts] = useState<any[]>([]);
   const [sweetsProducts, setSweetsProducts] = useState<any[]>([]);
   const [herbalProducts, setHerbalProducts] = useState<any[]>([]);
+  const [crockeryProducts, setCrockeryProducts] = useState<any[]>([]);  // ✅ NAYA
 
   const [loadingDryFruits, setLoadingDryFruits] = useState(true);
   const [loadingMens, setLoadingMens] = useState(true);
@@ -649,6 +647,7 @@ const HomePage = () => {
   const [loadingKids, setLoadingKids] = useState(true);
   const [loadingSweets, setLoadingSweets] = useState(true);
   const [loadingHerbal, setLoadingHerbal] = useState(true);
+  const [loadingCrockery, setLoadingCrockery] = useState(true);  // ✅ NAYA
 
   const slides = [
     { id: 0, image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1788241099/1788240235024_uw5fhn.jpg', link: '/shop', alt: 'Premium Dry Fruits Collection' },
@@ -716,8 +715,21 @@ const HomePage = () => {
         const snapshot = await getDocs(q);
         setHerbalProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) { console.error('Error:', error); } finally { setLoadingHerbal(false); }
-      };
+    };
     fetchHerbal();
+  }, []);
+
+  // ✅ CROCKERY FETCH — NAYA
+  useEffect(() => {
+    const fetchCrockery = async () => {
+      try {
+        setLoadingCrockery(true);
+        const q = query(collection(db, 'products'), where('category', '==', 'crockery'), where('status', '==', 'active'), limit(8));
+        const snapshot = await getDocs(q);
+        setCrockeryProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) { console.error('Error:', error); } finally { setLoadingCrockery(false); }
+    };
+    fetchCrockery();
   }, []);
 
   useEffect(() => {
@@ -768,30 +780,31 @@ const HomePage = () => {
     fetchSweets();
   }, []);
 
+  // ✅ Banner images — Crockery add karo
   const bannerImages = [
     { id: 'dryfruits', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787928030/1787927127977_tfpbae.jpg', alt: 'Premium Dry Fruits Collection', link: '/shop' },
-    { id: 'herbal', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787928030/1787927127977_tfpbae.jpg', alt: 'Herbal & Natural Collection', link: '/herbal' },
+    { id: 'herbal', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1790613930/ChatGPT_Image_Sep_28_2026_09_43_51_PM_ss5zqg.png', alt: 'Herbal & Natural Collection', link: '/herbal' },
+    { id: 'crockery', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1790613604/ChatGPT_Image_Sep_28_2026_09_33_35_PM_yj7pn1.png', alt: 'Crockery & Kitchenware Collection', link: '/crockery' },  // ✅ NAYA — apni image upload karo
     { id: 'mens-fashion', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787928029/1787927127796_r6gpwk.jpg', alt: "Men's Fashion Collection", link: '/fashion?gender=men' },
     { id: 'womens-fashion', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787928035/1787927127894_tf8wge.jpg', alt: "Women's Fashion Collection", link: '/fashion?gender=women' },
     { id: 'kids-fashion', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787928033/1787927127833_unljm2.jpg', alt: "Kids Fashion Collection", link: '/fashion?gender=kids' },
     { id: 'sweets', image: 'https://res.cloudinary.com/kw3pdwrb/image/upload/v1787928037/1787927127742_eifbns.jpg', alt: 'Sweets & Chocolates Collection', link: '/sweets' },
   ];
 
+  // ✅ Section configs — Crockery add karo
   const sectionConfigs = [
     { id: 'dryfruits-section', banner: bannerImages[0], title: 'PREMIUM DRY FRUITS', subtitle: 'Handpicked quality from the finest farms', products: dryFruitsProducts, loading: loadingDryFruits, viewAllLink: '/shop', detailPathPrefix: '/dry-product' },
     { id: 'herbal-section', banner: bannerImages[1], title: 'HERBAL & NATURAL', subtitle: 'Pure wellness from nature', products: herbalProducts, loading: loadingHerbal, viewAllLink: '/herbal', detailPathPrefix: '/herbal' },
-    { id: 'mens-fashion-section', banner: bannerImages[2], title: "MEN'S FASHION", subtitle: 'Sharp looks, timeless class', products: mensFashionProducts, loading: loadingMens, viewAllLink: '/fashion?gender=men', detailPathPrefix: '/fashion' },
-    { id: 'womens-fashion-section', banner: bannerImages[3], title: "WOMEN'S FASHION", subtitle: 'Elegance & style for every occasion', products: womensFashionProducts, loading: loadingWomens, viewAllLink: '/fashion?gender=women', detailPathPrefix: '/fashion' },
-    { id: 'kids-fashion-section', banner: bannerImages[4], title: "KIDS FASHION", subtitle: 'Playful styles for little stars', products: kidsFashionProducts, loading: loadingKids, viewAllLink: '/fashion?gender=kids', detailPathPrefix: '/fashion' },
-    { id: 'sweets-section', banner: bannerImages[5], title: 'SWEETS & CHOCOLATES', subtitle: 'Delicious treats for every celebration', products: sweetsProducts, loading: loadingSweets, viewAllLink: '/sweets', detailPathPrefix: '/sweet-product' },
+    { id: 'crockery-section', banner: bannerImages[2], title: 'CROCKERY & KITCHENWARE', subtitle: 'Premium dining essentials for your home', products: crockeryProducts, loading: loadingCrockery, viewAllLink: '/crockery', detailPathPrefix: '/crockery' },  // ✅ NAYA
+    { id: 'mens-fashion-section', banner: bannerImages[3], title: "MEN'S FASHION", subtitle: 'Sharp looks, timeless class', products: mensFashionProducts, loading: loadingMens, viewAllLink: '/fashion?gender=men', detailPathPrefix: '/fashion' },
+    { id: 'womens-fashion-section', banner: bannerImages[4], title: "WOMEN'S FASHION", subtitle: 'Elegance & style for every occasion', products: womensFashionProducts, loading: loadingWomens, viewAllLink: '/fashion?gender=women', detailPathPrefix: '/fashion' },
+    { id: 'kids-fashion-section', banner: bannerImages[5], title: "KIDS FASHION", subtitle: 'Playful styles for little stars', products: kidsFashionProducts, loading: loadingKids, viewAllLink: '/fashion?gender=kids', detailPathPrefix: '/fashion' },
+    { id: 'sweets-section', banner: bannerImages[6], title: 'SWEETS & CHOCOLATES', subtitle: 'Delicious treats for every celebration', products: sweetsProducts, loading: loadingSweets, viewAllLink: '/sweets', detailPathPrefix: '/sweet-product' },
   ];
 
   return (
     <div className="bg-[#FFFDF7] dark:bg-[#111827] min-h-screen">
-
-      {/* ============================================================
-          CUSTOMER / SELLER CARDS — Smart
-      ============================================================ */}
+      {/* CUSTOMER / SELLER CARDS */}
       <CustomerSellerCards
         isLoggedIn={isLoggedIn}
         sellerStatus={sellerStatus}

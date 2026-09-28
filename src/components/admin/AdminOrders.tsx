@@ -16,11 +16,16 @@ import {
   FaPalette,
   FaRuler,
   FaWhatsapp,
+  FaMoneyBillWave,
 } from 'react-icons/fa';
 import { db, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from '../../config/firebase';
 import { sendCustomWhatsAppMessage } from '../../services/whatsappNotificationService';
+import { getCommissionRate } from '../../config/commission';
 import toast from 'react-hot-toast';
 
+// ============================================================
+// TYPES
+// ============================================================
 interface OrderItem {
   productId: string;
   name: string;
@@ -33,6 +38,8 @@ interface OrderItem {
   size?: string;
   variantId?: string;
   sku?: string;
+  category?: string;
+  sellerId?: string;
 }
 
 interface Order {
@@ -47,6 +54,13 @@ interface Order {
   shipping: number;
   discount: number;
   total: number;
+
+  // ✅ Commission
+  commission?: number;
+  commissionRate?: number;
+  netEarnings?: number;
+  commissionStatus?: 'pending' | 'released' | 'reversed';
+
   paymentMethod: string;
   paymentStatus: string;
   orderStatus: string;
@@ -64,6 +78,9 @@ interface Order {
   updatedAt?: any;
 }
 
+// ============================================================
+// COMPONENT
+// ============================================================
 const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -75,19 +92,22 @@ const AdminOrders: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
 
+  const commissionRate = getCommissionRate();
+
   const statusOptions = [
     { value: 'pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-800', icon: <FaClock className="text-yellow-500" /> },
     { value: 'processing', label: 'Processing', color: 'bg-blue-100 text-blue-800', icon: <FaBox className="text-blue-500" /> },
     { value: 'shipped', label: 'Shipped', color: 'bg-purple-100 text-purple-800', icon: <FaTruck className="text-purple-500" /> },
     { value: 'delivered', label: 'Delivered', color: 'bg-green-100 text-green-800', icon: <FaCheck className="text-green-500" /> },
-    { value: 'cancelled', label: 'Cancelled', color: 'bg-red-100 text-red-800', icon: <FaTimes className="text-red-500" /> }
+    { value: 'cancelled', label: 'Cancelled', color: 'bg-red-100 text-red-800', icon: <FaTimes className="text-red-500" /> },
   ];
 
   const paymentStatusOptions = [
     { value: 'pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'pending_verification', label: 'Pending Verification', color: 'bg-amber-100 text-amber-800' },
     { value: 'paid', label: 'Paid', color: 'bg-green-100 text-green-800' },
     { value: 'failed', label: 'Failed', color: 'bg-red-100 text-red-800' },
-    { value: 'refunded', label: 'Refunded', color: 'bg-gray-100 text-gray-800' }
+    { value: 'refunded', label: 'Refunded', color: 'bg-gray-100 text-gray-800' },
   ];
 
   useEffect(() => {
@@ -138,16 +158,34 @@ const AdminOrders: React.FC = () => {
     setFilteredOrders(filtered);
   }, [orders, searchTerm, statusFilter, paymentFilter]);
 
+  // ============================================================
+  // ✅ Update Order Status — commission auto-updates
+  // ============================================================
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
     try {
-      await updateDoc(doc(db, 'orders', orderId), {
-        orderStatus: newStatus,
-        updatedAt: new Date()
-      });
-
       const order = orders.find(o => o.id === orderId);
-      if (order && order.userPhone) {
+      if (!order) return;
+
+      // ✅ Calculate commission status
+      const commissionStatus =
+        newStatus === 'delivered' ? 'released' :
+        newStatus === 'cancelled' ? 'reversed' :
+        'pending';
+
+      const updateData: Record<string, any> = {
+        orderStatus: newStatus,
+        commissionStatus,
+        updatedAt: new Date(),
+      };
+
+      if (newStatus === 'delivered') updateData.deliveredAt = new Date();
+      if (newStatus === 'cancelled') updateData.cancelledAt = new Date();
+
+      await updateDoc(doc(db, 'orders', orderId), updateData);
+
+      // ✅ WhatsApp notification
+      if (order.userPhone) {
         let message = '';
 
         switch (newStatus) {
@@ -161,7 +199,7 @@ const AdminOrders: React.FC = () => {
             message = `✅ *MAHA ONE HYPERMART - Order Delivered!*\n\n👋 Hello ${order.userName},\n\nYour order #${order.orderNumber || order.id.slice(-8)} has been delivered successfully! 🎉\n\n🌟 We hope you love your purchase!\n\n📱 Rate your order: ${window.location.origin}/orders/${order.id}/review\n\nThank you for choosing *MAHA ONE HYPERMART*! 🛍️`;
             break;
           case 'cancelled':
-            message = `❌ *MAHA ONE HYPERMART - Order Cancelled*\n\n👋 Hello ${order.userName},\n\nYour order #${order.orderNumber || order.id.slice(-8)} has been cancelled.\n\n💰 Refund will be processed within 3-5 business days.\n\n📞 For any questions, contact us on WhatsApp: +92-XXX-XXXXXXX\n\nThank you for choosing *MAHA ONE HYPERMART*! 🛍️`;
+            message = `❌ *MAHA ONE HYPERMART - Order Cancelled*\n\n👋 Hello ${order.userName},\n\nYour order #${order.orderNumber || order.id.slice(-8)} has been cancelled.\n\n💰 Refund will be processed within 3-5 business days.\n\n📞 For any questions, contact us on WhatsApp: +92-303-3169725\n\nThank you for choosing *MAHA ONE HYPERMART*! 🛍️`;
             break;
           default:
             message = `📦 *MAHA ONE HYPERMART - Order Update*\n\n👋 Hello ${order.userName},\n\nYour order #${order.orderNumber || order.id.slice(-8)} status has been updated to: ${newStatus}\n\n📱 Track your order: ${window.location.origin}/orders/${order.id}\n\nThank you for shopping with *MAHA ONE HYPERMART*! 🛍️`;
@@ -171,7 +209,15 @@ const AdminOrders: React.FC = () => {
       }
 
       await fetchOrders();
-      toast.success(`✅ Order status updated to: ${newStatus}`);
+
+      // ✅ Toast with commission info
+      if (newStatus === 'delivered') {
+        toast.success(`✅ Order delivered • Commission released: Rs. ${(order.commission || 0).toLocaleString()}`);
+      } else if (newStatus === 'cancelled') {
+        toast.success(`❌ Order cancelled • Commission reversed: Rs. ${(order.commission || 0).toLocaleString()}`);
+      } else {
+        toast.success(`✅ Order status updated to: ${newStatus}`);
+      }
     } catch (error) {
       console.error('❌ Error updating order:', error);
       toast.error('❌ Failed to update order status');
@@ -210,7 +256,7 @@ const AdminOrders: React.FC = () => {
       `${index + 1}. ${item.name} x${item.quantity} = Rs. ${(item.price * item.quantity).toLocaleString()}`
     ).join('\n') || 'No items';
 
-    const message = `📦 *MAHA ONE HYPERMART - Order Update*\n\n👋 Hello ${order.userName || 'Customer'},\n\nYour order #${order.orderNumber || order.id.slice(-8)} is being processed.\n\n📋 *Order Details:*\n${itemsList}\n\n💰 Total: Rs. ${order.total?.toLocaleString() || 0}\n📦 Status: ${order.orderStatus || 'Pending'}\n\n📱 Track your order: ${window.location.origin}/orders/${order.id}\n\n📞 Need help? Contact us on WhatsApp: +92-XXX-XXXXXXX\n\nThank you for shopping with *MAHA ONE HYPERMART*! 🛍️`;
+    const message = `📦 *MAHA ONE HYPERMART - Order Update*\n\n👋 Hello ${order.userName || 'Customer'},\n\nYour order #${order.orderNumber || order.id.slice(-8)} is being processed.\n\n📋 *Order Details:*\n${itemsList}\n\n💰 Total: Rs. ${order.total?.toLocaleString() || 0}\n📦 Status: ${order.orderStatus || 'Pending'}\n\n📱 Track your order: ${window.location.origin}/orders/${order.id}\n\n📞 Need help? Contact us on WhatsApp: +92-303-3169725\n\nThank you for shopping with *MAHA ONE HYPERMART*! 🛍️`;
 
     const result = sendCustomWhatsAppMessage(phone, message);
     if (result.success) {
@@ -253,7 +299,27 @@ const AdminOrders: React.FC = () => {
     const cancelled = orders.filter(o => o.orderStatus === 'cancelled').length;
     const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
 
-    return { total, pending, processing, shipped, delivered, cancelled, totalRevenue };
+    // ✅ Commission totals
+    let totalCommission = 0;
+    let releasedCommission = 0;
+    let pendingCommission = 0;
+
+    orders.forEach((o) => {
+      const subtotal = o.subtotal || 0;
+      const commission =
+        o.commission ||
+        Math.round(((subtotal * commissionRate) / 100) * 100) / 100;
+
+      totalCommission += commission;
+
+      if (o.commissionStatus === 'released') releasedCommission += commission;
+      else if (o.commissionStatus !== 'reversed') pendingCommission += commission;
+    });
+
+    return {
+      total, pending, processing, shipped, delivered, cancelled,
+      totalRevenue, totalCommission, releasedCommission, pendingCommission,
+    };
   };
 
   const stats = getStats();
@@ -280,7 +346,7 @@ const AdminOrders: React.FC = () => {
         </button>
       </div>
 
-      {/* Stats Cards - Responsive */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-sm p-2.5 sm:p-3 text-center border border-gray-200">
           <p className="text-lg sm:text-2xl font-bold text-gray-800">{stats.total}</p>
@@ -314,7 +380,39 @@ const AdminOrders: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters - Stack on mobile */}
+      {/* ✅ Commission Stats Bar */}
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <FaMoneyBillWave className="text-orange-600 text-lg" />
+            <span className="font-semibold text-gray-800 text-sm sm:text-base">
+              Commission ({commissionRate}% per order)
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 sm:gap-6 w-full sm:w-auto">
+            <div className="text-center">
+              <p className="text-[10px] sm:text-xs text-gray-500">Total</p>
+              <p className="text-sm sm:text-base font-bold text-orange-600">
+                Rs. {stats.totalCommission.toLocaleString()}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] sm:text-xs text-gray-500">Pending</p>
+              <p className="text-sm sm:text-base font-bold text-yellow-600">
+                Rs. {stats.pendingCommission.toLocaleString()}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] sm:text-xs text-gray-500">Released</p>
+              <p className="text-sm sm:text-base font-bold text-green-600">
+                Rs. {stats.releasedCommission.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 mb-4 sm:mb-6 border border-gray-200">
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <input
@@ -365,6 +463,8 @@ const AdminOrders: React.FC = () => {
             {filteredOrders.map((order) => {
               const statusBadge = getStatusBadge(order.orderStatus);
               const paymentBadge = getPaymentBadge(order.paymentStatus);
+              const subtotal = order.subtotal || 0;
+              const commission = order.commission || Math.round(((subtotal * commissionRate) / 100) * 100) / 100;
 
               return (
                 <div key={order.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
@@ -378,6 +478,21 @@ const AdminOrders: React.FC = () => {
                     </div>
                     <p className="text-sm font-bold text-[#0F766E] whitespace-nowrap">
                       PKR {order.total?.toLocaleString() || 0}
+                    </p>
+                  </div>
+
+                  {/* ✅ Commission badge */}
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 mb-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-orange-700 font-medium">
+                        💰 Commission ({commissionRate}%):
+                      </span>
+                      <span className="font-bold text-orange-600">
+                        Rs. {commission.toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-[9px] text-orange-500 mt-0.5">
+                      Status: {order.commissionStatus || 'pending'}
                     </p>
                   </div>
 
@@ -451,6 +566,7 @@ const AdminOrders: React.FC = () => {
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Customer</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Items</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Total</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Commission</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Status</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Payment</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Date</th>
@@ -461,6 +577,8 @@ const AdminOrders: React.FC = () => {
                   {filteredOrders.map((order) => {
                     const statusBadge = getStatusBadge(order.orderStatus);
                     const paymentBadge = getPaymentBadge(order.paymentStatus);
+                    const subtotal = order.subtotal || 0;
+                    const commission = order.commission || Math.round(((subtotal * commissionRate) / 100) * 100) / 100;
 
                     return (
                       <tr key={order.id} className="border-b hover:bg-gray-50 transition">
@@ -492,7 +610,27 @@ const AdminOrders: React.FC = () => {
                           <p className="text-sm font-bold text-[#0F766E]">
                             PKR {order.total?.toLocaleString() || 0}
                           </p>
+                          <p className="text-[10px] text-gray-400">
+                            Subtotal: Rs. {subtotal.toLocaleString()}
+                          </p>
                         </td>
+
+                        {/* ✅ Commission column */}
+                        <td className="py-3 px-4">
+                          <p className="text-sm font-bold text-orange-600">
+                            Rs. {commission.toLocaleString()}
+                          </p>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                            order.commissionStatus === 'released'
+                              ? 'bg-green-100 text-green-700'
+                              : order.commissionStatus === 'reversed'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {order.commissionStatus || 'pending'}
+                          </span>
+                        </td>
+
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1">
                             <select
@@ -558,7 +696,7 @@ const AdminOrders: React.FC = () => {
         </>
       )}
 
-      {/* Order Details Modal - Mobile Optimized */}
+      {/* Order Details Modal */}
       {showModal && selectedOrder && (
         <div
           className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
@@ -608,6 +746,53 @@ const AdminOrders: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* ✅ Commission Box */}
+              {(() => {
+                const subtotal = selectedOrder.subtotal || 0;
+                const commission = selectedOrder.commission ||
+                  Math.round(((subtotal * commissionRate) / 100) * 100) / 100;
+                const netEarnings = selectedOrder.netEarnings || (subtotal - commission);
+
+                return (
+                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-3 sm:p-4">
+                    <h4 className="font-semibold text-orange-800 mb-3 flex items-center gap-2 text-sm">
+                      <FaMoneyBillWave /> Commission Breakdown
+                    </h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <p className="text-[10px] text-gray-500">Subtotal</p>
+                        <p className="text-sm font-bold text-gray-800">
+                          Rs. {subtotal.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500">Commission ({commissionRate}%)</p>
+                        <p className="text-sm font-bold text-orange-600">
+                          - Rs. {commission.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500">Net to Seller</p>
+                        <p className="text-sm font-bold text-green-600">
+                          Rs. {netEarnings.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-orange-200">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        selectedOrder.commissionStatus === 'released'
+                          ? 'bg-green-100 text-green-700'
+                          : selectedOrder.commissionStatus === 'reversed'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        Commission Status: {selectedOrder.commissionStatus || 'pending'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Customer Info */}
               <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">

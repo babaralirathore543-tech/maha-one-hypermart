@@ -5,6 +5,7 @@ import {
   Candy,
   Cake,
   Leaf,
+  Utensils,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -193,6 +194,140 @@ const cakesCategoryFields: ProductField[] = [
 ];
 
 // ============================================================
+// CROCKERY SPECIFIC ✅ NEW
+// ============================================================
+const crockeryCategoryFields: ProductField[] = [
+  {
+    name: 'subCategory',
+    label: 'Category',
+    type: 'select',
+    options: [
+      'dinner-sets',
+      'plates',
+      'bowls',
+      'mugs-cups',
+      'glasses',
+      'serving-dishes',
+      'cutlery',
+      'tea-sets',
+      'coffee-sets',
+      'bakeware',
+      'storage-containers',
+      'kitchen-tools',
+    ],
+    required: true,
+    section: 'category',
+  },
+  {
+    name: 'productType',
+    label: 'Material',
+    type: 'select',
+    options: [
+      'Ceramic',
+      'Porcelain',
+      'Bone China',
+      'Melamine',
+      'Stainless Steel',
+      'Glass',
+      'Crystal',
+      'Stoneware',
+      'Plastic',
+      'Copper',
+      'Brass',
+      'Wood',
+    ],
+    required: true,
+    section: 'category',
+  },
+  {
+    name: 'style',
+    label: 'Style / Design',
+    type: 'text',
+    section: 'category',
+    placeholder: 'e.g. Floral, Marble, Geometric',
+  },
+  {
+    name: 'origin',
+    label: 'Origin',
+    type: 'select',
+    options: ['Pakistan', 'China', 'India', 'Turkey', 'UK', 'Germany', 'Japan'],
+    section: 'category',
+  },
+  {
+    name: 'piecesCount',
+    label: 'Number of Pieces',
+    type: 'number',
+    min: 1,
+    section: 'description',
+    helperText: 'For sets: 12, 24, 36 pieces',
+  },
+  {
+    name: 'primaryColor',
+    label: 'Primary Color',
+    type: 'text',
+    section: 'description',
+    placeholder: 'e.g. White, Gold, Blue',
+  },
+  {
+    name: 'weight',
+    label: 'Weight',
+    type: 'text',
+    section: 'description',
+  },
+  {
+    name: 'weightUnit',
+    label: 'Weight Unit',
+    type: 'select',
+    options: ['g', 'kg'],
+    section: 'description',
+  },
+  {
+    name: 'careInstructions',
+    label: 'Care Instructions',
+    type: 'text',
+    section: 'description',
+    placeholder: 'e.g. Hand wash only, avoid abrasive cleaners',
+  },
+  {
+    name: 'dishwasherSafe',
+    label: 'Dishwasher Safe',
+    type: 'checkbox',
+    section: 'benefits',
+  },
+  {
+    name: 'microwaveSafe',
+    label: 'Microwave Safe',
+    type: 'checkbox',
+    section: 'benefits',
+  },
+  {
+    name: 'heatResistant',
+    label: 'Heat Resistant',
+    type: 'checkbox',
+    section: 'benefits',
+  },
+  {
+    name: 'foodGrade',
+    label: 'Food Grade',
+    type: 'checkbox',
+    section: 'benefits',
+  },
+  {
+    name: 'breakResistant',
+    label: 'Break Resistant',
+    type: 'checkbox',
+    section: 'benefits',
+  },
+  {
+    name: 'benefits',
+    label: 'Other Features',
+    type: 'tags',
+    section: 'benefits',
+    placeholder: 'Comma separated: e.g. Lead-Free, BPA-Free',
+  },
+];
+
+// ============================================================
 // CATEGORY CONFIGS
 // ============================================================
 export const categoryConfigs: CategoryConfig[] = [
@@ -325,6 +460,28 @@ export const categoryConfigs: CategoryConfig[] = [
       ...commonLabelFields,
     ],
   },
+
+  // ══════════════ CROCKERY ✅ NEW ══════════════
+  {
+    id: 'crockery',
+    name: 'Crockery',
+    icon: '🍽️',
+    iconComponent: Utensils,
+    color: 'amber',
+    gradient: 'from-amber-500 to-orange-500',
+    skuPrefix: 'MCR',
+    firestoreCategory: 'crockery',
+    sections: ['basic', 'category', 'pricing', 'inventory', 'images', 'description', 'benefits', 'labels'],
+    fields: [
+      ...commonBasicFields,
+      ...crockeryCategoryFields,
+      ...commonPricingFields,
+      ...commonInventoryFields,
+      ...commonImageFields,
+      ...commonDescriptionFields,
+      ...commonLabelFields,
+    ],
+  },
 ];
 
 // ============================================================
@@ -350,6 +507,6 @@ export const sectionTitles: Record<string, string> = {
   variants: '🎨 Variants',
   ingredients: '🧾 Ingredients',
   description: '📝 Description',
-  benefits: '⭐ Benefits & Dietary',
+  benefits: '⭐ Benefits & Features',
   labels: '🏷️ Labels & Tags',
 };
