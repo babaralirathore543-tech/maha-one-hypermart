@@ -8,14 +8,9 @@
    BASE STYLES
    ============================================================ */
 @layer base {
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
   html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -26,8 +21,16 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
+  /* ✅ Dark mode base */
+  html.dark body {
+    background: #0F172A !important;
+    color: #F1F5F9 !important;
+  }
+
+  /* Scrollbar */
   ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
     background: #F8FAFC;
@@ -40,14 +43,30 @@
     background: #b8941f;
   }
 
+  html.dark ::-webkit-scrollbar-track {
+    background: #1E293B;
+  }
+  html.dark ::-webkit-scrollbar-thumb {
+    background: #64748B;
+  }
+  html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+  }
+
   ::selection {
     background: #D4AF37;
     color: white;
   }
+
+  /* Focus visible outline */
+  *:focus-visible {
+    outline: 2px solid #D4AF37;
+    outline-offset: 2px;
+  }
 }
 
 /* ============================================================
-   PUBLIC SITE — Header Height Variables
+   HEADER HEIGHT VARIABLES
    ============================================================ */
 :root {
   --navbar-height: 80px;
@@ -64,8 +83,7 @@
 }
 
 /* ============================================================
-   PUBLIC SITE ONLY — Main Content Padding
-   Admin/Seller pe apply NAHI hoga
+   PUBLIC SITE — MAIN CONTENT PADDING
    ============================================================ */
 body:not(.admin-active):not(.seller-active) main,
 body:not(.admin-active):not(.seller-active) .flex-grow {
@@ -80,7 +98,7 @@ body:not(.admin-active):not(.seller-active) .flex-grow {
 }
 
 /* ============================================================
-   PUBLIC SITE — Navbar Fixed
+   PUBLIC NAVBAR — FIXED
    ============================================================ */
 body:not(.admin-active):not(.seller-active) nav.fixed,
 body:not(.admin-active):not(.seller-active) nav.sticky,
@@ -93,7 +111,7 @@ body:not(.admin-active):not(.seller-active) .navbar {
 }
 
 /* ============================================================
-   PUBLIC SITE — Categories Slider
+   CATEGORIES SLIDER
    ============================================================ */
 body:not(.admin-active):not(.seller-active) .categories-slider {
   position: sticky;
@@ -102,18 +120,18 @@ body:not(.admin-active):not(.seller-active) .categories-slider {
   background: white;
 }
 
-.dark .categories-slider {
-  background: #1F2937;
+html.dark .categories-slider,
+html.dark body:not(.admin-active):not(.seller-active) .categories-slider {
+  background: #1E293B !important;
 }
 
 /* ============================================================
-   ADMIN PANEL — Clean Reset (Minimal)
+   ADMIN PANEL — LAYOUT RESET
    ============================================================ */
 body.admin-active {
   overflow-x: hidden;
 }
 
-/* Admin main — no public padding */
 body.admin-active main,
 body.admin-active .flex-grow,
 body.admin-active .page-container {
@@ -121,20 +139,18 @@ body.admin-active .page-container {
   margin-top: 0 !important;
 }
 
-/* Admin — no public navbar override */
 body.admin-active nav.fixed,
 body.admin-active nav.sticky,
 body.admin-active .navbar {
   position: static !important;
 }
 
-/* Admin — hide public categories slider if any */
 body.admin-active .categories-slider {
   display: none !important;
 }
 
 /* ============================================================
-   SELLER PANEL — Same Clean Reset
+   SELLER PANEL — LAYOUT RESET
    ============================================================ */
 body.seller-active main,
 body.seller-active .flex-grow,
@@ -150,26 +166,358 @@ body.seller-active .navbar {
 }
 
 /* ============================================================
-   DARK MODE — Minimal (Safe Rules Only)
+   🌙🌙🌙 DARK MODE — COMPLETE OVERRIDES 🌙🌙🌙
+   Ye Tailwind ke baad load hoti hain, so they win.
    ============================================================ */
-.dark body {
-  background-color: #111827;
-  color: #F9FAFB;
+
+/* ---------- ROOT LAYOUTS ---------- */
+html.dark body,
+html.dark .min-h-screen,
+html.dark .min-h-\[100dvh\] {
+  background-color: #0F172A !important;
+  color: #F1F5F9 !important;
 }
 
-.dark .bg-white {
-  background-color: #1F2937;
+/* ---------- BACKGROUNDS ---------- */
+html.dark .bg-white {
+  background-color: #1E293B !important;
 }
 
-.dark .text-gray-800,
-.dark .text-gray-900,
-.dark .text-black {
-  color: #F9FAFB;
+html.dark .bg-gray-50 {
+  background-color: #0F172A !important;
 }
 
-.dark .border-gray-100,
-.dark .border-gray-200 {
-  border-color: #374151;
+html.dark .bg-gray-100 {
+  background-color: #1E293B !important;
+}
+
+html.dark .bg-gray-200 {
+  background-color: #334155 !important;
+}
+
+html.dark .bg-gray-300 {
+  background-color: #475569 !important;
+}
+
+/* Cream & custom backgrounds */
+html.dark .bg-\[\#FFFDF7\] {
+  background-color: #0F172A !important;
+}
+html.dark .bg-\[\#F8FAFC\] {
+  background-color: #1E293B !important;
+}
+html.dark .bg-\[\#F5F3FF\] {
+  background-color: #1E293B !important;
+}
+html.dark .bg-\[\#FFF8E7\] {
+  background-color: #1E293B !important;
+}
+html.dark .bg-\[\#111827\] {
+  background-color: #0F172A !important;
+}
+
+/* White with opacity (for glass effects) */
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80,
+html.dark .bg-white\/70,
+html.dark .bg-white\/50 {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+/* Color-tinted card backgrounds */
+html.dark .bg-amber-50 { background-color: rgba(120, 53, 15, 0.25) !important; }
+html.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.25) !important; }
+html.dark .bg-green-50 { background-color: rgba(20, 83, 45, 0.25) !important; }
+html.dark .bg-emerald-50 { background-color: rgba(6, 78, 59, 0.25) !important; }
+html.dark .bg-rose-50 { background-color: rgba(136, 19, 55, 0.25) !important; }
+html.dark .bg-pink-50 { background-color: rgba(131, 24, 67, 0.25) !important; }
+html.dark .bg-purple-50 { background-color: rgba(88, 28, 135, 0.25) !important; }
+html.dark .bg-indigo-50 { background-color: rgba(49, 46, 129, 0.25) !important; }
+html.dark .bg-orange-50 { background-color: rgba(124, 45, 18, 0.25) !important; }
+html.dark .bg-red-50 { background-color: rgba(127, 29, 29, 0.25) !important; }
+html.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.25) !important; }
+
+/* ---------- TEXT COLORS ---------- */
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-black,
+html.dark .text-\[\#111827\] {
+  color: #F1F5F9 !important;
+}
+
+html.dark .text-gray-700 {
+  color: #CBD5E1 !important;
+}
+
+html.dark .text-gray-600 {
+  color: #94A3B8 !important;
+}
+
+html.dark .text-gray-500 {
+  color: #94A3B8 !important;
+}
+
+html.dark .text-gray-400 {
+  color: #64748B !important;
+}
+
+html.dark .text-gray-300 {
+  color: #475569 !important;
+}
+
+/* Brand colors — lighten */
+html.dark .text-\[\#3B1E54\] {
+  color: #DDD6FE !important;
+}
+
+html.dark .text-\[\#0F766E\] {
+  color: #5EEAD4 !important;
+}
+
+html.dark .text-\[\#D4AF37\] {
+  color: #FCD34D !important;
+}
+
+/* ---------- BORDERS ---------- */
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-\[\#E5E7EB\] {
+  border-color: #334155 !important;
+}
+
+html.dark .border-gray-300 {
+  border-color: #475569 !important;
+}
+
+html.dark .divide-gray-100 > * + *,
+html.dark .divide-gray-200 > * + * {
+  border-color: #334155 !important;
+}
+
+html.dark .border-\[\#0F766E\]\/20 {
+  border-color: rgba(94, 234, 212, 0.3) !important;
+}
+
+html.dark .border-\[\#D4AF37\]\/20 {
+  border-color: rgba(252, 211, 77, 0.3) !important;
+}
+
+/* ---------- FORM INPUTS ---------- */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+html.dark textarea,
+html.dark select {
+  background-color: #1E293B !important;
+  color: #F1F5F9 !important;
+  border-color: #475569 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748B !important;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  border-color: #5EEAD4 !important;
+  background-color: #1E293B !important;
+  outline: none;
+}
+
+/* Override ALL inline white backgrounds */
+html.dark input[style*="#FFFFFF"],
+html.dark input[style*="#ffffff"],
+html.dark input[style*="rgb(255, 255, 255)"],
+html.dark textarea[style*="#FFFFFF"],
+html.dark textarea[style*="#ffffff"],
+html.dark select[style*="#FFFFFF"] {
+  background-color: #1E293B !important;
+  color: #F1F5F9 !important;
+}
+
+/* Disabled inputs */
+html.dark input:disabled,
+html.dark textarea:disabled,
+html.dark select:disabled {
+  background-color: #334155 !important;
+  color: #94A3B8 !important;
+}
+
+/* ---------- MODALS & OVERLAYS ---------- */
+html.dark .fixed.inset-0.bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
+html.dark .fixed.inset-0.bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+html.dark .fixed.inset-0 > .bg-white,
+html.dark .fixed.inset-0 .bg-white {
+  background-color: #1E293B !important;
+}
+
+/* ---------- DROPDOWNS (portaled) ---------- */
+html.dark #user-dropdown-menu {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
+}
+
+html.dark #user-dropdown-menu * {
+  border-color: #334155;
+}
+
+html.dark #user-dropdown-menu a,
+html.dark #user-dropdown-menu button {
+  color: #CBD5E1 !important;
+}
+
+html.dark #user-dropdown-menu a:hover,
+html.dark #user-dropdown-menu button:hover {
+  background-color: #334155 !important;
+  color: #F1F5F9 !important;
+}
+
+/* ---------- TABLES ---------- */
+html.dark table thead tr {
+  background-color: #0F172A !important;
+}
+
+html.dark table thead th {
+  color: #94A3B8 !important;
+}
+
+html.dark table tbody tr {
+  border-color: #334155 !important;
+}
+
+html.dark table tbody tr:hover {
+  background-color: #334155 !important;
+}
+
+html.dark table tbody td {
+  color: #CBD5E1 !important;
+}
+
+/* ---------- STATUS BADGES ---------- */
+html.dark .bg-green-100 {
+  background-color: rgba(34, 197, 94, 0.25) !important;
+}
+html.dark .text-green-700,
+html.dark .text-green-600 {
+  color: #4ADE80 !important;
+}
+
+html.dark .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.25) !important;
+}
+html.dark .text-red-700,
+html.dark .text-red-600 {
+  color: #F87171 !important;
+}
+
+html.dark .bg-yellow-100 {
+  background-color: rgba(234, 179, 8, 0.25) !important;
+}
+html.dark .text-yellow-700,
+html.dark .text-yellow-600 {
+  color: #FACC15 !important;
+}
+
+html.dark .bg-blue-100 {
+  background-color: rgba(59, 130, 246, 0.25) !important;
+}
+html.dark .text-blue-700,
+html.dark .text-blue-600 {
+  color: #60A5FA !important;
+}
+
+html.dark .bg-purple-100 {
+  background-color: rgba(168, 85, 247, 0.25) !important;
+}
+html.dark .text-purple-700,
+html.dark .text-purple-600 {
+  color: #C084FC !important;
+}
+
+html.dark .bg-orange-100 {
+  background-color: rgba(249, 115, 22, 0.25) !important;
+}
+html.dark .text-orange-700,
+html.dark .text-orange-600 {
+  color: #FB923C !important;
+}
+
+html.dark .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.25) !important;
+}
+html.dark .text-amber-700,
+html.dark .text-amber-600 {
+  color: #FBBF24 !important;
+}
+
+html.dark .bg-pink-100 {
+  background-color: rgba(236, 72, 153, 0.25) !important;
+}
+html.dark .text-pink-700,
+html.dark .text-pink-600 {
+  color: #F472B6 !important;
+}
+
+/* ---------- GRADIENT UTILITIES ---------- */
+html.dark .bg-gradient-to-br.from-\[\#F8FAFC\].to-white {
+  background: linear-gradient(to bottom right, #1E293B, #0F172A) !important;
+}
+
+html.dark .bg-gradient-to-r.from-white.to-white {
+  background: linear-gradient(to right, #1E293B, #1E293B) !important;
+}
+
+/* ---------- SPECIAL ELEMENTS ---------- */
+
+/* Purple navbar stays purple (intentional) */
+html.dark .bg-\[\#3B1E54\] {
+  background-color: #3B1E54 !important;
+}
+
+/* Gold badge on cart */
+html.dark .bg-\[\#D4AF37\] {
+  background-color: #D4AF37 !important;
+  color: #1E1B4B !important;
+}
+
+/* Mobile bottom nav */
+html.dark .safe-area-bottom {
+  background-color: #1E293B !important;
+  border-top-color: #334155 !important;
+}
+
+html.dark .safe-area-bottom a,
+html.dark .safe-area-bottom button {
+  color: #CBD5E1 !important;
+}
+
+/* Loading skeleton */
+html.dark .animate-pulse {
+  background-color: #334155 !important;
+}
+
+/* Placeholder images */
+html.dark img[src*="placeholder"],
+html.dark img[src*="via.placeholder"] {
+  filter: brightness(0.7) saturate(0.8);
+}
+
+/* ---------- CHART.JS ---------- */
+html.dark canvas {
+  filter: brightness(0.95);
+}
+
+/* ---------- SCROLL BEHAVIOR ---------- */
+html.dark .overflow-y-auto,
+html.dark .overflow-x-auto {
+  scrollbar-color: #475569 #1E293B;
 }
 
 /* ============================================================
@@ -188,6 +536,11 @@ body.seller-active .navbar {
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 24px;
+  }
+
+  html.dark .glass-card {
+    background: rgba(30, 41, 59, 0.7) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
   }
 
   .btn-primary {
@@ -214,6 +567,11 @@ body.seller-active .navbar {
     border: 1px solid rgba(0, 0, 0, 0.04);
   }
 
+  html.dark .card-premium {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+  }
+
   .card-premium:hover {
     transform: translateY(-8px);
     border-color: rgba(212, 175, 55, 0.2);
@@ -221,7 +579,7 @@ body.seller-active .navbar {
 }
 
 /* ============================================================
-   UTILITIES
+   ANIMATIONS
    ============================================================ */
 @layer utilities {
   .animate-float {

@@ -133,12 +133,12 @@ const AdminProductsApproval = () => {
       await updateDoc(productRef, {
         status: 'active',
         approvalStatus: 'approved',
-        isActive: true,                    // ✅ Ye add karo
+        isActive: true,                    // ✅ 
         approvedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
-      alert(`✅ ${product.name} approved!\n\nCustomer page pe ab dikhega.`);
+      alert(`✅ ${product.name} approved!\n\n.`);
       setShowModal(false);
       fetchProducts();
     } catch (error: any) {

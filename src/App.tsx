@@ -10,7 +10,7 @@ import {
 import { doc, getDoc } from 'firebase/firestore';
 
 import { CartProvider } from './context/CartContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 import { auth, onAuthStateChanged, db } from './config/firebase';
@@ -52,19 +52,19 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-red-50 p-4">
-          <div className="max-w-md w-full text-center bg-white p-6 rounded-2xl shadow-xl">
+        <div className="min-h-screen flex items-center justify-center bg-red-50 dark:bg-slate-900 p-4">
+          <div className="max-w-md w-full text-center bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl">
             <div className="text-5xl mb-3">⚠️</div>
-            <h1 className="text-xl font-bold text-red-600 mb-2">
+            <h1 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">
               Something went wrong
             </h1>
-            <p className="text-sm text-gray-600 mb-4 break-words">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 break-words">
               {this.state.error?.message || 'Unknown error'}
             </p>
             <button
               onClick={() => {
                 this.setState({ hasError: false, error: null });
-                window.location.reload();
+                window.location.href = '/';
               }}
               className="bg-red-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-700 transition"
             >
@@ -122,16 +122,7 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     const checkSeller = async () => {
       try {
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout')), 5000)
-        );
-
-        const docPromise = getDoc(doc(db, 'sellers', user.uid));
-
-        const sellerDoc = (await Promise.race([
-          docPromise,
-          timeoutPromise,
-        ])) as any;
+        const sellerDoc = await getDoc(doc(db, 'sellers', user.uid));
 
         if (cancelled) return;
 
@@ -181,23 +172,32 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // ============================================================
-// APP CONTENT — inside Router, uses useLocation
+// APP CONTENT — inside Router
 // ============================================================
 function AppContent() {
   const location = useLocation();
+  const { theme } = useTheme();
 
-  // ✅ Detect special pages
+  // ✅ Body class for theme (extra safety)
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    root.setAttribute('data-theme', theme);
+  }, [theme]);
+
   const isSellerPage = location.pathname.startsWith('/seller');
   const isAdminPage = location.pathname.startsWith('/admin');
   const isDashboard = location.pathname.startsWith('/dashboard');
 
-  // ✅ Hide global chrome on these pages
   const hideChrome = isSellerPage || isAdminPage;
 
   return (
     <>
-      <div className="min-h-[100dvh] flex flex-col bg-[#FFFDF7] dark:bg-[#111827]">
-        {/* ✅ Navbar — only on public pages */}
+      <div className="min-h-[100dvh] flex flex-col bg-[#FFFDF7] dark:bg-[#0F172A] transition-colors duration-300">
         {!hideChrome && <Navbar />}
 
         <main className="flex-grow">
@@ -207,11 +207,9 @@ function AppContent() {
           />
         </main>
 
-        {/* ✅ Footer — only on public pages */}
         {!hideChrome && <Footer />}
       </div>
 
-      {/* ✅ Overlays — only on public pages */}
       {!hideChrome && !isDashboard && (
         <>
           <WhatsAppButton />
@@ -226,55 +224,54 @@ function AppContent() {
 }
 
 // ============================================================
-// MAIN APP
+// APP SHELL — Mode switching (Eid/Maintenance/Normal)
 // ============================================================
-function App() {
+function AppShell() {
   const SHOW_EID_MILAD = false;
   const MAINTENANCE_MODE = false;
 
-  // EID MILAD MODE
+  // ✅ EID MILAD MODE
   if (SHOW_EID_MILAD) {
     return (
-      <ThemeProvider>
-        <Router>
-          <Routes>
-            <Route path="*" element={<EidMiladPage />} />
-          </Routes>
-        </Router>
-      </ThemeProvider>
+      <Routes>
+        <Route path="*" element={<EidMiladPage />} />
+      </Routes>
     );
   }
 
-  // MAINTENANCE MODE
+  // ✅ MAINTENANCE MODE
   if (MAINTENANCE_MODE) {
     return (
-      <ThemeProvider>
-        <Router>
-          <Routes>
-            <Route
-              path="/admin/*"
-              element={
-                <AdminRoute>
-                  <AdminPanel />
-                </AdminRoute>
-              }
-            />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="*" element={<MaintenancePage />} />
-          </Routes>
-        </Router>
-      </ThemeProvider>
+      <Routes>
+        <Route
+          path="/admin/*"
+          element={
+            <AdminRoute>
+              <AdminPanel />
+            </AdminRoute>
+          }
+        />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<MaintenancePage />} />
+      </Routes>
     );
   }
 
-  // NORMAL WEBSITE
+  // ✅ NORMAL MODE
+  return <AppContent />;
+}
+
+// ============================================================
+// MAIN APP
+// ============================================================
+function App() {
   return (
     <ErrorBoundary>
       <Router>
         <ThemeProvider>
           <AuthProvider>
             <CartProvider>
-              <AppContent />
+              <AppShell />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>
