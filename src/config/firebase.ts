@@ -25,7 +25,7 @@ import {
   setDoc,
   arrayUnion,
   arrayRemove,
-  serverTimestamp,          // ✅ ADD THIS
+  serverTimestamp,
 } from "firebase/firestore";
 
 import {
@@ -38,14 +38,11 @@ import {
   updateProfile,
 } from "firebase/auth";
 
-// ✅ App Check — reCAPTCHA Enterprise
-import {
-  initializeAppCheck,
-  ReCaptchaEnterpriseProvider,
-} from "firebase/app-check";
-
-// ✅ Firebase AI Logic
-import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
+// ⚠️ APP CHECK DISABLED TEMPORARILY FOR DEVELOPMENT
+// import {
+//   initializeAppCheck,
+//   ReCaptchaEnterpriseProvider,
+// } from "firebase/app-check";
 
 import type {
   DocumentData,
@@ -65,36 +62,50 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// ✅ App Check — DEBUG MODE (development only)
+// ⚠️ APP CHECK DISABLED FOR DEVELOPMENT
+// Baad mein enable karna ho toh uncomment karo
 
-if (import.meta.env.DEV) {
-  // @ts-ignore
-  self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-}
-
-// ✅ App Check initialize — reCAPTCHA Enterprise
-initializeAppCheck(app, {
-  provider: new ReCaptchaEnterpriseProvider(
-    "6LejB7ktAAAAADhaoLndVS0tXbwgCZNT-tgwugUZ"  // 👈 yahan apni site key paste karo
-  ),
-  isTokenAutoRefreshEnabled: true,
-});
+// if (import.meta.env.DEV) {
+//   // @ts-ignore
+//   self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+// }
+//
+// initializeAppCheck(app, {
+//   provider: new ReCaptchaEnterpriseProvider(
+//     "6LejB7ktAAAAADhaoLndVS0tXbwgCZNT-tgwugUZ"
+//   ),
+//   isTokenAutoRefreshEnabled: true,
+// });
 
 const db = getFirestore(app);
 const storage = getStorage(app);
 const auth = getAuth(app);
 
-// ✅ AI Logic initialize
-const ai = getAI(app, { backend: new GoogleAIBackend() });
+// ============================================================
+// AI LOGIC — SAFE DYNAMIC IMPORT
+// ============================================================
+let ai: any = null;
+let storeBuilderModel: any = null;
 
-// ✅ Store Builder Model (Gemini)
-const storeBuilderModel = getGenerativeModel(ai, {
-  model: "gemini-3.6-flash",
-  generationConfig: {
-    responseMimeType: "application/json",
-    temperature: 0.7,
-  },
-});
+import("firebase/ai")
+  .then(({ getAI, getGenerativeModel, GoogleAIBackend }) => {
+    try {
+      ai = getAI(app, { backend: new GoogleAIBackend() });
+      storeBuilderModel = getGenerativeModel(ai, {
+        model: "gemini-2.0-flash",
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.7,
+        },
+      });
+      console.log("✅ AI Logic initialized");
+    } catch (err) {
+      console.warn("⚠️ AI Logic init failed:", err);
+    }
+  })
+  .catch((err) => {
+    console.warn("⚠️ firebase/ai not available:", err);
+  });
 
 export {
   app,
@@ -121,7 +132,7 @@ export {
   setDoc,
   arrayUnion,
   arrayRemove,
-  serverTimestamp,          // ✅ EXPORT THIS
+  serverTimestamp,
   storage,
   ref,
   uploadBytesResumable,

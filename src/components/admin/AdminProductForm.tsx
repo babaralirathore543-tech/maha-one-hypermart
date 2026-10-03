@@ -1,14 +1,21 @@
 // src/components/admin/AdminProductForm.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import ProductForm from '../products/ProductForm';
+import ProductForm from '../products/UniversalProductForm';
 
 const AdminProductForm: React.FC = () => {
   const { category, id } = useParams<{ category?: string; id?: string }>();
   const navigate = useNavigate();
 
+  // ✅ Redirect if no category
+  useEffect(() => {
+    if (!category) {
+      navigate('/admin/products/add', { replace: true });
+    }
+  }, [category, navigate]);
+
+  // ✅ Don't render until category is confirmed
   if (!category) {
-    navigate('/admin/products/add');
     return null;
   }
 
@@ -18,7 +25,7 @@ const AdminProductForm: React.FC = () => {
         mode="admin"
         categoryId={category}
         productId={id}
-        onSuccess={() => navigate('/admin')}
+        onSuccess={() => navigate('/admin/products')}
       />
     </div>
   );
