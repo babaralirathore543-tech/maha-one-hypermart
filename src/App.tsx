@@ -7,7 +7,7 @@ import {
   Navigate,
   useLocation,
 } from 'react-router-dom';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -30,15 +30,10 @@ import MaintenancePage from './components/pages/MaintenancePage';
 import LoginPage from './components/pages/LoginPage';
 
 // ============================================================
-// SITE CONFIG TYPE
+// 🚧 MODE FLAGS — YAHAN SE CONTROL KARO
 // ============================================================
-interface SiteConfig {
-  maintenanceMode: boolean;
-  maintenanceMessage?: string;
-  maintenanceExpectedBack?: string;
-  maintenanceProgress?: number;
-  eidMiladMode?: boolean;
-}
+const SHOW_EID_MILAD = false;      // true karo → Eid Milad page
+const MAINTENANCE_MODE = true;      // true karo → Maintenance page
 
 // ============================================================
 // ERROR BOUNDARY
@@ -183,49 +178,12 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // ============================================================
-// MAINTENANCE ROUTES (public — admin can still login)
-// ============================================================
-interface MaintenanceRoutesProps {
-  config: SiteConfig;
-}
-
-const MaintenanceRoutes: React.FC<MaintenanceRoutesProps> = ({ config }) => {
-  return (
-    <Routes>
-      {/* Admin can still access */}
-      <Route
-        path="/admin/*"
-        element={
-          <AdminRoute>
-            <AdminPanel />
-          </AdminRoute>
-        }
-      />
-      {/* Login always accessible */}
-      <Route path="/login" element={<LoginPage />} />
-      {/* Everything else → maintenance page */}
-      <Route
-        path="*"
-        element={
-          <MaintenancePage
-            message={config.maintenanceMessage}
-            expectedBack={config.maintenanceExpectedBack}
-            progress={config.maintenanceProgress}
-          />
-        }
-      />
-    </Routes>
-  );
-};
-
-// ============================================================
-// APP CONTENT (normal mode)
+// APP CONTENT — Normal Mode
 // ============================================================
 function AppContent() {
   const location = useLocation();
   const { theme } = useTheme();
 
-  // Body class for theme
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -271,79 +229,80 @@ function AppContent() {
 }
 
 // ============================================================
-// APP SHELL — mode switching based on Firestore config
+// MAINTENANCE MODE — Public locked, admin accessible
 // ============================================================
-function AppShell() {
-  const [config, setConfig] = useState<SiteConfig>({
-    maintenanceMode: false,
-    eidMiladMode: false,
-  });
-  const [configLoading, setConfigLoading] = useState(true);
-
-  // ✅ Real-time config subscription
-  useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, 'config', 'site'),
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data() as SiteConfig;
-          setConfig({
-            maintenanceMode: data.maintenanceMode ?? false,
-            maintenanceMessage: data.maintenanceMessage,
-            maintenanceExpectedBack: data.maintenanceExpectedBack,
-            maintenanceProgress: data.maintenanceProgress,
-            eidMiladMode: data.eidMiladMode ?? false,
-          });
-        } else {
-          // Config doesn't exist → default (normal mode)
-          setConfig({ maintenanceMode: false, eidMiladMode: false });
+function MaintenanceMode() {
+  return (
+    <Routes>
+      {/* ✅ Admin panel accessible during maintenance */}
+      <Route
+        path="/admin/*"
+        element={
+          <AdminRoute>
+            <AdminPanel />
+          </AdminRoute>
         }
-        setConfigLoading(false);
-      },
-      (error) => {
-        console.warn('⚠️ Config fetch failed, defaulting to normal mode:', error);
-        setConfig({ maintenanceMode: false, eidMiladMode: false });
-        setConfigLoading(false);
-      }
-    );
-
-    return () => unsub();
-  }, []);
-
-  // Loading state
-  if (configLoading) {
-    return <PageLoader />;
-  }
-
-  // ✅ EID MILAD MODE — full takeover
-  if (config.eidMiladMode) {
-    return (
-      <Routes>
-        <Route path="*" element={<EidMiladPage />} />
-      </Routes>
-    );
-  }
-
-  // ✅ MAINTENANCE MODE — public locked, admin can access
-  if (config.maintenanceMode) {
-    return <MaintenanceRoutes config={config} />;
-  }
-
-  // ✅ NORMAL MODE
-  return <AppContent />;
+      />
+      {/* ✅ Login page always accessible */}
+      <Route path="/login" element={<LoginPage />} />
+      {/* ✅ Everything else → Maintenance page */}
+      <Route
+        path="*"
+        element={
+          <MaintenancePage
+            message="We're upgrading our systems to serve you better. Please check back soon!"
+            expectedBack="Back in 24 hours"
+          />
+        }
+      />
+    </Routes>
+  );
 }
 
 // ============================================================
 // MAIN APP
 // ============================================================
 function App() {
+  // 🚧 MAINTENANCE MODE
+  if (MAINTENANCE_MODE) {
+    return (
+      <ErrorBoundary>
+        <Router>
+          <ThemeProvider>
+            <AuthProvider>
+              <CartProvider>
+                <MaintenanceMode />
+              </CartProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </Router>
+      </ErrorBoundary>
+    );
+  }
+
+  // 🌙 EID MILAD MODE
+  if (SHOW_EID_MILAD) {
+    return (
+      <ErrorBoundary>
+        <Router>
+          <ThemeProvider>
+            <Routes>
+              <Route path="*" element={<EidMiladPage />} />
+            </Routes>
+          </ThemeProvider>
+        </Router>
+      </ErrorBoundary>
+    );
+  }
+
+  // ✅ NORMAL MODE
   return (
     <ErrorBoundary>
       <Router>
         <ThemeProvider>
           <AuthProvider>
             <CartProvider>
-              <AppShell />
+              <AppContent />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>
