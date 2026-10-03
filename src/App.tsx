@@ -7,7 +7,7 @@ import {
   Navigate,
   useLocation,
 } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -28,6 +28,17 @@ import AdminPanel from './components/admin/AdminPanel';
 import EidMiladPage from './components/pages/EidMiladPage';
 import MaintenancePage from './components/pages/MaintenancePage';
 import LoginPage from './components/pages/LoginPage';
+
+// ============================================================
+// SITE CONFIG TYPE
+// ============================================================
+interface SiteConfig {
+  maintenanceMode: boolean;
+  maintenanceMessage?: string;
+  maintenanceExpectedBack?: string;
+  maintenanceProgress?: number;
+  eidMiladMode?: boolean;
+}
 
 // ============================================================
 // ERROR BOUNDARY
@@ -172,13 +183,49 @@ const SellerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // ============================================================
-// APP CONTENT — inside Router
+// MAINTENANCE ROUTES (public — admin can still login)
+// ============================================================
+interface MaintenanceRoutesProps {
+  config: SiteConfig;
+}
+
+const MaintenanceRoutes: React.FC<MaintenanceRoutesProps> = ({ config }) => {
+  return (
+    <Routes>
+      {/* Admin can still access */}
+      <Route
+        path="/admin/*"
+        element={
+          <AdminRoute>
+            <AdminPanel />
+          </AdminRoute>
+        }
+      />
+      {/* Login always accessible */}
+      <Route path="/login" element={<LoginPage />} />
+      {/* Everything else → maintenance page */}
+      <Route
+        path="*"
+        element={
+          <MaintenancePage
+            message={config.maintenanceMessage}
+            expectedBack={config.maintenanceExpectedBack}
+            progress={config.maintenanceProgress}
+          />
+        }
+      />
+    </Routes>
+  );
+};
+
+// ============================================================
+// APP CONTENT (normal mode)
 // ============================================================
 function AppContent() {
   const location = useLocation();
   const { theme } = useTheme();
 
-  // ✅ Body class for theme (extra safety)
+  // Body class for theme
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -224,14 +271,52 @@ function AppContent() {
 }
 
 // ============================================================
-// APP SHELL — Mode switching (Eid/Maintenance/Normal)
+// APP SHELL — mode switching based on Firestore config
 // ============================================================
 function AppShell() {
-  const SHOW_EID_MILAD = false;
-  const MAINTENANCE_MODE = false;
+  const [config, setConfig] = useState<SiteConfig>({
+    maintenanceMode: false,
+    eidMiladMode: false,
+  });
+  const [configLoading, setConfigLoading] = useState(true);
 
-  // ✅ EID MILAD MODE
-  if (SHOW_EID_MILAD) {
+  // ✅ Real-time config subscription
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, 'config', 'site'),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data() as SiteConfig;
+          setConfig({
+            maintenanceMode: data.maintenanceMode ?? false,
+            maintenanceMessage: data.maintenanceMessage,
+            maintenanceExpectedBack: data.maintenanceExpectedBack,
+            maintenanceProgress: data.maintenanceProgress,
+            eidMiladMode: data.eidMiladMode ?? false,
+          });
+        } else {
+          // Config doesn't exist → default (normal mode)
+          setConfig({ maintenanceMode: false, eidMiladMode: false });
+        }
+        setConfigLoading(false);
+      },
+      (error) => {
+        console.warn('⚠️ Config fetch failed, defaulting to normal mode:', error);
+        setConfig({ maintenanceMode: false, eidMiladMode: false });
+        setConfigLoading(false);
+      }
+    );
+
+    return () => unsub();
+  }, []);
+
+  // Loading state
+  if (configLoading) {
+    return <PageLoader />;
+  }
+
+  // ✅ EID MILAD MODE — full takeover
+  if (config.eidMiladMode) {
     return (
       <Routes>
         <Route path="*" element={<EidMiladPage />} />
@@ -239,22 +324,9 @@ function AppShell() {
     );
   }
 
-  // ✅ MAINTENANCE MODE
-  if (MAINTENANCE_MODE) {
-    return (
-      <Routes>
-        <Route
-          path="/admin/*"
-          element={
-            <AdminRoute>
-              <AdminPanel />
-            </AdminRoute>
-          }
-        />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<MaintenancePage />} />
-      </Routes>
-    );
+  // ✅ MAINTENANCE MODE — public locked, admin can access
+  if (config.maintenanceMode) {
+    return <MaintenanceRoutes config={config} />;
   }
 
   // ✅ NORMAL MODE

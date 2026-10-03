@@ -7,15 +7,9 @@ import { useState, useEffect, useRef } from 'react';
 import LoadingScreen from './LoadingScreen';
 
 // ============================================================
-// PAGE IMPORTS
+// PAGE IMPORTS — PUBLIC
 // ============================================================
 import HomePage from '../pages/HomePage';
-import DryFruitsPage from '../pages/DryFruitsPage';
-import SweetsPage from '../pages/SweetsPage';
-import FashionPage from '../pages/FashionPage';
-import FashionDetailPage from '../pages/FashionDetailPage';
-import SweetsDetailPage from '../pages/SweetsDetailPage';
-import DryFruitsDetailPage from '../pages/DryFruitsDetailPage';
 import LoginPage from '../pages/LoginPage';
 import SignupPage from '../pages/SignupPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
@@ -23,10 +17,17 @@ import CartPage from '../pages/CartPage';
 import CheckoutPage from '../pages/CheckoutPage';
 import AboutPage from '../pages/AboutPage';
 import ContactPage from '../pages/ContactPage';
-import CategoryPage from '../pages/CategoryPage';
 import WishlistPage from '../pages/WishlistPage';
-import CakesPage from '../pages/CakesPage';
-import CakesDetailPage from '../pages/CakesDetailPage';
+
+// ============================================================
+// ✅ UNIVERSAL PAGES (dynamic system)
+// ============================================================
+import DynamicCategoryPage from '../pages/DynamicCategoryPage';
+import UniversalProductDetailPage from '../pages/UniversalProductDetailPage';
+
+// ============================================================
+// CUSTOMER DASHBOARD
+// ============================================================
 import CustomerLayout from '../customer/CustomerLayout';
 import CustomerDashboard from '../customer/CustomerDashboard';
 import OrdersTab from '../customer/tabs/OrdersTab';
@@ -35,10 +36,10 @@ import AddressesTab from '../customer/tabs/AddressesTab';
 import PaymentsTab from '../customer/tabs/PaymentsTab';
 import HistoryTab from '../customer/tabs/HistoryTab';
 import SettingsTab from '../customer/tabs/SettingsTab';
-import HerbalPage from '../pages/HerbalPage';
-import HerbalDetailPage from '../pages/HerbalDetailPage';
-import CrockeryPage from '../pages/CrockeryPage';
-import CrockeryDetailPage from '../pages/CrockeryDetailPage';
+
+// ============================================================
+// SELLER
+// ============================================================
 import SellerRegistration from './seller/SellerRegistration';
 import SellerTermsPage from '../pages/SellerTermsPage';
 import SellerLayout from '../seller/SellerLayout';
@@ -50,20 +51,30 @@ import SellerStore from '../seller/SellerStore';
 import SellerSettings from '../seller/SellerSettings';
 import SellerProductPage from '../seller/SellerProductPage';
 import StoreBuilderWizard from '../seller/store-builder/StoreBuilderWizard';
-import PublicStorePage from '../pages/PublicStorePage';
-import ProductDetailPage from '../store/ProductDetailPage';
 
-// ✅ ADMIN
+// ============================================================
+// AI STORES
+// ============================================================
+import PublicStorePage from '../pages/PublicStorePage';
+
+// ============================================================
+// ADMIN
+// ============================================================
 import AdminPanel from '../admin/AdminPanel';
-import AdminCakesProductForm from '../pages/AdminCakesProductForm';
-import AdminDryFruitsForm from '../pages/AdminDryFruitsForm';
-import AdminSweetsForm from '../pages/AdminSweetsForm';
-import AdminHerbalForm from '../pages/AdminHerbalForm';
-import AdminSellerManagement from '../admin/AdminSellerManagement';
-import AdminProductsApproval from '../admin/AdminProductsApproval';
 import AdminCategorySelector from '../pages/admin/AdminCategorySelector';
 import AdminProductFormNew from '../admin/AdminProductForm';
+import AdminSellerManagement from '../admin/AdminSellerManagement';
+import AdminProductsApproval from '../admin/AdminProductsApproval';
+import AdminCategoryManager from '../admin/AdminCategoryManager';
 
+// ============================================================
+// ✅ REDIRECT WRAPPERS (backward compatibility)
+// ============================================================
+import CategoryRedirect from './CategoryRedirect';
+
+// ============================================================
+// PROPS
+// ============================================================
 interface AnimatedRoutesProps {
   AdminRoute: React.FC<{ children: React.ReactNode }>;
   SellerRoute: React.FC<{ children: React.ReactNode }>;
@@ -105,7 +116,7 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
   const [showSplash, setShowSplash] = useState(true);
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ✅ Splash ONLY on very first mount
+  // Splash ONLY on very first mount
   useEffect(() => {
     splashTimerRef.current = setTimeout(() => setShowSplash(false), 1200);
     return () => {
@@ -114,7 +125,7 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ Safety net
+  // Safety net
   useEffect(() => {
     if (!showSplash) return;
     const emergency = setTimeout(() => setShowSplash(false), 5000);
@@ -130,43 +141,83 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
 
-          {/* ✅ ROOT — redirect to /home */}
+          {/* ==================================================== */}
+          {/* ROOT — redirect to /home                            */}
+          {/* ==================================================== */}
           <Route path="/" element={<Navigate to="/home" replace />} />
 
-          {/* ============ PUBLIC ============ */}
+          {/* ==================================================== */}
+          {/* PUBLIC — Core Pages                                 */}
+          {/* ==================================================== */}
           <Route path="/home" element={<PageTransition><HomePage /></PageTransition>} />
-          <Route path="/shop" element={<PageTransition><DryFruitsPage /></PageTransition>} />
-          <Route path="/sweets" element={<PageTransition><SweetsPage /></PageTransition>} />
-          <Route path="/fashion" element={<PageTransition><FashionPage /></PageTransition>} />
-          <Route path="/fashion/:id" element={<PageTransition><FashionDetailPage /></PageTransition>} />
-          <Route path="/sweet-product/:id" element={<PageTransition><SweetsDetailPage /></PageTransition>} />
-          <Route path="/dry-product/:id" element={<PageTransition><DryFruitsDetailPage /></PageTransition>} />
           <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
           <Route path="/signup" element={<PageTransition><SignupPage /></PageTransition>} />
           <Route path="/forgot-password" element={<PageTransition><ForgotPasswordPage /></PageTransition>} />
           <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
           <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
-          <Route path="/category/:categoryName" element={<PageTransition><CategoryPage /></PageTransition>} />
-          <Route path="/cakes" element={<PageTransition><CakesPage /></PageTransition>} />
-          <Route path="/cakes/:id" element={<PageTransition><CakesDetailPage /></PageTransition>} />
+          <Route path="/wishlist" element={<PageTransition><WishlistPage /></PageTransition>} />
+          <Route path="/cart" element={<PageTransition><CartPage /></PageTransition>} />
+          <Route path="/checkout" element={<PageTransition><CheckoutPage /></PageTransition>} />
 
-          {/* ============ AI STORES ============ */}
-          <Route path="/store/:slug" element={<PageTransition><PublicStorePage /></PageTransition>} />
-          <Route path="/product/:id" element={<PageTransition><ProductDetailPage /></PageTransition>} />
+          {/* ==================================================== */}
+          {/* ✅ UNIVERSAL ROUTES (dynamic system)                */}
+          {/* Ye 2 routes saari categories handle karte hain      */}
+          {/* ==================================================== */}
+          <Route
+            path="/category/:categorySlug"
+            element={<PageTransition><DynamicCategoryPage /></PageTransition>}
+          />
+          <Route
+            path="/product/:id"
+            element={<PageTransition><UniversalProductDetailPage /></PageTransition>}
+          />
 
-          {/* ============ HERBAL ============ */}
-          <Route path="/herbal" element={<PageTransition><HerbalPage /></PageTransition>} />
-          <Route path="/herbal/:id" element={<PageTransition><HerbalDetailPage /></PageTransition>} />
+          {/* ==================================================== */}
+          {/* 🔄 BACKWARD COMPATIBILITY — Redirects               */}
+          {/* Purane URLs ko naye routes pe bhejo                 */}
+          {/* ==================================================== */}
 
-          {/* ============ CROCKERY ✅ NEW ============ */}
-          <Route path="/crockery" element={<PageTransition><CrockeryPage /></PageTransition>} />
-          <Route path="/crockery/:id" element={<PageTransition><CrockeryDetailPage /></PageTransition>} />
+          {/* Old category listing pages */}
+          <Route path="/shop" element={<Navigate to="/category/dryfruits" replace />} />
+          <Route path="/sweets" element={<Navigate to="/category/sweets" replace />} />
+          <Route path="/cakes" element={<Navigate to="/category/cakes" replace />} />
+          <Route path="/herbal" element={<Navigate to="/category/herbal" replace />} />
+          <Route path="/crockery" element={<Navigate to="/category/crockery" replace />} />
+          <Route path="/calligraphy" element={<Navigate to="/category/calligraphy" replace />} />
+          <Route path="/fashion" element={<Navigate to="/category/fashion" replace />} />
 
-          {/* ============ SELLER REGISTRATION ============ */}
-          <Route path="/seller/register" element={<PageTransition><SellerRegistration /></PageTransition>} />
-          <Route path="/seller/terms" element={<PageTransition><SellerTermsPage /></PageTransition>} />
+          {/* Old product detail pages — redirect to universal */}
+          <Route path="/dry-product/:id" element={<CategoryRedirect toCategory="dryfruits" />} />
+          <Route path="/sweet-product/:id" element={<CategoryRedirect toCategory="sweets" />} />
+          <Route path="/cakes/:id" element={<CategoryRedirect toCategory="cakes" />} />
+          <Route path="/herbal/:id" element={<CategoryRedirect toCategory="herbal" />} />
+          <Route path="/crockery/:id" element={<CategoryRedirect toCategory="crockery" />} />
+          <Route path="/calligraphy/:id" element={<CategoryRedirect toCategory="calligraphy" />} />
+          <Route path="/fashion/:id" element={<CategoryRedirect toCategory="fashion" />} />
 
-          {/* ============ SELLER PANEL ============ */}
+          {/* ==================================================== */}
+          {/* AI STORES                                           */}
+          {/* ==================================================== */}
+          <Route
+            path="/store/:slug"
+            element={<PageTransition><PublicStorePage /></PageTransition>}
+          />
+
+          {/* ==================================================== */}
+          {/* SELLER REGISTRATION & TERMS                         */}
+          {/* ==================================================== */}
+          <Route
+            path="/seller/register"
+            element={<PageTransition><SellerRegistration /></PageTransition>}
+          />
+          <Route
+            path="/seller/terms"
+            element={<PageTransition><SellerTermsPage /></PageTransition>}
+          />
+
+          {/* ==================================================== */}
+          {/* SELLER PANEL (nested routes)                        */}
+          {/* ==================================================== */}
           <Route
             path="/seller"
             element={
@@ -188,7 +239,9 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
             <Route path="settings" element={<SellerSettings />} />
           </Route>
 
-          {/* ============ CUSTOMER DASHBOARD ============ */}
+          {/* ==================================================== */}
+          {/* CUSTOMER DASHBOARD                                  */}
+          {/* ==================================================== */}
           <Route
             path="/dashboard"
             element={
@@ -207,16 +260,11 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
             <Route path="settings" element={<SettingsTab />} />
           </Route>
 
-          {/* ============ CART / CHECKOUT / WISHLIST ============ */}
-          <Route path="/cart" element={<PageTransition><CartPage /></PageTransition>} />
-          <Route path="/checkout" element={<PageTransition><CheckoutPage /></PageTransition>} />
-          <Route path="/wishlist" element={<PageTransition><WishlistPage /></PageTransition>} />
+          {/* ==================================================== */}
+          {/* ADMIN — Add/Edit Product Forms                      */}
+          {/* ==================================================== */}
 
-          {/* ============================================================ */}
-          {/* ADMIN SECTION */}
-          {/* ============================================================ */}
-
-          {/* ✅ Add/Edit Product — Full page forms (no AdminPanel) */}
+          {/* Category selector (step 1) */}
           <Route
             path="/admin/products/add"
             element={
@@ -227,6 +275,8 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
               </AdminRoute>
             }
           />
+
+          {/* Dynamic product form (step 2) — universal */}
           <Route
             path="/admin/products/add/:category"
             element={
@@ -237,6 +287,8 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
               </AdminRoute>
             }
           />
+
+          {/* Edit product */}
           <Route
             path="/admin/products/edit/:category/:id"
             element={
@@ -248,7 +300,23 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
             }
           />
 
-          {/* ✅ MAIN ADMIN PANEL */}
+          {/* ==================================================== */}
+          {/* ✅ ADMIN — Category Manager (standalone page)       */}
+          {/* ==================================================== */}
+          <Route
+            path="/admin/categories"
+            element={
+              <AdminRoute>
+                <PageTransition>
+                  <AdminCategoryManager />
+                </PageTransition>
+              </AdminRoute>
+            }
+          />
+
+          {/* ==================================================== */}
+          {/* ADMIN — Main Panel (tab-based)                      */}
+          {/* ==================================================== */}
           <Route
             path="/admin"
             element={
@@ -258,7 +326,10 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
             }
           />
 
-          {/* ✅ Separate admin pages */}
+          {/* ==================================================== */}
+          {/* ADMIN — Separate Pages                              */}
+          {/* ==================================================== */}
+
           <Route
             path="/admin/sellers"
             element={
@@ -269,6 +340,7 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
               </AdminRoute>
             }
           />
+
           <Route
             path="/admin/products-approval"
             element={
@@ -280,100 +352,29 @@ const AnimatedRoutes = ({ AdminRoute, SellerRoute }: AnimatedRoutesProps) => {
             }
           />
 
-          {/* ✅ Legacy admin form routes */}
-          <Route
-            path="/admin/dryfruits/add"
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminDryFruitsForm />
-                </PageTransition>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/dryfruits/edit/:id"
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminDryFruitsForm />
-                </PageTransition>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/sweets/add"
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminSweetsForm />
-                </PageTransition>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/sweets/edit/:id"
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminSweetsForm />
-                </PageTransition>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/cakes/add"
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminCakesProductForm />
-                </PageTransition>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/cakes/edit/:id"
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminCakesProductForm />
-                </PageTransition>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/herbal/add"
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminHerbalForm />
-                </PageTransition>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/herbal/edit/:id"
-            element={
-              <AdminRoute>
-                <PageTransition>
-                  <AdminHerbalForm />
-                </PageTransition>
-              </AdminRoute>
-            }
-          />
-
-          {/* ✅ Catch-all admin redirect */}
+          {/* ==================================================== */}
+          {/* ADMIN — Catch-all                                   */}
+          {/* ==================================================== */}
           <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
 
-          {/* ============ 404 ============ */}
+          {/* ==================================================== */}
+          {/* 404 — NOT FOUND                                     */}
+          {/* ==================================================== */}
           <Route
             path="*"
             element={
               <PageTransition>
-                <div className="flex flex-col items-center justify-center h-96">
-                  <h1 className="text-6xl font-bold text-gray-300">404</h1>
-                  <p className="text-gray-500 mt-2">Page not found</p>
-                  <Link to="/home" className="mt-4 text-[#0F766E] hover:underline">
+                <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
+                  <h1 className="text-6xl font-bold text-gray-300 dark:text-gray-600">
+                    404
+                  </h1>
+                  <p className="text-gray-500 dark:text-gray-400 mt-2">
+                    Page not found
+                  </p>
+                  <Link
+                    to="/home"
+                    className="mt-4 text-[#0F766E] dark:text-[#5EEAD4] hover:underline"
+                  >
                     Go back to Home
                   </Link>
                 </div>

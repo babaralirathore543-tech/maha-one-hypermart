@@ -17,6 +17,7 @@ import {
   FaTimes,
   FaLeaf,
   FaCheckCircle,
+  FaSitemap,
 } from 'react-icons/fa';
 import { db, collection, getDocs } from '../../config/firebase';
 import AdminOrders from './AdminOrders';
@@ -25,6 +26,7 @@ import AdminDashboard from './AdminDashboard';
 import AdminProducts from './AdminProducts';
 import AdminSellerManagement from './AdminSellerManagement';
 import AdminProductsApproval from './AdminProductsApproval';
+import AdminCategoryManager from './AdminCategoryManager';
 
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
@@ -45,6 +47,7 @@ const AdminPanel: React.FC = () => {
   useEffect(() => {
     if (!isAdmin) navigate('/');
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, navigate]);
 
   // ✅ Body scroll lock when mobile sidebar open
@@ -115,25 +118,40 @@ const AdminPanel: React.FC = () => {
     { title: 'Herbal', value: categoryStats.herbal, icon: <FaLeaf />, color: 'bg-emerald-500' },
   ];
 
+  // ============================================================
+  // MENU ITEMS — Category Manager added
+  // ============================================================
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <FaHome /> },
     { id: 'products', label: 'Products', icon: <FaBox /> },
     { id: 'products-approval', label: 'Products Approval', icon: <FaCheckCircle />, badge: 'Pending' },
+    { id: 'categories', label: 'Categories', icon: <FaSitemap /> },
     { id: 'orders', label: 'Orders', icon: <FaShoppingCart /> },
     { id: 'users', label: 'Users', icon: <FaUsers /> },
     { id: 'sellers', label: 'Sellers', icon: <FaUserPlus />, badge: 'New' },
   ];
 
   const handleMenuClick = (id: string) => {
+    // ✅ Categories → navigate to dedicated route
+    if (id === 'categories') {
+      navigate('/admin/categories');
+      setIsSidebarOpen(false);
+      return;
+    }
+
     setActiveTab(id);
     setIsSidebarOpen(false);
   };
 
+  // ============================================================
+  // RENDER CONTENT
+  // ============================================================
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <AdminDashboard />;
       case 'products': return <AdminProducts />;
       case 'products-approval': return <AdminProductsApproval />;
+      case 'categories': return <AdminCategoryManager />;
       case 'orders': return <AdminOrders />;
       case 'users': return <AdminUsers />;
       case 'sellers': return <AdminSellerManagement />;
@@ -144,23 +162,13 @@ const AdminPanel: React.FC = () => {
   if (!isAdmin) return null;
 
   return (
-    <div className="admin-layout min-h-screen bg-gray-100">
-
+    <div className="admin-layout min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* ================================================================
           LAYOUT STRUCTURE:
-          
-          ┌──────────────────────────────────────────┐
-          │  HEADER (sticky top)                     │
-          ├──────────────────────────────────────────┤
-          │  MOBILE SIDEBAR (fixed, overlay+drawer)  │  ← Overlay + drawer
-          ├─────────────┬────────────────────────────┤
-          │  DESKTOP    │  MAIN CONTENT              │
-          │  SIDEBAR    │                            │
-          │  (sticky)   │                            │
-          └─────────────┴────────────────────────────┘
-          
-          ✅ Desktop sidebar is INSIDE flex, takes space
-          ✅ Mobile sidebar is FIXED, OUTSIDE flex, overlays
+          - HEADER (sticky top)
+          - MOBILE SIDEBAR (fixed, overlay + drawer)
+          - DESKTOP SIDEBAR (sticky, inside flex)
+          - MAIN CONTENT
           ================================================================ */}
 
       {/* ==================== 1. HEADER ==================== */}
@@ -204,7 +212,7 @@ const AdminPanel: React.FC = () => {
         </div>
       </header>
 
-      {/* ==================== 2. MOBILE SIDEBAR (fixed, overlays) ==================== */}
+      {/* ==================== 2. MOBILE SIDEBAR (fixed) ==================== */}
       {/* Overlay */}
       {isSidebarOpen && (
         <div
@@ -286,9 +294,9 @@ const AdminPanel: React.FC = () => {
         </div>
       </aside>
 
-      {/* ==================== 3. FLEX WRAPPER: DESKTOP SIDEBAR + MAIN ==================== */}
+      {/* ==================== 3. FLEX WRAPPER ==================== */}
       <div className="flex w-full">
-        {/* ---------- 3A. DESKTOP SIDEBAR (hidden on mobile) ---------- */}
+        {/* ---------- 3A. DESKTOP SIDEBAR ---------- */}
         <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:sticky lg:top-[60px] lg:h-[calc(100vh-60px)] bg-gradient-to-b from-[#0F766E] to-[#065F46] text-white">
           {/* Desktop Header */}
           <div className="p-4 border-b border-white/10 shrink-0">
@@ -349,12 +357,12 @@ const AdminPanel: React.FC = () => {
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-gray-100 hover:shadow-md transition"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition"
               >
-                <p className="text-xs sm:text-sm text-gray-500 truncate">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
                   {stat.title}
                 </p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mt-1">
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 dark:text-white mt-1">
                   {stat.value}
                 </p>
                 <div
@@ -367,7 +375,7 @@ const AdminPanel: React.FC = () => {
           </div>
 
           {/* Dynamic Content */}
-          <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 lg:p-6 border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 lg:p-6 border border-gray-100 dark:border-gray-700">
             {renderContent()}
           </div>
         </main>
